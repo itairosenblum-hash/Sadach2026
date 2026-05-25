@@ -232,7 +232,6 @@ footer{background:#060e1c;border-top:1px solid rgba(201,168,76,0.15);padding:3re
   <div class="navbar-logo">סד"ח נגדים ראשוני</div>
   <ul class="navbar-links">
     <li><a href="#details">📋 <span>פרטים</span></a></li>
-    <li><a href="#rsvp">✅ <span>הרשמה</span></a></li>
     <li><a href="#goals">🎯 <span>מטרות</span></a></li>
     <li><a href="#packing">🎒 <span>ציוד</span></a></li>
     <li><a href="#instructions">📋 <span>הנחיות</span></a></li>
@@ -294,25 +293,6 @@ footer{background:#060e1c;border-top:1px solid rgba(201,168,76,0.15);padding:3re
   </div>
 </div>
 
-<!-- RSVP -->
-<div class="schedule-bg" id="rsvp" style="border-top:2px solid rgba(201,168,76,0.5);border-bottom:2px solid rgba(201,168,76,0.5);background:linear-gradient(180deg,#0d2044 0%,#1a3a6e 50%,#0d2044 100%);">
-  <div class="section reveal">
-    <h2 class="section-title">✅ הרשמה</h2>
-    <div style="text-align:center;padding:1rem 0;">
-      <!-- Icon -->
-      <div style="font-size:3rem;margin-bottom:0.8rem;">🎖️</div>
-      <h3 style="font-size:1.3rem;font-weight:800;color:var(--white);margin-bottom:0.5rem;">הצטרף לסד"ח נגדים ראשוני!</h3>
-      <p style="color:rgba(255,255,255,0.55);margin-bottom:2rem;font-size:0.95rem;max-width:360px;margin-inline:auto;">מלא את פרטיך ואשר השתתפות · תקבל אישור מיידי</p>
-      <div style="animation:pulse 2s ease-in-out infinite;display:inline-block;">
-        <button class="rsvp-hero-btn" onclick="openModal()" style="font-size:1.2rem;padding:1.1rem 3rem;box-shadow:0 0 40px rgba(201,168,76,0.6);letter-spacing:0.5px;">
-          ✅ אישור השתתפות
-        </button>
-      </div>
-      <p style="color:rgba(255,255,255,0.25);font-size:0.78rem;margin-top:1.2rem;">ההרשמה פתוחה · פשוט ומהיר</p>
-    </div>
-  </div>
-</div>
-
 <!-- GOALS -->
 <div class="schedule-bg" id="goals">
   <div class="section reveal">
@@ -365,7 +345,39 @@ footer{background:#060e1c;border-top:1px solid rgba(201,168,76,0.15);padding:3re
 <div class="info-bg" id="schedule">
   <div class="section reveal">
     <h2 class="section-title">🗓️ לוח זמנים</h2>
-    <div class="coming-soon"><span class="coming-soon-icon">⏳</span>לוח הזמנים יפורסם בקרוב</div>
+    <!-- יום שלישי -->
+    <div class="day-block" style="margin-bottom:2.5rem;">
+      <div style="background:linear-gradient(90deg,var(--navy-light),transparent);border-right:4px solid var(--gold);padding:1rem 1.5rem;border-radius:0 10px 10px 0;margin-bottom:1.2rem;">
+        <h3 style="font-size:1.3rem;font-weight:800;">יום שלישי</h3>
+        <div style="font-size:0.85rem;color:var(--gold-light);margin-top:0.1rem;">02/06/2026</div>
+      </div>
+      <div class="schedule-list">
+        <div class="schedule-row"><span class="time-badge">09:00</span><span class="event-name">יציאה מתחנת רכבת באר שבע מרכז</span></div>
+        <div class="schedule-row"><span class="time-badge">10:00 – 11:00</span><span class="event-name">סדנת ODT</span></div>
+        <div class="schedule-row"><span class="time-badge">11:00 – 12:00</span><span class="event-name">מנהיגים בשרשרת הדורות – סיור בצריף בן גוריון</span></div>
+        <div class="schedule-row"><span class="time-badge">12:00 – 13:30</span><span class="event-name">ארוחת צהריים</span></div>
+        <div class="schedule-row"><span class="time-badge">13:30 – 16:00</span><span class="event-name">מרכז מבקרים מצפה רמון</span></div>
+        <div class="schedule-row"><span class="time-badge">16:00 – 17:00</span><span class="event-name">אקרובאלנס</span></div>
+        <div class="schedule-row"><span class="time-badge">17:00 – 18:00</span><span class="event-name">זמן מנוחה והתארגנות בחדרים</span></div>
+        <div class="schedule-row"><span class="time-badge">18:00 – 20:00</span><span class="event-name">מסלול שקיעה בנחל קרקש</span></div>
+        <div class="schedule-row"><span class="time-badge">20:00</span><span class="event-name">🔥 ערב יחידה (מדורה ואוכל)</span></div>
+      </div>
+    </div>
+
+    <!-- יום רביעי -->
+    <div class="day-block">
+      <div style="background:linear-gradient(90deg,#1a4460,transparent);border-right:4px solid var(--gold-light);padding:1rem 1.5rem;border-radius:0 10px 10px 0;margin-bottom:1.2rem;">
+        <h3 style="font-size:1.3rem;font-weight:800;">יום רביעי</h3>
+        <div style="font-size:0.85rem;color:var(--gold-light);margin-top:0.1rem;">03/06/2026</div>
+      </div>
+      <div class="schedule-list">
+        <div class="schedule-row"><span class="time-badge">05:45 – 06:00</span><span class="event-name">השקמה וזיכויי חדרים</span></div>
+        <div class="schedule-row"><span class="time-badge">06:00 – 08:00</span><span class="event-name">נסיעה לנחל ערוגות</span></div>
+        <div class="schedule-row"><span class="time-badge">08:00 – 12:00</span><span class="event-name">מסלול נחל ערוגות</span></div>
+        <div class="schedule-row"><span class="time-badge">12:00 – 13:00</span><span class="event-name">ארוחת צהריים</span></div>
+        <div class="schedule-row"><span class="time-badge">13:00 – 13:30</span><span class="event-name">סיכום סד"ח ופיזור</span></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -535,6 +547,7 @@ var adminPass = '';
 var regData = [];
 var _p = [50,48,50,54];   // site pass: 2026
 var _ap = [55,53,52,56];  // admin pass: 7548
+var _ap2 = [215, 169, 215, 149, 215, 149, 215, 168, 215, 165];  // admin pass: שוורץ
 
 function decode(arr) { return new TextDecoder().decode(new Uint8Array(arr)); }
 
@@ -664,7 +677,7 @@ async function adminLogin() {
   var pass  = document.getElementById('adminPassInput').value;
   var errEl = document.getElementById('adminLoginErr');
   errEl.style.display = 'none';
-  if (pass !== decode(_ap)) {
+  if (pass !== decode(_ap) && pass !== decode(_ap2)) {
     errEl.textContent = '❌ סיסמא שגויה';
     errEl.style.color = '#fca5a5';
     errEl.style.display = 'block';
@@ -917,7 +930,7 @@ function exportExcel() {
 
 // NAVBAR
 var navLinks = document.querySelectorAll('.navbar-links a');
-var sectionIds = ['details','rsvp','goals','packing','instructions','schedule','gallery','emergency'];
+var sectionIds = ['details','goals','packing','instructions','schedule','gallery','emergency'];
 var navSections = sectionIds.map(function(id) { return document.getElementById(id); }).filter(Boolean);
 function updateNav() {
   var mid = window.scrollY + window.innerHeight / 2;
