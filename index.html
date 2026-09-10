@@ -28,7 +28,15 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html{direction:rtl;}
-body{font-family:'Rubik',sans-serif;background:var(--bg1);color:var(--text-dark);direction:rtl;overflow-x:hidden;}
+body{font-family:'Rubik',sans-serif;background:transparent;color:var(--text-dark);direction:rtl;overflow-x:hidden;}
+
+/* AMBIENT WATER-RIPPLE BACKGROUND (Kinneret theme) */
+.bg-waves{position:fixed;inset:0;z-index:-1;overflow:hidden;background:linear-gradient(180deg,var(--bg1),var(--bg2));}
+.bg-wave-layer{position:absolute;bottom:0;left:0;width:200%;height:240px;background-repeat:repeat-x;background-size:1440px 100%;}
+.bg-wave1{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240'%3E%3Cpath fill='%232f8f7a' fill-opacity='0.16' d='M0,120 C180,180 360,60 540,120 C720,180 900,60 1080,120 C1260,180 1380,90 1440,120 L1440,240 L0,240 Z'/%3E%3C/svg%3E");animation:bgwave 22s linear infinite;}
+.bg-wave2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240'%3E%3Cpath fill='%230f4c4c' fill-opacity='0.12' d='M0,160 C240,110 480,200 720,160 C960,110 1200,200 1440,160 L1440,240 L0,240 Z'/%3E%3C/svg%3E");animation:bgwave 30s linear infinite reverse;}
+.bg-wave3{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240'%3E%3Cpath fill='%230f4c4c' fill-opacity='0.08' d='M0,200 C360,175 720,215 1080,198 C1260,190 1380,205 1440,200 L1440,240 L0,240 Z'/%3E%3C/svg%3E");animation:bgwave 38s linear infinite;}
+@keyframes bgwave{from{transform:translateX(0);}to{transform:translateX(-1440px);}}
 button{font-family:'Rubik',sans-serif;}
 
 /* HEADER — fixed, always visible, holds the full official title */
@@ -82,8 +90,9 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 
 /* BOTTOM TAB BAR — full width, all tabs visible, no scrolling */
 .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:600;background:var(--teal-dark);display:flex;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 20px rgba(0,0,0,0.15);}
-.tab{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:9px 2px;color:rgba(255,255,255,0.55);font-size:0.6rem;font-weight:600;cursor:pointer;border:none;background:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tab{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 1px;color:rgba(255,255,255,0.55);font-size:0.56rem;font-weight:600;cursor:pointer;border:none;background:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;}
 .tab .ic{font-size:1.2rem;}
+.tab .wa-ic{display:flex;align-items:center;justify-content:center;}
 .tab.active{color:#fff;}
 .tab.active .ic{transform:scale(1.12);}
 .tab.cta{color:var(--accent-light);}
@@ -98,8 +107,12 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .modal .modal-sub{text-align:center;color:var(--text-mid);font-size:0.85rem;margin-bottom:20px;}
 .form-group{margin-bottom:14px;}
 .form-group label{display:block;font-size:0.78rem;font-weight:700;color:var(--teal);margin-bottom:5px;}
-.form-group input,.form-group select{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:12px;padding:12px 14px;color:var(--text-dark);font-family:'Rubik',sans-serif;font-size:0.95rem;outline:none;}
-.form-group input:focus,.form-group select:focus{border-color:var(--teal);}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:12px;padding:12px 14px;color:var(--text-dark);font-family:'Rubik',sans-serif;font-size:0.95rem;outline:none;}
+.form-group textarea{resize:vertical;min-height:60px;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--teal);}
+.checkbox-row{display:flex;align-items:center;}
+.checkbox-label{display:flex;align-items:center;gap:9px;font-size:0.92rem;color:var(--text-dark);cursor:pointer;user-select:none;}
+.checkbox-label input[type="checkbox"]{width:19px;height:19px;accent-color:var(--teal);cursor:pointer;flex-shrink:0;}
 .radio-group{display:flex;gap:8px;}
 .radio-btn{flex:1;padding:11px 6px;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;text-align:center;cursor:pointer;font-size:0.9rem;color:var(--text-mid);user-select:none;}
 .radio-btn.selected{background:var(--teal-soft);border-color:var(--teal);color:var(--teal-dark);font-weight:700;}
@@ -125,6 +138,11 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 </style>
 </head>
 <body>
+<div class="bg-waves" aria-hidden="true">
+  <div class="bg-wave-layer bg-wave1"></div>
+  <div class="bg-wave-layer bg-wave2"></div>
+  <div class="bg-wave-layer bg-wave3"></div>
+</div>
 
 <div class="header"><span class="h-eyebrow">⚓ זרוע הים · המערך הלוגיסטי</span><span class="h-main">סדרת חינוך לאוכלוסיית הקבע המובהק והבכיר</span></div>
 
@@ -210,11 +228,12 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 <!-- BOTTOM TAB BAR -->
 <div class="tabbar" id="tabbar">
   <button class="tab active" data-target="details" onclick="showPage('details')"><span class="ic">📋</span>פרטים</button>
+  <button class="tab" data-target="schedule" onclick="showPage('schedule')"><span class="ic">🗓️</span>לו"ז</button>
   <button class="tab" data-target="goals" onclick="showPage('goals')"><span class="ic">🎯</span>מטרות</button>
   <button class="tab" data-target="instructions" onclick="showPage('instructions')"><span class="ic">📢</span>הנחיות</button>
-  <button class="tab" data-target="schedule" onclick="showPage('schedule')"><span class="ic">🗓️</span>לו"ז</button>
   <button class="tab" data-target="emergency" onclick="showPage('emergency')"><span class="ic">📞</span>חירום</button>
   <button class="tab cta" data-target="register" onclick="showPage('register')"><span class="ic">✅</span>הרשמה</button>
+  <a class="tab" href="https://chat.whatsapp.com/BnxUqFAPwNVEjBSsQ06cS7?s=sh&p=a&mlu=4&ilr=4" target="_blank" rel="noopener noreferrer"><span class="ic wa-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="#25D366"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.79.47 3.47 1.29 4.94L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 1.67c2.19 0 4.25.85 5.79 2.39a8.19 8.19 0 0 1 2.41 5.85c0 4.55-3.7 8.25-8.25 8.25a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.18 8.18 0 0 1-1.26-4.38c0-4.55 3.7-8.25 8.29-8.25zm-4.68 4.6c-.16 0-.42.06-.64.31-.22.25-.85.83-.85 2.02 0 1.19.87 2.34.99 2.5.12.16 1.7 2.72 4.19 3.71 2.07.82 2.49.66 2.94.62.45-.04 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28-.24-.12-1.45-.72-1.68-.8-.22-.08-.39-.12-.55.12-.16.24-.63.8-.78.96-.14.16-.29.18-.53.06-.24-.12-1.03-.38-1.96-1.21-.72-.64-1.21-1.43-1.35-1.67-.14-.24-.01-.37.11-.49.11-.11.24-.29.36-.43.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.55-1.34-.76-1.83-.2-.48-.4-.42-.55-.42h-.47z"/></svg></span>קבוצה</a>
 </div>
 
 <!-- MODAL -->
@@ -239,7 +258,26 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         </select>
       </div>
       <div class="form-group"><label>שם תפקיד *</label><input type="text" id="f-role" placeholder="לדוגמה: קצין חינוך"></div>
-      <div class="form-group"><label>דרגה *</label><input type="text" id="f-rank" placeholder="לדוגמה: סמל"></div>
+      <div class="form-group"><label>דרגה *</label>
+        <select id="f-rank">
+          <option value="">בחר דרגה</option>
+          <optgroup label="נגדים">
+            <option>רס"ל</option>
+            <option>רס"ר</option>
+            <option>רס"ם</option>
+            <option>רס"ב</option>
+            <option>רנ"ג</option>
+          </optgroup>
+          <optgroup label="קצינים">
+            <option>סג"ם</option>
+            <option>סגן</option>
+            <option>סרן</option>
+            <option>רס"ן</option>
+            <option>סא"ל</option>
+            <option>אל"ם</option>
+          </optgroup>
+        </select>
+      </div>
       <div class="form-group"><label>מספר אישי *</label><input type="text" inputmode="numeric" id="f-personalnum" placeholder="מספר אישי" dir="ltr"></div>
       <div class="form-group"><label>שם מלא *</label><input type="text" id="f-name" placeholder="ישראל ישראלי"></div>
       <div class="form-group"><label>טלפון *</label><input type="tel" inputmode="tel" id="f-phone" placeholder="050-1234567" dir="ltr"></div>
@@ -248,6 +286,20 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <div class="radio-btn" onclick="selectRadio('genderGroup',this)">👨 זכר</div>
           <div class="radio-btn" onclick="selectRadio('genderGroup',this)">👩 נקבה</div>
         </div>
+      </div>
+      <div class="form-group checkbox-row"><label class="checkbox-label"><input type="checkbox" id="f-overnight"> נשאר/ת ללינה</label></div>
+      <div class="form-group checkbox-row"><label class="checkbox-label"><input type="checkbox" id="f-weapon"> יכול/ה לשאת נשק</label></div>
+      <div class="form-group">
+        <label>העדפת תזונה</label>
+        <select id="f-diet">
+          <option value="רגיל">רגיל</option>
+          <option value="צמחוני">צמחוני</option>
+          <option value="טבעוני">טבעוני</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>הערות חופשיות</label>
+        <textarea id="f-notes" rows="3" placeholder="משהו שחשוב שנדע?"></textarea>
       </div>
       <div class="form-error" id="formError"></div>
       <button class="submit-btn" id="submitBtn" onclick="submitForm()">שלח הרשמה</button>
@@ -348,6 +400,10 @@ function submitForm(){
   var personalNum = document.getElementById('f-personalnum').value.trim();
   var name = document.getElementById('f-name').value.trim();
   var phone = document.getElementById('f-phone').value.trim();
+  var overnight = document.getElementById('f-overnight').checked ? 'כן' : 'לא';
+  var weapon = document.getElementById('f-weapon').checked ? 'כן' : 'לא';
+  var diet = document.getElementById('f-diet').value;
+  var notes = document.getElementById('f-notes').value.trim();
   var genderBtn = document.querySelector('#genderGroup .selected');
   var gender = genderBtn ? genderBtn.textContent.trim() : '';
   var errEl = document.getElementById('formError');
@@ -360,7 +416,7 @@ function submitForm(){
   }
   errEl.classList.remove('visible');
 
-  var record = { unit:unit, role:role, rank:rank, personalNum:personalNum, name:name, phone:phone, gender:gender };
+  var record = { unit:unit, role:role, rank:rank, personalNum:personalNum, name:name, phone:phone, gender:gender, overnight:overnight, weapon:weapon, diet:diet, notes:notes };
 
   btn.disabled = true;
   btn.textContent = 'שולח...';
