@@ -12,6 +12,12 @@
 <meta property="og:image:height" content="800">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="https://itairosenblum-hash.github.io/Sadach2026/favicon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f4c4c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="סדרת חינוך">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -31,13 +37,23 @@ html{direction:rtl;}
 body{font-family:'Rubik',sans-serif;background:transparent;color:var(--text-dark);direction:rtl;overflow-x:hidden;}
 
 /* AMBIENT WATER-RIPPLE BACKGROUND (Kinneret theme) */
-.bg-waves{position:fixed;inset:0;z-index:-1;overflow:hidden;background:linear-gradient(180deg,var(--bg1),var(--bg2));}
-.bg-wave-layer{position:absolute;bottom:0;left:0;width:200%;height:240px;background-repeat:repeat-x;background-size:1440px 100%;}
-.bg-wave1{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240'%3E%3Cpath fill='%232f8f7a' fill-opacity='0.16' d='M0,120 C180,180 360,60 540,120 C720,180 900,60 1080,120 C1260,180 1380,90 1440,120 L1440,240 L0,240 Z'/%3E%3C/svg%3E");animation:bgwave 22s linear infinite;}
-.bg-wave2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240'%3E%3Cpath fill='%230f4c4c' fill-opacity='0.12' d='M0,160 C240,110 480,200 720,160 C960,110 1200,200 1440,160 L1440,240 L0,240 Z'/%3E%3C/svg%3E");animation:bgwave 30s linear infinite reverse;}
-.bg-wave3{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240'%3E%3Cpath fill='%230f4c4c' fill-opacity='0.08' d='M0,200 C360,175 720,215 1080,198 C1260,190 1380,205 1440,200 L1440,240 L0,240 Z'/%3E%3C/svg%3E");animation:bgwave 38s linear infinite;}
+.bg-waves{position:fixed;inset:0;z-index:-1;overflow:hidden;}
+.bg-wave-layer{position:absolute;inset:0;background-repeat:repeat-x;background-size:1440px 100%;animation:bgwaveslide 40s linear infinite;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Crect width='1440' height='900' fill='%23eaf6f6'/%3E%3Cpath d='M0,560 C240,500 480,620 720,560 C960,500 1200,620 1440,560 L1440,900 L0,900 Z' fill='%23dff0ea'/%3E%3Cpath d='M0,630 C300,690 780,570 1440,630 L1440,900 L0,900 Z' fill='%232f8f7a' fill-opacity='0.22'/%3E%3C/svg%3E");}
+@keyframes bgwaveslide{from{background-position:0 0;}to{background-position:-1440px 0;}}
 @keyframes bgwave{from{transform:translateX(0);}to{transform:translateX(-1440px);}}
 button{font-family:'Rubik',sans-serif;}
+
+/* ENTRY CODE GATE */
+.gate-overlay{position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,var(--teal-dark),#0a2e2e);display:flex;align-items:center;justify-content:center;padding:20px;}
+.gate-box{background:#fff;border-radius:22px;padding:34px 26px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.gate-icon{font-size:2.6rem;margin-bottom:10px;}
+.gate-box h2{color:var(--teal-dark);font-size:1.15rem;font-weight:900;margin-bottom:4px;}
+.gate-box p{color:var(--text-mid);font-size:0.88rem;margin-bottom:16px;}
+.gate-box input{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.2);border-radius:12px;padding:13px 14px;font-family:'Rubik',sans-serif;font-size:1.1rem;text-align:center;letter-spacing:2px;outline:none;margin-bottom:10px;}
+.gate-box input:focus{border-color:var(--teal);}
+.gate-error{color:#c0392b;font-size:0.83rem;margin-bottom:10px;display:none;}
+.gate-error.visible{display:block;}
+.gate-box .btn-primary{width:100%;justify-content:center;}
 
 /* HEADER — fixed, always visible, holds the full official title */
 .header{position:fixed;top:0;left:0;right:0;z-index:700;background:rgba(234,246,246,0.96);backdrop-filter:blur(10px);border-bottom:1px solid rgba(15,76,76,0.12);padding:12px 16px;text-align:center;}
@@ -139,9 +155,18 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 </head>
 <body>
 <div class="bg-waves" aria-hidden="true">
-  <div class="bg-wave-layer bg-wave1"></div>
-  <div class="bg-wave-layer bg-wave2"></div>
-  <div class="bg-wave-layer bg-wave3"></div>
+  <div class="bg-wave-layer"></div>
+</div>
+
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="gate-icon">🔒</div>
+    <h2>סדרת חינוך · טבריה</h2>
+    <p>הזינו קוד כניסה</p>
+    <input type="text" id="gateCode" inputmode="numeric" placeholder="קוד כניסה" dir="ltr" onkeydown="if(event.key==='Enter')checkGateCode()">
+    <div class="gate-error" id="gateError">קוד שגוי, נסו שוב</div>
+    <button class="btn-primary" onclick="checkGateCode()">כניסה</button>
+  </div>
 </div>
 
 <div class="header"><span class="h-eyebrow">⚓ זרוע הים · המערך הלוגיסטי</span><span class="h-main">סדרת חינוך לאוכלוסיית הקבע המובהק והבכיר</span></div>
@@ -154,28 +179,27 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
       <button class="btn-primary" onclick="showPage('register')">✅ הרשמה לסדרה</button>
     </div>
     <div class="section">
-      <h2 class="section-title">📋 פרטים על האירוע</h2>
-      <p class="section-sub">מידע נוסף יעודכן בהמשך</p>
-      <div class="info-grid">
-        <div class="info-card"><span class="ic">📍</span><div class="lbl">מיקום</div><div class="val">טבריה</div></div>
-        <div class="info-card"><span class="ic">🗓️</span><div class="lbl">מועד</div><div class="val">4–5 בנובמבר 2026</div></div>
-        <div class="info-card"><span class="ic">🎓</span><div class="lbl">מסגרת</div><div class="val">סדרת חינוך יחידתית</div></div>
-        <div class="info-card"><span class="ic">🌤️</span><div class="lbl">מזג אוויר</div><div class="val">יתעדכן בהמשך</div></div>
+      <div class="sub-block">
+        <h2 class="section-title">📋 פרטים על האירוע</h2>
+        <p class="section-sub">מידע נוסף יעודכן בהמשך</p>
+        <div class="info-grid">
+          <div class="info-card"><span class="ic">📍</span><div class="lbl">מיקום</div><div class="val">טבריה</div></div>
+          <div class="info-card"><span class="ic">🗓️</span><div class="lbl">מועד</div><div class="val">4–5 בנובמבר 2026</div></div>
+          <div class="info-card"><span class="ic">🎓</span><div class="lbl">מסגרת</div><div class="val">סדרת חינוך יחידתית</div></div>
+          <div class="info-card"><span class="ic">🌤️</span><div class="lbl">מזג אוויר</div><div class="val">יתעדכן בהמשך</div></div>
+        </div>
+        <div style="text-align:center;margin-top:20px;">
+          <button class="btn-primary" onclick="addToCalendar()">📅 הוסף ליומן</button>
+        </div>
       </div>
-      <div style="text-align:center;margin-top:20px;">
-        <button class="btn-primary" onclick="addToCalendar()">📅 הוסף ליומן</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="page" id="page-goals">
-    <div class="section">
-      <h2 class="section-title">🎯 מטרות</h2>
-      <p class="section-sub">מה נרוויח מהסדרה</p>
-      <div class="goals-grid">
-        <div class="goal-card"><div class="goal-num">1</div><span class="ic">🏛️</span><b>מורשת וידיעת הארץ</b><span>חיזוק הקשר למורשת ולידיעת הארץ</span></div>
-        <div class="goal-card"><div class="goal-num">2</div><span class="ic">🤝</span><b>קשר ושותפות</b><span>חיזוק הקשר והשותפות בין המשתתפים</span></div>
-        <div class="goal-card"><div class="goal-num">3</div><span class="ic">🌿</span><b>הפוגה מקצועית</b><span>זמן להתרחק מהשגרה ולהתרענן</span></div>
+      <div class="sub-block">
+        <h2 class="section-title">🎯 מטרות</h2>
+        <p class="section-sub">מה נרוויח מהסדרה</p>
+        <div class="goals-grid">
+          <div class="goal-card"><div class="goal-num">1</div><span class="ic">🏛️</span><b>מורשת וידיעת הארץ</b><span>חיזוק הקשר למורשת ולידיעת הארץ</span></div>
+          <div class="goal-card"><div class="goal-num">2</div><span class="ic">🤝</span><b>קשר ושותפות</b><span>חיזוק הקשר והשותפות בין המשתתפים</span></div>
+          <div class="goal-card"><div class="goal-num">3</div><span class="ic">🌿</span><b>הפוגה מקצועית</b><span>זמן להתרחק מהשגרה ולהתרענן</span></div>
+        </div>
       </div>
     </div>
   </div>
@@ -229,7 +253,6 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 <div class="tabbar" id="tabbar">
   <button class="tab active" data-target="details" onclick="showPage('details')"><span class="ic">📋</span>פרטים</button>
   <button class="tab" data-target="schedule" onclick="showPage('schedule')"><span class="ic">🗓️</span>לו"ז</button>
-  <button class="tab" data-target="goals" onclick="showPage('goals')"><span class="ic">🎯</span>מטרות</button>
   <button class="tab" data-target="instructions" onclick="showPage('instructions')"><span class="ic">📢</span>הנחיות</button>
   <button class="tab" data-target="emergency" onclick="showPage('emergency')"><span class="ic">📞</span>חירום</button>
   <button class="tab cta" data-target="register" onclick="showPage('register')"><span class="ic">✅</span>הרשמה</button>
@@ -316,6 +339,31 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 
 <script>
 var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx1UpfnxKo8FxOMm0VXtJ6yJ5ZwBUYjdcaELmctBzMldOIbZmhGYDc771xtYBdZf15Z8g/exec";
+
+var SITE_CODE = "2026";
+function checkGateCode(){
+  var val = document.getElementById('gateCode').value.trim();
+  var errEl = document.getElementById('gateError');
+  if(val === SITE_CODE){
+    localStorage.setItem('sadachLogisticsGateOk', '1');
+    document.getElementById('gateOverlay').style.display = 'none';
+  } else {
+    errEl.classList.add('visible');
+  }
+}
+(function(){
+  if(localStorage.getItem('sadachLogisticsGateOk') === '1'){
+    document.addEventListener('DOMContentLoaded', function(){
+      document.getElementById('gateOverlay').style.display = 'none';
+    });
+  }
+})();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
 
 // ADD TO CALENDAR (generates a .ics file, works with iOS/Android/desktop calendar apps)
 function addToCalendar(){
