@@ -74,6 +74,7 @@ table.reg-table thead th{position:sticky;top:0;background:var(--teal-soft);color
 table.reg-table tbody td{padding:8px 10px;border-bottom:1px solid rgba(15,76,76,0.08);background:rgba(255,255,255,0.6);}
 table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .reg-empty{text-align:center;color:var(--text-mid);font-size:0.85rem;padding:10px;}
+.retry-btn{margin-top:8px;background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);padding:7px 16px;border-radius:999px;font-size:0.8rem;font-weight:700;cursor:pointer;}
 
 /* BOTTOM TAB BAR — full width, all tabs visible, no scrolling */
 .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:600;background:var(--teal-dark);display:flex;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 20px rgba(0,0,0,0.15);}
@@ -385,10 +386,11 @@ function showSuccess(record){
 }
 
 // LOAD "WHO'S REGISTERED" LIST + GENDER BREAKDOWN
-function loadRegistrations(){
+function loadRegistrations(isRetry){
   var listEl = document.getElementById('regList');
   var countEl = document.getElementById('regCount');
   var genderEl = document.getElementById('genderBreakdown');
+  if(!isRetry){ listEl.innerHTML = '<div class="reg-empty">טוען... (עשוי לקחת כמה שניות)</div>'; }
   fetch(SCRIPT_URL + '?action=list')
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -414,8 +416,12 @@ function loadRegistrations(){
       listEl.innerHTML = '<table class="reg-table"><thead><tr><th>יחידה</th><th>שם מלא</th></tr></thead><tbody>' + rows + '</tbody></table>';
     })
     .catch(function(){
+      if(!isRetry){
+        setTimeout(function(){ loadRegistrations(true); }, 2000);
+        return;
+      }
       countEl.textContent = '–';
-      listEl.innerHTML = '<div class="reg-empty">לא ניתן לטעון כרגע את הרשימה</div>';
+      listEl.innerHTML = '<div class="reg-empty">לא ניתן לטעון כרגע את הרשימה<br><button class="retry-btn" onclick="loadRegistrations()">🔄 נסה שוב</button></div>';
     });
 }
 window.addEventListener('load', loadRegistrations);
