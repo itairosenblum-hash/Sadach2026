@@ -365,28 +365,49 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ADD TO CALENDAR (generates a .ics file, works with iOS/Android/desktop calendar apps)
+// ADD TO CALENDAR
+// iOS: opens the static sadach-logistics.ics file -> native "Add to Calendar" sheet
+// Android: opens Google Calendar with the event pre-filled
+// Desktop: downloads the .ics file
+var CAL_EVENT = {
+  title: 'סד"ח מערך לוגיסטי קבע מובהק ובכיר',
+  start: '20261104',
+  end: '20261106', // all-day: end date is exclusive
+  location: 'טבריה',
+  details: 'סדרת חינוך יחידתית - טבריה'
+};
 function addToCalendar(){
-  var ics = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Sadach Logistics//Event Site//HE',
-    'CALSCALE:GREGORIAN',
-    'BEGIN:VEVENT',
-    'UID:sadach-logistics-2026-' + Date.now() + '@tveria-event',
-    'DTSTAMP:' + icsNow(),
-    'DTSTART;VALUE=DATE:20261104',
-    'DTEND;VALUE=DATE:20261106',
-    'SUMMARY:סד"ח מערך לוגיסטי קבע מובהק ובכיר',
-    'LOCATION:טבריה',
-    'DESCRIPTION:סדרת חינוך יחידתית - טבריה',
-    'END:VEVENT',
-    'END:VCALENDAR'
-  ].join('\r\n');
+  var ua = navigator.userAgent;
+  var isIOS = /iPhone|iPad|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isAndroid = /Android/i.test(ua);
+  var isStandalone = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  var icsUrl = new URL('sadach-logistics.ics', location.href).href;
 
-  var dataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+  if (isAndroid) {
+    var q = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: CAL_EVENT.title,
+      dates: CAL_EVENT.start + '/' + CAL_EVENT.end,
+      ctz: 'Asia/Jerusalem',
+      location: CAL_EVENT.location,
+      details: CAL_EVENT.details
+    });
+    window.open('https://calendar.google.com/calendar/render?' + q.toString(), '_blank');
+    return;
+  }
+
+  if (isIOS) {
+    // in an installed PWA, open in Safari so the calendar sheet appears
+    if (isStandalone) window.open(icsUrl, '_blank');
+    else window.location.href = icsUrl;
+    return;
+  }
+
+  // desktop
   var link = document.createElement('a');
-  link.href = dataUri;
+  link.href = icsUrl;
   link.download = 'sadach-logistics.ics';
   document.body.appendChild(link);
   link.click();
