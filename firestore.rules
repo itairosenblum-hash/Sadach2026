@@ -2,10 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
 
-    // The only account allowed to read / edit / delete registrations.
+    // Accounts allowed to read / edit / delete registrations.
     function isAdmin() {
       return request.auth != null
-        && request.auth.token.email == 'itai.rosenblum@gmail.com'
+        && request.auth.token.email in ['itai.rosenblum@gmail.com', 'henshvarts@gmail.com']
         && request.auth.token.email_verified == true;
     }
 
