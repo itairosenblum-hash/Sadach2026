@@ -125,7 +125,14 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .admin-actions .retry-btn{margin-top:0;}
 .admin-search{width:100%;background:#fff;border:1.5px solid rgba(15,76,76,0.15);border-radius:12px;padding:11px 14px;font-family:'Rubik',sans-serif;font-size:0.92rem;outline:none;margin-bottom:12px;}
 .admin-search:focus{border-color:var(--teal);}
-.admin-card{background:rgba(255,255,255,0.8);border:1px solid rgba(15,76,76,0.12);border-radius:14px;padding:12px 14px;margin-bottom:10px;}
+.admin-card{background:rgba(255,255,255,0.8);border:1px solid rgba(15,76,76,0.12);border-radius:12px;margin-bottom:6px;overflow:hidden;}
+.admin-card .ac-row{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:11px 12px;cursor:pointer;font-family:'Rubik',sans-serif;text-align:right;}
+.admin-card .ac-num{font-size:0.72rem;color:var(--text-mid);min-width:18px;}
+.admin-card .ac-row .ac-name{flex:1;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.admin-card .ac-plus{flex:none;width:26px;height:26px;border-radius:50%;background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);font-weight:900;font-size:1.05rem;line-height:24px;text-align:center;}
+.admin-card.open .ac-plus{background:var(--teal-dark);color:#fff;border-color:var(--teal-dark);}
+.admin-card .ac-detail{display:none;padding:0 14px 12px;border-top:1px solid rgba(15,76,76,0.08);}
+.admin-card.open .ac-detail{display:block;padding-top:10px;}
 .admin-card .ac-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;}
 .admin-card .ac-name{font-weight:700;color:var(--teal-dark);}
 .admin-card .ac-unit{font-size:0.78rem;color:var(--accent);font-weight:700;white-space:nowrap;}
@@ -859,9 +866,16 @@ function renderAdmin(){
 
   var listEl = document.getElementById('adminList');
   if(!shown.length){ listEl.innerHTML = '<div class="reg-empty">' + (regs.length ? 'אין אנשים שמתאימים לסינון' : 'עדיין אין נרשמים') + '</div>'; return; }
-  listEl.innerHTML = shown.map(function(r){
-    return '<div class="admin-card">' +
-      '<div class="ac-head"><span class="ac-name">' + escapeHtml(r.rank || '') + ' ' + escapeHtml(r.name || '') + '</span><span class="ac-unit">' + escapeHtml(r.unit || '') + '</span></div>' +
+  listEl.innerHTML = shown.map(function(r, i){
+    var open = !!adminOpen[r.id];
+    return '<div class="admin-card' + (open ? ' open' : '') + '" id="ac-' + r.id + '">' +
+      '<button type="button" class="ac-row" onclick="toggleAdminRow(\'' + r.id + '\')" aria-expanded="' + open + '">' +
+        '<span class="ac-num">' + (i + 1) + '</span>' +
+        '<span class="ac-name">' + escapeHtml(r.rank || '') + ' ' + escapeHtml(r.name || '') + '</span>' +
+        '<span class="ac-unit">' + escapeHtml(r.unit || '') + '</span>' +
+        '<span class="ac-plus">' + (open ? '−' : '+') + '</span>' +
+      '</button>' +
+      '<div class="ac-detail">' +
       '<div class="ac-body">' +
         '<b>תפקיד:</b> ' + escapeHtml(r.role || '') + ' · <b>מ"א:</b> ' + escapeHtml(r.personalNum || '') + '<br>' +
         '<b>טלפון:</b> <a href="tel:' + escapeHtml(r.phone || '') + '" dir="ltr">' + escapeHtml(r.phone || '') + '</a> · <b>מגדר:</b> ' + escapeHtml(r.gender || '') + '<br>' +
@@ -870,8 +884,19 @@ function renderAdmin(){
         (r.createdAt ? '<br><b>נרשם:</b> ' + fmtDate(r.createdAt) : '') +
       '</div>' +
       '<div class="ac-btns"><button onclick="adminEdit(\'' + r.id + '\')">✏️ עריכה</button><button class="del" onclick="adminDelete(\'' + r.id + '\')">🗑️ מחיקה</button></div>' +
+      '</div>' +
     '</div>';
   }).join('');
+}
+
+var adminOpen = {};
+function toggleAdminRow(id){
+  adminOpen[id] = !adminOpen[id];
+  var card = document.getElementById('ac-' + id);
+  if(!card) return;
+  card.classList.toggle('open', !!adminOpen[id]);
+  card.querySelector('.ac-plus').textContent = adminOpen[id] ? '−' : '+';
+  card.querySelector('.ac-row').setAttribute('aria-expanded', !!adminOpen[id]);
 }
 
 function adminEdit(id){
