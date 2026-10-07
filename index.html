@@ -18,6 +18,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="סדרת חינוך">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -671,47 +673,76 @@ function showSuccess(record){
 }
 
 // LOAD "WHO'S REGISTERED" LIST + GENDER BREAKDOWN
-function loadRegistrations(isRetry){
+// Uses a single Firestore REST request (no SDK / connection setup needed), starts as soon as the
+// page HTML is parsed, and shows the last-seen list instantly from a local copy while it refreshes.
+var PUBLIC_LIST_URL = 'https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/public_list'
+  + '?pageSize=1000&orderBy=createdAt&key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI';
+var LIST_CACHE_KEY = 'chinuchPublicListV1';
+
+function fetchPublicListFast(){
+  return fetch(PUBLIC_LIST_URL, { cache: 'no-store' })
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data){
+      return (data.documents || []).map(function(d){
+        var f = d.fields || {};
+        function sv(k){ return f[k] && f[k].stringValue ? f[k].stringValue : ''; }
+        return { unit: sv('unit'), name: sv('name'), gender: sv('gender') };
+      });
+    });
+}
+
+function renderPublicList(regs){
   var listEl = document.getElementById('regList');
   var countEl = document.getElementById('regCount');
   var genderEl = document.getElementById('genderBreakdown');
-  if(!isRetry){ listEl.innerHTML = '<div class="reg-empty">טוען... (עשוי לקחת כמה שניות)</div>'; }
-  if(typeof window.fetchPublicList !== 'function'){
-    window.addEventListener('firebase-ready', function(){ loadRegistrations(isRetry); }, { once:true });
+  countEl.textContent = regs.length;
+  var maleCount = 0, femaleCount = 0;
+  regs.forEach(function(r){
+    if(r.gender && r.gender.indexOf('נקבה') !== -1) femaleCount++;
+    else if(r.gender && r.gender.indexOf('זכר') !== -1) maleCount++;
+  });
+  genderEl.innerHTML = regs.length ?
+    '<span>👨 ' + maleCount + ' גברים</span><span>👩 ' + femaleCount + ' נשים</span>' : '';
+  if(regs.length === 0){
+    listEl.innerHTML = '<div class="reg-empty">עדיין אין נרשמים — היו הראשונים!</div>';
     return;
   }
-  window.fetchPublicList()
+  var rows = regs.map(function(r){
+    return '<tr><td>' + escapeHtml(r.unit) + '</td><td>' + escapeHtml(r.name) + '</td></tr>';
+  }).join('');
+  listEl.innerHTML = '<table class="reg-table"><thead><tr><th>יחידה</th><th>שם מלא</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function loadRegistrations(isRetry){
+  var listEl = document.getElementById('regList');
+  var shownFromCache = false;
+  if(!isRetry){
+    try {
+      var cached = JSON.parse(localStorage.getItem(LIST_CACHE_KEY) || 'null');
+      if(cached && cached.length !== undefined){ renderPublicList(cached); shownFromCache = true; }
+    } catch(e){}
+    if(!shownFromCache){ listEl.innerHTML = '<div class="reg-empty">טוען...</div>'; }
+  }
+  fetchPublicListFast()
     .then(function(regs){
-      regs = regs || [];
-      countEl.textContent = regs.length;
-
-      var maleCount = 0, femaleCount = 0;
-      regs.forEach(function(r){
-        if(r.gender && r.gender.indexOf('נקבה') !== -1) femaleCount++;
-        else if(r.gender && r.gender.indexOf('זכר') !== -1) maleCount++;
-      });
-      genderEl.innerHTML = regs.length ?
-        '<span>👨 ' + maleCount + ' גברים</span><span>👩 ' + femaleCount + ' נשים</span>' : '';
-
-      if(regs.length === 0){
-        listEl.innerHTML = '<div class="reg-empty">עדיין אין נרשמים — היו הראשונים!</div>';
-        return;
-      }
-      var rows = regs.map(function(r){
-        return '<tr><td>' + escapeHtml(r.unit) + '</td><td>' + escapeHtml(r.name) + '</td></tr>';
-      }).join('');
-      listEl.innerHTML = '<table class="reg-table"><thead><tr><th>יחידה</th><th>שם מלא</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      renderPublicList(regs);
+      try { localStorage.setItem(LIST_CACHE_KEY, JSON.stringify(regs)); } catch(e){}
     })
     .catch(function(){
+      if(shownFromCache) return; // keep showing the saved list
       if(!isRetry){
-        setTimeout(function(){ loadRegistrations(true); }, 2000);
+        setTimeout(function(){ loadRegistrations(true); }, 1500);
         return;
       }
-      countEl.textContent = '–';
+      document.getElementById('regCount').textContent = '–';
       listEl.innerHTML = '<div class="reg-empty">לא ניתן לטעון כרגע את הרשימה<br><button class="retry-btn" onclick="loadRegistrations()">🔄 נסה שוב</button></div>';
     });
 }
-window.addEventListener('load', loadRegistrations);
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', function(){ loadRegistrations(); });
+} else {
+  loadRegistrations();
+}
 
 // ===================== ADMIN =====================
 var adminRegs = [];
