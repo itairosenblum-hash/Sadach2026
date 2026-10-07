@@ -111,10 +111,16 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .admin-link button{background:none;border:none;color:var(--text-mid);font-size:0.78rem;text-decoration:underline;cursor:pointer;opacity:0.7;}
 .admin-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,0.65);border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:0.82rem;color:var(--text-mid);}
 .admin-bar .retry-btn{margin-top:0;}
-.admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
-.admin-stat{background:rgba(255,255,255,0.7);border:1px solid rgba(15,76,76,0.12);border-radius:12px;padding:10px 6px;text-align:center;}
+.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.admin-stat{background:rgba(255,255,255,0.7);border:1.5px solid rgba(15,76,76,0.12);border-radius:12px;padding:10px 4px;text-align:center;cursor:pointer;font-family:'Rubik',sans-serif;transition:background .15s,border-color .15s;}
+.admin-stat:active{transform:scale(0.97);}
+.admin-stat.active{background:var(--teal-dark);border-color:var(--teal-dark);}
+.admin-stat.active b,.admin-stat.active span{color:#fff;}
+.admin-filter-label{display:none;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:0.82rem;color:var(--text-mid);margin-bottom:10px;}
+.admin-filter-label b{color:var(--teal-dark);}
+.admin-filter-label button{background:none;border:1px solid var(--teal);color:var(--teal-dark);border-radius:999px;padding:3px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;}
 .admin-stat b{display:block;font-size:1.3rem;color:var(--teal-dark);font-weight:900;}
-.admin-stat span{font-size:0.72rem;color:var(--text-mid);}
+.admin-stat span{font-size:0.7rem;color:var(--text-mid);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .admin-actions{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;}
 .admin-actions .retry-btn{margin-top:0;}
 .admin-search{width:100%;background:#fff;border:1.5px solid rgba(15,76,76,0.15);border-radius:12px;padding:11px 14px;font-family:'Rubik',sans-serif;font-size:0.92rem;outline:none;margin-bottom:12px;}
@@ -284,6 +290,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
       <div id="adminLoggedIn" style="display:none">
         <div class="admin-bar"><span id="adminWho"></span><button class="retry-btn" onclick="adminSignOut()">התנתקות</button></div>
         <div class="admin-stats" id="adminStats"></div>
+        <div class="admin-filter-label" id="adminFilterLabel"></div>
         <div class="admin-actions">
           <button class="retry-btn" onclick="loadAdmin()">🔄 רענון</button>
           <button class="retry-btn" onclick="exportCsv()">⬇️ ייצוא לאקסל</button>
@@ -810,29 +817,48 @@ function fmtDate(ts){
   return p(d.getDate()) + '/' + p(d.getMonth()+1) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
 }
 
+var adminFilter = 'all';
+var ADMIN_FILTERS = [
+  ['all',       'נרשמים',          function(r){ return true; }],
+  ['male',      'גברים',           function(r){ return r.gender === 'זכר'; }],
+  ['female',    'נשים',            function(r){ return r.gender === 'נקבה'; }],
+  ['notes',     'עם הערות',        function(r){ return !!(r.notes && r.notes.trim()); }],
+  ['overnight', 'לינה',            function(r){ return r.overnight === 'כן'; }],
+  ['noovernight','ללא לינה',       function(r){ return r.overnight !== 'כן'; }],
+  ['weapon',    'נושאי נשק',       function(r){ return r.weapon === 'כן'; }],
+  ['veg',       'צמחוני/טבעוני',   function(r){ return !!r.diet && r.diet !== 'רגיל'; }]
+];
+function setAdminFilter(key){
+  adminFilter = (adminFilter === key) ? 'all' : key;
+  renderAdmin();
+}
+
 function renderAdmin(){
   var regs = adminRegs;
-  var male = 0, female = 0, overnight = 0, weapon = 0, veg = 0;
-  regs.forEach(function(r){
-    if(r.gender === 'נקבה') female++; else if(r.gender === 'זכר') male++;
-    if(r.overnight === 'כן') overnight++;
-    if(r.weapon === 'כן') weapon++;
-    if(r.diet && r.diet !== 'רגיל') veg++;
-  });
-  document.getElementById('adminStats').innerHTML =
-    '<div class="admin-stat"><b>' + regs.length + '</b><span>נרשמים</span></div>' +
-    '<div class="admin-stat"><b>' + male + ' / ' + female + '</b><span>גברים / נשים</span></div>' +
-    '<div class="admin-stat"><b>' + overnight + '</b><span>לינה</span></div>' +
-    '<div class="admin-stat"><b>' + weapon + '</b><span>נושאי נשק</span></div>' +
-    '<div class="admin-stat"><b>' + veg + '</b><span>צמחוני/טבעוני</span></div>' +
-    '<div class="admin-stat"><b>' + (regs.length - overnight) + '</b><span>ללא לינה</span></div>';
+  document.getElementById('adminStats').innerHTML = ADMIN_FILTERS.map(function(f){
+    var n = regs.filter(f[2]).length;
+    return '<button type="button" class="admin-stat' + (adminFilter === f[0] ? ' active' : '') + '" onclick="setAdminFilter(\'' + f[0] + '\')">' +
+      '<b>' + n + '</b><span>' + f[1] + '</span></button>';
+  }).join('');
 
+  var activeF = ADMIN_FILTERS.filter(function(f){ return f[0] === adminFilter; })[0] || ADMIN_FILTERS[0];
+  var shown = regs.filter(activeF[2]);
   var q = (document.getElementById('adminSearch').value || '').trim();
-  var shown = !q ? regs : regs.filter(function(r){
-    return [r.name, r.unit, r.personalNum, r.phone, r.role, r.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; });
-  });
+  if(q){
+    shown = shown.filter(function(r){
+      return [r.name, r.unit, r.personalNum, r.phone, r.role, r.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; });
+    });
+  }
+  var fl = document.getElementById('adminFilterLabel');
+  if(adminFilter !== 'all'){
+    fl.innerHTML = 'מסונן: <b>' + activeF[1] + '</b> · ' + shown.length + ' אנשים <button type="button" onclick="setAdminFilter(\'all\')">✕ הצג הכול</button>';
+    fl.style.display = 'flex';
+  } else {
+    fl.style.display = 'none';
+  }
+
   var listEl = document.getElementById('adminList');
-  if(!shown.length){ listEl.innerHTML = '<div class="reg-empty">' + (regs.length ? 'אין תוצאות לחיפוש' : 'עדיין אין נרשמים') + '</div>'; return; }
+  if(!shown.length){ listEl.innerHTML = '<div class="reg-empty">' + (regs.length ? 'אין אנשים שמתאימים לסינון' : 'עדיין אין נרשמים') + '</div>'; return; }
   listEl.innerHTML = shown.map(function(r){
     return '<div class="admin-card">' +
       '<div class="ac-head"><span class="ac-name">' + escapeHtml(r.rank || '') + ' ' + escapeHtml(r.name || '') + '</span><span class="ac-unit">' + escapeHtml(r.unit || '') + '</span></div>' +
