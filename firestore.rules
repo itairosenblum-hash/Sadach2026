@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    // The only account allowed to read / edit / delete registrations.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'itai.rosenblum@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function validUnit(u) {
+      return u in ['אילת','אשדוד','קריה','עתלית','בצ"ת','מספנה','ב"ח','בה"ד'];
+    }
+    function validGender(g) {
+      return g in ['זכר','נקבה'];
+    }
+    function shortStr(v, max) {
+      return v is string && v.size() > 0 && v.size() <= max;
+    }
+
+    // Full registration — anyone can create; only the admin can read/edit/delete.
+    match /registrations/{id} {
+      allow create: if request.resource.data.keys().hasOnly(
+            ['unit','role','rank','personalNum','name','phone','gender',
+             'overnight','weapon','diet','notes','createdAt'])
+        && validUnit(request.resource.data.unit)
+        && validGender(request.resource.data.gender)
+        && shortStr(request.resource.data.role, 80)
+        && shortStr(request.resource.data.rank, 20)
+        && shortStr(request.resource.data.personalNum, 15)
+        && shortStr(request.resource.data.name, 80)
+        && shortStr(request.resource.data.phone, 20)
+        && request.resource.data.overnight in ['כן','לא']
+        && request.resource.data.weapon in ['כן','לא']
+        && request.resource.data.diet in ['רגיל','צמחוני','טבעוני']
+        && request.resource.data.notes is string
+        && request.resource.data.notes.size() <= 500
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Public list shown on the site — unit, name, gender only.
+    match /public_list/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['unit','name','gender','createdAt'])
+        && validUnit(request.resource.data.unit)
+        && validGender(request.resource.data.gender)
+        && shortStr(request.resource.data.name, 80)
+        && request.resource.data.createdAt == request.time
+        && existsAfter(/databases/$(db)/documents/registrations/$(id));
+      allow update, delete: if isAdmin();
+    }
+  }
+}

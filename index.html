@@ -104,6 +104,29 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .reg-empty{text-align:center;color:var(--text-mid);font-size:0.85rem;padding:10px;}
 .retry-btn{margin-top:8px;background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);padding:7px 16px;border-radius:999px;font-size:0.8rem;font-weight:700;cursor:pointer;}
 
+/* ADMIN */
+.admin-link{text-align:center;margin-top:26px;}
+.admin-link button{background:none;border:none;color:var(--text-mid);font-size:0.78rem;text-decoration:underline;cursor:pointer;opacity:0.7;}
+.admin-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,0.65);border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:0.82rem;color:var(--text-mid);}
+.admin-bar .retry-btn{margin-top:0;}
+.admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.admin-stat{background:rgba(255,255,255,0.7);border:1px solid rgba(15,76,76,0.12);border-radius:12px;padding:10px 6px;text-align:center;}
+.admin-stat b{display:block;font-size:1.3rem;color:var(--teal-dark);font-weight:900;}
+.admin-stat span{font-size:0.72rem;color:var(--text-mid);}
+.admin-actions{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;}
+.admin-actions .retry-btn{margin-top:0;}
+.admin-search{width:100%;background:#fff;border:1.5px solid rgba(15,76,76,0.15);border-radius:12px;padding:11px 14px;font-family:'Rubik',sans-serif;font-size:0.92rem;outline:none;margin-bottom:12px;}
+.admin-search:focus{border-color:var(--teal);}
+.admin-card{background:rgba(255,255,255,0.8);border:1px solid rgba(15,76,76,0.12);border-radius:14px;padding:12px 14px;margin-bottom:10px;}
+.admin-card .ac-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;}
+.admin-card .ac-name{font-weight:700;color:var(--teal-dark);}
+.admin-card .ac-unit{font-size:0.78rem;color:var(--accent);font-weight:700;white-space:nowrap;}
+.admin-card .ac-body{font-size:0.8rem;color:var(--text-mid);line-height:1.7;}
+.admin-card .ac-body b{color:var(--text-dark);font-weight:600;}
+.admin-card .ac-btns{display:flex;gap:8px;margin-top:8px;}
+.admin-card .ac-btns button{flex:1;padding:8px;border-radius:10px;font-size:0.8rem;font-weight:700;cursor:pointer;border:1px solid var(--teal);background:var(--teal-soft);color:var(--teal-dark);}
+.admin-card .ac-btns button.del{border-color:#e3a59d;background:#fbecea;color:#a5352a;}
+
 /* BOTTOM TAB BAR — full width, all tabs visible, no scrolling */
 .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:600;background:var(--teal-dark);display:flex;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 20px rgba(0,0,0,0.15);}
 .tab{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 1px;color:rgba(255,255,255,0.55);font-size:0.56rem;font-weight:600;cursor:pointer;border:none;background:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;}
@@ -243,6 +266,29 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <div id="genderBreakdown" class="gender-breakdown"></div>
         <div class="reg-table-wrap" id="regList"><div class="reg-empty">טוען...</div></div>
       </div>
+      <div class="admin-link"><button onclick="showPage('admin')">🔐 כניסת מנהל</button></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-admin">
+    <div class="section">
+      <h2 class="section-title">🔐 ניהול הרשמות</h2>
+      <p class="section-sub">גישה למנהל המערכת בלבד</p>
+      <div id="adminLoggedOut" class="reg-box">
+        <p id="adminMsg">התחברו עם חשבון Google של מנהל המערכת</p>
+        <button class="btn-primary" id="adminSignInBtn" onclick="doAdminSignIn()">התחברות עם Google</button>
+        <div style="margin-top:12px;"><button class="retry-btn" id="adminSwitchBtn" style="display:none" onclick="adminSignOut()">התנתקות והחלפת חשבון</button></div>
+      </div>
+      <div id="adminLoggedIn" style="display:none">
+        <div class="admin-bar"><span id="adminWho"></span><button class="retry-btn" onclick="adminSignOut()">התנתקות</button></div>
+        <div class="admin-stats" id="adminStats"></div>
+        <div class="admin-actions">
+          <button class="retry-btn" onclick="loadAdmin()">🔄 רענון</button>
+          <button class="retry-btn" onclick="exportCsv()">⬇️ ייצוא לאקסל</button>
+        </div>
+        <input class="admin-search" id="adminSearch" placeholder="חיפוש לפי שם, יחידה, מספר אישי או טלפון" oninput="renderAdmin()">
+        <div id="adminList"><div class="reg-empty">טוען...</div></div>
+      </div>
     </div>
   </div>
 
@@ -263,7 +309,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBg(event)">
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">✕</button>
-    <h2>✅ הרשמה לסדרת החינוך</h2>
+    <h2 id="modalTitle">✅ הרשמה לסדרת החינוך</h2>
     <div class="modal-sub">טבריה</div>
     <div id="formWrap">
       <div class="form-group">
@@ -337,8 +383,93 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
   </div>
 </div>
 
+<!-- FIREBASE (Firestore + Auth) BACKEND -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, writeBatch, getDocs, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI",
+  authDomain: "sadach-a63c7.firebaseapp.com",
+  projectId: "sadach-a63c7",
+  storageBucket: "sadach-a63c7.firebasestorage.app",
+  messagingSenderId: "894150719654",
+  appId: "1:894150719654:web:948fbecd825c178c389c67"
+};
+
+// The only account allowed to view / edit / delete registrations.
+// Must match the email in firestore.rules.
+const ADMIN_EMAIL = "itai.rosenblum@gmail.com";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ---- public: register + who's-registered list ----
+// Full record goes to private "registrations"; unit/name/gender go to readable "public_list".
+window.saveRegistration = async function(record){
+  const ref = doc(collection(db, 'registrations'));
+  const batch = writeBatch(db);
+  batch.set(ref, Object.assign({}, record, { createdAt: serverTimestamp() }));
+  batch.set(doc(db, 'public_list', ref.id), {
+    unit: record.unit, name: record.name, gender: record.gender, createdAt: serverTimestamp()
+  });
+  await batch.commit();
+};
+
+window.fetchPublicList = async function(){
+  const snap = await getDocs(query(collection(db, 'public_list'), orderBy('createdAt', 'asc')));
+  return snap.docs.map(d => d.data());
+};
+
+// ---- admin ----
+window.adminSignIn = async function(){
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) {
+      await signInWithRedirect(auth, provider);
+    } else { throw e; }
+  }
+};
+window.adminSignOut = function(){ return signOut(auth); };
+
+window.fetchAllRegistrations = async function(){
+  const snap = await getDocs(query(collection(db, 'registrations'), orderBy('createdAt', 'asc')));
+  return snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+};
+
+window.updateRegistration = async function(id, record){
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'registrations', id), record);
+  batch.set(doc(db, 'public_list', id),
+    { unit: record.unit, name: record.name, gender: record.gender }, { merge: true });
+  await batch.commit();
+};
+
+window.deleteRegistration = async function(id){
+  const batch = writeBatch(db);
+  batch.delete(doc(db, 'registrations', id));
+  batch.delete(doc(db, 'public_list', id));
+  await batch.commit();
+};
+
+onAuthStateChanged(auth, function(user){
+  const isAdmin = !!(user && user.emailVerified && user.email &&
+    user.email.toLowerCase() === ADMIN_EMAIL);
+  if (typeof window.onAdminState === 'function') window.onAdminState(user, isAdmin);
+});
+
+window.firebaseReady = true;
+window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
 <script>
-var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx1UpfnxKo8FxOMm0VXtJ6yJ5ZwBUYjdcaELmctBzMldOIbZmhGYDc771xtYBdZf15Z8g/exec";
 
 var SITE_CODE = "2026";
 function checkGateCode(){
@@ -436,7 +567,10 @@ window.addEventListener('load', adjustHeaderSpace);
 window.addEventListener('resize', adjustHeaderSpace);
 
 // MODAL
+var editingId = null;
 function openModal(){
+  if(editingId){ editingId = null; clearForm(); }
+  document.getElementById('modalTitle').textContent = '✅ הרשמה לסדרת החינוך';
   document.getElementById('modalOverlay').classList.add('open');
   document.getElementById('formWrap').style.display='block';
   document.getElementById('formSuccess').classList.remove('visible');
@@ -474,7 +608,7 @@ function submitForm(){
   var diet = document.getElementById('f-diet').value;
   var notes = document.getElementById('f-notes').value.trim();
   var genderBtn = document.querySelector('#genderGroup .selected');
-  var gender = genderBtn ? genderBtn.textContent.trim() : '';
+  var gender = genderBtn ? (genderBtn.textContent.indexOf('נקבה') !== -1 ? 'נקבה' : 'זכר') : '';
   var errEl = document.getElementById('formError');
   var btn = document.getElementById('submitBtn');
 
@@ -490,14 +624,36 @@ function submitForm(){
   btn.disabled = true;
   btn.textContent = 'שולח...';
 
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: JSON.stringify(record)
-  }).then(function(){
+  if(typeof window.saveRegistration !== 'function'){
+    btn.disabled = false;
+    btn.textContent = 'שלח הרשמה';
+    errEl.textContent = 'המערכת עדיין נטענת, נסו שוב בעוד רגע.';
+    errEl.classList.add('visible');
+    return;
+  }
+
+  if(editingId){
+    window.updateRegistration(editingId, record).then(function(){
+      editingId = null;
+      clearForm();
+      closeModal();
+      loadAdmin();
+      loadRegistrations();
+    }).catch(function(err){
+      console.error(err);
+      btn.disabled = false;
+      btn.textContent = 'שמור שינויים';
+      errEl.textContent = 'השמירה נכשלה: ' + (err && err.code ? err.code : 'שגיאה');
+      errEl.classList.add('visible');
+    });
+    return;
+  }
+
+  window.saveRegistration(record).then(function(){
     showSuccess(record);
     loadRegistrations();
-  }).catch(function(){
+  }).catch(function(err){
+    console.error(err);
     btn.disabled = false;
     btn.textContent = 'שלח הרשמה';
     errEl.textContent = 'שליחת הטופס נכשלה. בדקו חיבור לאינטרנט ונסו שוב.';
@@ -520,11 +676,13 @@ function loadRegistrations(isRetry){
   var countEl = document.getElementById('regCount');
   var genderEl = document.getElementById('genderBreakdown');
   if(!isRetry){ listEl.innerHTML = '<div class="reg-empty">טוען... (עשוי לקחת כמה שניות)</div>'; }
-  fetch(SCRIPT_URL + '?action=list')
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if(!data.success) throw new Error('bad response');
-      var regs = data.registrations || [];
+  if(typeof window.fetchPublicList !== 'function'){
+    window.addEventListener('firebase-ready', function(){ loadRegistrations(isRetry); }, { once:true });
+    return;
+  }
+  window.fetchPublicList()
+    .then(function(regs){
+      regs = regs || [];
       countEl.textContent = regs.length;
 
       var maleCount = 0, femaleCount = 0;
@@ -554,6 +712,164 @@ function loadRegistrations(isRetry){
     });
 }
 window.addEventListener('load', loadRegistrations);
+
+// ===================== ADMIN =====================
+var adminRegs = [];
+
+function clearForm(){
+  ['f-unit','f-role','f-rank','f-personalnum','f-name','f-phone','f-notes'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('f-diet').value = 'רגיל';
+  document.getElementById('f-overnight').checked = false;
+  document.getElementById('f-weapon').checked = false;
+  Array.prototype.forEach.call(document.getElementById('genderGroup').children, function(c){ c.classList.remove('selected'); });
+}
+
+window.onAdminState = function(user, isAdmin){
+  var out = document.getElementById('adminLoggedOut');
+  var inn = document.getElementById('adminLoggedIn');
+  var msg = document.getElementById('adminMsg');
+  var signBtn = document.getElementById('adminSignInBtn');
+  var switchBtn = document.getElementById('adminSwitchBtn');
+  if(isAdmin){
+    out.style.display = 'none';
+    inn.style.display = 'block';
+    document.getElementById('adminWho').textContent = 'מחובר: ' + user.email;
+    loadAdmin();
+  } else {
+    inn.style.display = 'none';
+    out.style.display = 'block';
+    adminRegs = [];
+    if(user){
+      msg.textContent = 'החשבון ' + user.email + ' אינו מורשה לגשת לניהול.';
+      signBtn.style.display = 'none';
+      switchBtn.style.display = 'inline-block';
+    } else {
+      msg.textContent = 'התחברו עם חשבון Google של מנהל המערכת';
+      signBtn.style.display = 'inline-flex';
+      switchBtn.style.display = 'none';
+    }
+  }
+};
+
+function doAdminSignIn(){
+  if(typeof window.adminSignIn !== 'function'){ alert('המערכת עדיין נטענת, נסו שוב בעוד רגע'); return; }
+  window.adminSignIn().catch(function(err){
+    console.error(err);
+    if(err && err.code === 'auth/popup-closed-by-user') return;
+    document.getElementById('adminMsg').textContent = 'ההתחברות נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
+  });
+}
+
+function loadAdmin(){
+  var listEl = document.getElementById('adminList');
+  listEl.innerHTML = '<div class="reg-empty">טוען...</div>';
+  window.fetchAllRegistrations().then(function(regs){
+    adminRegs = regs;
+    renderAdmin();
+  }).catch(function(err){
+    console.error(err);
+    listEl.innerHTML = '<div class="reg-empty">לא ניתן לטעון (' + escapeHtml(err && err.code ? err.code : 'שגיאה') + ')</div>';
+  });
+}
+
+function fmtDate(ts){
+  if(!ts || !ts.toDate) return '';
+  var d = ts.toDate();
+  function p(n){ return (n<10?'0':'')+n; }
+  return p(d.getDate()) + '/' + p(d.getMonth()+1) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function renderAdmin(){
+  var regs = adminRegs;
+  var male = 0, female = 0, overnight = 0, weapon = 0, veg = 0;
+  regs.forEach(function(r){
+    if(r.gender === 'נקבה') female++; else if(r.gender === 'זכר') male++;
+    if(r.overnight === 'כן') overnight++;
+    if(r.weapon === 'כן') weapon++;
+    if(r.diet && r.diet !== 'רגיל') veg++;
+  });
+  document.getElementById('adminStats').innerHTML =
+    '<div class="admin-stat"><b>' + regs.length + '</b><span>נרשמים</span></div>' +
+    '<div class="admin-stat"><b>' + male + ' / ' + female + '</b><span>גברים / נשים</span></div>' +
+    '<div class="admin-stat"><b>' + overnight + '</b><span>לינה</span></div>' +
+    '<div class="admin-stat"><b>' + weapon + '</b><span>נושאי נשק</span></div>' +
+    '<div class="admin-stat"><b>' + veg + '</b><span>צמחוני/טבעוני</span></div>' +
+    '<div class="admin-stat"><b>' + (regs.length - overnight) + '</b><span>ללא לינה</span></div>';
+
+  var q = (document.getElementById('adminSearch').value || '').trim();
+  var shown = !q ? regs : regs.filter(function(r){
+    return [r.name, r.unit, r.personalNum, r.phone, r.role, r.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; });
+  });
+  var listEl = document.getElementById('adminList');
+  if(!shown.length){ listEl.innerHTML = '<div class="reg-empty">' + (regs.length ? 'אין תוצאות לחיפוש' : 'עדיין אין נרשמים') + '</div>'; return; }
+  listEl.innerHTML = shown.map(function(r){
+    return '<div class="admin-card">' +
+      '<div class="ac-head"><span class="ac-name">' + escapeHtml(r.rank || '') + ' ' + escapeHtml(r.name || '') + '</span><span class="ac-unit">' + escapeHtml(r.unit || '') + '</span></div>' +
+      '<div class="ac-body">' +
+        '<b>תפקיד:</b> ' + escapeHtml(r.role || '') + ' · <b>מ"א:</b> ' + escapeHtml(r.personalNum || '') + '<br>' +
+        '<b>טלפון:</b> <a href="tel:' + escapeHtml(r.phone || '') + '" dir="ltr">' + escapeHtml(r.phone || '') + '</a> · <b>מגדר:</b> ' + escapeHtml(r.gender || '') + '<br>' +
+        '<b>לינה:</b> ' + escapeHtml(r.overnight || '') + ' · <b>נשק:</b> ' + escapeHtml(r.weapon || '') + ' · <b>תזונה:</b> ' + escapeHtml(r.diet || '') +
+        (r.notes ? '<br><b>הערות:</b> ' + escapeHtml(r.notes) : '') +
+        (r.createdAt ? '<br><b>נרשם:</b> ' + fmtDate(r.createdAt) : '') +
+      '</div>' +
+      '<div class="ac-btns"><button onclick="adminEdit(\'' + r.id + '\')">✏️ עריכה</button><button class="del" onclick="adminDelete(\'' + r.id + '\')">🗑️ מחיקה</button></div>' +
+    '</div>';
+  }).join('');
+}
+
+function adminEdit(id){
+  var r = adminRegs.filter(function(x){ return x.id === id; })[0];
+  if(!r) return;
+  openModal();
+  editingId = id;
+  document.getElementById('modalTitle').textContent = '✏️ עריכת הרשמה';
+  document.getElementById('f-unit').value = r.unit || '';
+  document.getElementById('f-role').value = r.role || '';
+  document.getElementById('f-rank').value = r.rank || '';
+  document.getElementById('f-personalnum').value = r.personalNum || '';
+  document.getElementById('f-name').value = r.name || '';
+  document.getElementById('f-phone').value = r.phone || '';
+  document.getElementById('f-notes').value = r.notes || '';
+  document.getElementById('f-diet').value = r.diet || 'רגיל';
+  document.getElementById('f-overnight').checked = r.overnight === 'כן';
+  document.getElementById('f-weapon').checked = r.weapon === 'כן';
+  Array.prototype.forEach.call(document.getElementById('genderGroup').children, function(c){
+    c.classList.toggle('selected', !!r.gender && c.textContent.indexOf(r.gender) !== -1);
+  });
+  document.getElementById('submitBtn').textContent = 'שמור שינויים';
+}
+
+function adminDelete(id){
+  var r = adminRegs.filter(function(x){ return x.id === id; })[0];
+  if(!r || !confirm('למחוק את ההרשמה של ' + (r.name || '') + '?')) return;
+  window.deleteRegistration(id).then(function(){
+    loadAdmin();
+    loadRegistrations();
+  }).catch(function(err){
+    console.error(err);
+    alert('המחיקה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')');
+  });
+}
+
+function exportCsv(){
+  var cols = [['unit','יחידה'],['rank','דרגה'],['name','שם מלא'],['role','תפקיד'],['personalNum','מספר אישי'],['phone','טלפון'],['gender','מגדר'],['overnight','לינה'],['weapon','נשק'],['diet','תזונה'],['notes','הערות'],['createdAt','תאריך הרשמה']];
+  function cell(v){ v = (v == null ? '' : String(v)); return '"' + v.replace(/"/g, '""') + '"'; }
+  var lines = [cols.map(function(c){ return cell(c[1]); }).join(',')];
+  adminRegs.forEach(function(r){
+    lines.push(cols.map(function(c){
+      var v = r[c[0]];
+      if(c[0] === 'createdAt') v = fmtDate(v);
+      if(c[0] === 'personalNum' || c[0] === 'phone') v = v ? '\t' + v : ''; // keep leading zeros in Excel
+      return cell(v);
+    }).join(','));
+  });
+  var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'registrations-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+}
 </script>
 </body>
 </html>
