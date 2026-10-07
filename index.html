@@ -144,12 +144,14 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 
 /* BOTTOM TAB BAR — full width, all tabs visible, no scrolling */
 .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:600;background:var(--teal-dark);display:flex;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 20px rgba(0,0,0,0.15);}
-.tab{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 1px;color:rgba(255,255,255,0.55);font-size:0.56rem;font-weight:600;cursor:pointer;border:none;background:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;}
-.tab .ic{font-size:1.2rem;}
+.tabbar{padding-top:6px;padding-left:4px;padding-right:4px;}
+.tab{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;margin:0 2px 6px;padding:7px 1px 6px;border-radius:12px;color:#fff;font-family:'Rubik',sans-serif;font-size:0.68rem;font-weight:700;cursor:pointer;border:none;background:rgba(255,255,255,0.08);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;transition:background .15s,transform .1s;}
+.tab .ic{font-size:1.3rem;line-height:1;}
 .tab .wa-ic{display:flex;align-items:center;justify-content:center;}
-.tab.active{color:#fff;}
-.tab.active .ic{transform:scale(1.12);}
-.tab.cta{color:var(--accent-light);}
+.tab:active{transform:scale(0.95);}
+.tab.active{background:#fff;color:var(--teal-dark);box-shadow:0 2px 8px rgba(0,0,0,0.18);}
+.tab.cta{background:var(--accent);color:#fff;}
+.tab.cta.active{background:#fff;color:var(--accent);}
 
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;z-index:9000;background:rgba(10,30,30,0.6);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .3s;}
@@ -185,7 +187,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 @media(min-width:860px){
   body{display:flex;}
   .tabbar{position:fixed;top:0;bottom:0;left:0;right:auto;width:80px;flex-direction:column;padding-bottom:0;padding-top:16px;box-shadow:4px 0 20px rgba(0,0,0,0.1);}
-  .tab{padding:14px 4px;}
+  .tab{flex:none;padding:12px 4px;margin:4px 8px;}
   .app{margin-right:80px;width:100%;}
   .header{right:80px;}
 }
