@@ -3,7 +3,7 @@
 // Everything here is namespaced to this app only: unique cache prefix, cleanup touches
 // only our own caches, and we only handle requests inside /Sadach2026/.
 const APP_PREFIX = 'sadach2026-chinuch-';
-const CACHE_NAME = APP_PREFIX + 'v6';
+const CACHE_NAME = APP_PREFIX + 'v7';
 const SCOPE_PATH = new URL('./', self.location).pathname; // "/Sadach2026/"
 
 const SHELL = [
@@ -48,7 +48,7 @@ self.addEventListener('fetch', function (event) {
 
   // Network-first: always fresh content online, cached copy when offline
   event.respondWith(
-    fetch(req).then(function (res) {
+    fetch(req, { cache: 'no-cache' }).then(function (res) {   // always revalidate — GitHub Pages caches pages for 10 min
       if (res && res.ok) {
         const copy = res.clone();
         caches.open(CACHE_NAME).then(function (cache) { cache.put(req, copy); });
