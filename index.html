@@ -164,7 +164,8 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .up-bar div{height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--accent-light));border-radius:999px;transition:width .2s;}
 .up-pct{font-weight:900;color:var(--teal-dark);font-size:1.4rem;margin-top:8px;}
 .up-note{font-size:0.75rem;color:var(--text-mid);margin:6px 0 4px;}
-.up-box .close-btn{margin-top:12px;}
+.up-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
+.up-actions .btn-primary{padding:10px 20px;font-size:0.9rem;}
 /* SCHEDULE */
 .sch-sub{text-align:center;color:var(--text-mid);font-size:0.88rem;margin:-2px 0 4px;}
 .sch-title{text-align:center;color:var(--accent);font-weight:700;font-size:0.95rem;margin-bottom:16px;}
@@ -381,7 +382,10 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
     <div class="up-bar"><div id="upFill"></div></div>
     <div class="up-pct" id="upPct">0%</div>
     <div class="up-note" id="upNote">אל תסגרו את הדף עד לסיום ההעלאה</div>
-    <button class="close-btn" id="upClose" style="display:none" onclick="closeUpModal()">סגירה</button>
+    <div class="up-actions">
+      <button class="btn-primary" id="upRetry" style="display:none" onclick="retryUpload()">🔄 נסה שוב</button>
+      <button class="close-btn" id="upClose" style="display:none" onclick="closeUpModal()">סגירה</button>
+    </div>
   </div>
 </div>
 
@@ -995,6 +999,9 @@ function openUpModal(){
   document.getElementById('upTitle').textContent = 'מעלה תמונות...';
   document.getElementById('upNote').style.display = '';
   document.getElementById('upClose').style.display = 'none';
+  document.getElementById('upRetry').style.display = 'none';
+  document.getElementById('upPct').style.display = '';
+  document.querySelector('.up-bar').style.display = '';
   upProgress(0, '');
   document.getElementById('upOverlay').classList.add('open');
 }
@@ -1003,8 +1010,13 @@ function finishUpModal(ok, title, sub){
   document.getElementById('upTitle').textContent = title;
   document.getElementById('upSub').textContent = sub || '';
   document.getElementById('upNote').style.display = 'none';
+  document.getElementById('upPct').style.display = ok ? '' : 'none';
+  document.querySelector('.up-bar').style.display = ok ? '' : 'none';
   document.getElementById('upClose').style.display = 'inline-block';
+  document.getElementById('upRetry').style.display = (!ok && galFailedFiles.length) ? 'inline-flex' : 'none';
 }
+var galFailedFiles = [], galLastName = '';
+function retryUpload(){ var f = galFailedFiles.slice(); if(f.length) runUpload(f, galLastName); }
 function closeUpModal(){ document.getElementById('upOverlay').classList.remove('open'); }
 
 // One upload with real progress (XHR reports bytes sent)
@@ -1037,6 +1049,10 @@ function galUpload(fileList){
   var name = document.getElementById('galName').value.trim();
   try { localStorage.setItem('chinuchGalName', name); } catch(e){}
   galSetStatus('');
+  runUpload(files, name);
+}
+function runUpload(files, name){
+  galLastName = name; galFailedFiles = [];
   galUploading = true; keepAwake(true); openUpModal();
   var done = 0, failed = 0, lastErr = '', n = files.length;
   function overall(i, frac){ return ((i + frac) / n) * 100; }   // each file: 15% shrink, 85% upload
@@ -1055,7 +1071,7 @@ function galUpload(fileList){
       upProgress(overall(i, 0.15), 'תמונה ' + (i + 1) + ' מתוך ' + n + ' · מעלה...');
       return postImage(dataUrl, name, function(f){ upProgress(overall(i, 0.15 + 0.8 * f)); });
     }, function(){ return { ok: false, error: 'decode' }; })
-    .then(function(res){ if(res.ok) done++; else { failed++; lastErr = res.error; } upProgress(overall(i, 1)); next(i + 1); });
+    .then(function(res){ if(res.ok) done++; else { failed++; lastErr = res.error; galFailedFiles.push(files[i]); } upProgress(overall(i, 1)); next(i + 1); });
   }
   next(0);
 }
