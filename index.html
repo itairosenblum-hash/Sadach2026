@@ -169,6 +169,8 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .up-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
 .up-actions .btn-primary{padding:10px 20px;font-size:0.9rem;}
 .up-cancel{border-color:#e3a59d !important;background:#fbecea !important;color:#a5352a !important;}
+table.reg-table tr.unit-row td{background:var(--teal-dark) !important;color:#fff;font-weight:800;position:sticky;top:0;}
+table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radius:999px;padding:0 8px;font-size:0.75rem;margin-right:4px;}
 /* SCHEDULE */
 .sch-sub{text-align:center;color:var(--text-mid);font-size:0.88rem;margin:-2px 0 4px;}
 .sch-title{text-align:center;color:var(--accent);font-weight:700;font-size:0.95rem;margin-bottom:16px;}
@@ -355,7 +357,6 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
       </div>
       <div class="registered-box">
         <h3>נרשמו עד כה (<span id="regCount">–</span>)</h3>
-        <div id="genderBreakdown" class="gender-breakdown"></div>
         <div class="reg-table-wrap" id="regList"><div class="reg-empty">טוען...</div></div>
       </div>
     </div>
@@ -731,24 +732,23 @@ function fetchPublicListFast(){
 
 function renderPublicList(regs){
   var listEl = document.getElementById('regList');
-  var countEl = document.getElementById('regCount');
-  var genderEl = document.getElementById('genderBreakdown');
-  countEl.textContent = regs.length;
-  var maleCount = 0, femaleCount = 0;
-  regs.forEach(function(r){
-    if(r.gender && r.gender.indexOf('נקבה') !== -1) femaleCount++;
-    else if(r.gender && r.gender.indexOf('זכר') !== -1) maleCount++;
-  });
-  genderEl.innerHTML = regs.length ?
-    '<span>👨 ' + maleCount + ' גברים</span><span>👩 ' + femaleCount + ' נשים</span>' : '';
+  document.getElementById('regCount').textContent = regs.length;
   if(regs.length === 0){
     listEl.innerHTML = '<div class="reg-empty">עדיין אין נרשמים — היו הראשונים!</div>';
     return;
   }
-  var rows = regs.map(function(r){
-    return '<tr><td>' + escapeHtml(r.unit) + '</td><td>' + escapeHtml(r.name) + '</td></tr>';
-  }).join('');
-  listEl.innerHTML = '<table class="reg-table"><thead><tr><th>יחידה</th><th>שם מלא</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  // group by unit (א-ב), names א-ב inside each unit
+  var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
+  var sorted = regs.slice().sort(function(a, b){ return heCmp(a.unit, b.unit) || heCmp(a.name, b.name); });
+  var counts = {};
+  sorted.forEach(function(r){ var u = r.unit || 'ללא יחידה'; counts[u] = (counts[u] || 0) + 1; });
+  var last = null, rows = '';
+  sorted.forEach(function(r){
+    var u = r.unit || 'ללא יחידה';
+    if(u !== last){ last = u; rows += '<tr class="unit-row"><td colspan="2">' + escapeHtml(u) + ' <span>' + counts[u] + '</span></td></tr>'; }
+    rows += '<tr><td colspan="2">' + escapeHtml(r.name) + '</td></tr>';
+  });
+  listEl.innerHTML = '<table class="reg-table"><tbody>' + rows + '</tbody></table>';
 }
 
 function loadRegistrations(isRetry){
