@@ -484,6 +484,11 @@ function showPage(id){
   window.scrollTo({top:0});
 }
 
+// Open a page from the URL hash (used by links from admin.html, e.g. ./#schedule)
+function openFromHash(){ var h = (location.hash || '').slice(1); if(h && document.getElementById('page-' + h)) showPage(h); }
+window.addEventListener('hashchange', openFromHash);
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', openFromHash); } else { openFromHash(); }
+
 // Keep header height and page top-padding in sync (header text can wrap to 2 lines on narrow phones)
 function adjustHeaderSpace(){
   var h = document.querySelector('.header').offsetHeight;
