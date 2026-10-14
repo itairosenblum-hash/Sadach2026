@@ -206,6 +206,15 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .ct-status{text-align:center;font-size:0.82rem;margin-top:10px;min-height:1.2em;color:var(--text-mid);}
 .ct-status.ok{color:var(--teal);font-weight:700;}
 .ct-status.err{color:#c0392b;font-weight:700;}
+.adm-gal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+@media(min-width:560px){.adm-gal-grid{grid-template-columns:repeat(5,1fr);}}
+.adm-gal-grid .ag{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--teal-soft);}
+.adm-gal-grid img{width:100%;height:100%;object-fit:cover;display:block;}
+.adm-gal-grid .ag button{position:absolute;bottom:5px;left:5px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(192,57,43,0.9);color:#fff;cursor:pointer;font-size:0.9rem;}
+.adm-gal-grid .ag span{position:absolute;top:4px;right:4px;max-width:90%;background:rgba(15,76,76,0.8);color:#fff;font-size:0.6rem;padding:1px 6px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.adm-gal-pager{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.adm-gal-pager button{min-width:34px;height:34px;border-radius:10px;border:1px solid rgba(15,76,76,0.2);background:#fff;color:var(--teal-dark);font-weight:700;cursor:pointer;}
+.adm-gal-pager button.cur{background:var(--teal-dark);color:#fff;}
 .admin-tabs{flex-wrap:wrap;}
 .admin-tabs button{flex:1 1 40%;}
 @media(min-width:560px){.admin-tabs button{flex:1 1 0;}}
@@ -262,6 +271,9 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         </div>
         <p class="section-sub" style="margin:10px 0 0">השינוי נשמר מיד. כשההעלאה חסומה, כולם עדיין יכולים לצפות בגלריה.</p>
         <div class="ct-status" id="galAdmStatus"></div>
+        <h3 style="color:var(--teal-dark);font-size:1rem;margin:18px 0 8px;text-align:center">🗑️ מחיקת תמונות</h3>
+        <div id="admGalGrid" class="adm-gal-grid"><div class="reg-empty">טוען...</div></div>
+        <div id="admGalPager" class="adm-gal-pager"></div>
       </div>
 
       <div class="admin-pane" id="pane-sched">
@@ -461,6 +473,7 @@ window.fetchSettings = async function(id){
   const s = await getDoc(doc(db, 'settings', id));
   return s.exists() ? s.data() : null;
 };
+window.getIdToken = function(){ return auth.currentUser ? auth.currentUser.getIdToken() : Promise.reject(new Error('not signed in')); };
 window.saveSettings = async function(id, data){
   await setDoc(doc(db, 'settings', id), Object.assign({}, data, { updatedAt: serverTimestamp() }));
 };
@@ -568,6 +581,7 @@ window.onAdminState = function(user, isAdmin){
     loadInstr();
     loadSched();
     loadGalSetting();
+    loadAdmGallery(1);
   } else {
     inn.style.display = 'none';
     out.style.display = 'block';
@@ -933,6 +947,38 @@ function toggleGalUploads(){
     console.error(err);
     st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
   });
+}
+
+// ===================== GALLERY: ADMIN DELETE =====================
+var GALLERY_URL = 'https://script.google.com/macros/s/AKfycbwtUPldWBJpUS3erfYto--ebu833XE6MDLxwSJ0LTItEzi5sUE7TN5cwE8_Oyb2xeA7/exec';
+var GALLERY_KEY = 'chinuch-tiberias-2026';
+var admGalPage = 1, admGalItems = [];
+function admThumb(id){ return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w300'; }
+function loadAdmGallery(page){
+  var grid = document.getElementById('admGalGrid');
+  grid.innerHTML = '<div class="reg-empty" style="grid-column:1/-1">טוען...</div>';
+  fetch(GALLERY_URL + '?page=' + page, { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(d){
+    admGalPage = d.page || 1; admGalItems = d.items || [];
+    if(!admGalItems.length){ grid.innerHTML = '<div class="reg-empty" style="grid-column:1/-1">אין תמונות בגלריה</div>'; document.getElementById('admGalPager').innerHTML = ''; return; }
+    grid.innerHTML = admGalItems.map(function(it, i){
+      return '<div class="ag"><img loading="lazy" src="' + admThumb(it.id) + '" alt="">' + (it.by ? '<span>' + escapeHtml(it.by) + '</span>' : '') +
+        '<button type="button" onclick="admDeletePhoto(' + i + ')" aria-label="מחיקה">🗑️</button></div>';
+    }).join('');
+    var h = '';
+    for(var p = 1; p <= (d.pages || 1); p++) h += '<button class="' + (p === admGalPage ? 'cur' : '') + '" onclick="loadAdmGallery(' + p + ')">' + p + '</button>';
+    document.getElementById('admGalPager').innerHTML = (d.pages || 1) > 1 ? h : '';
+  }).catch(function(){ grid.innerHTML = '<div class="reg-empty" style="grid-column:1/-1">לא ניתן לטעון את הגלריה <button class="retry-btn" onclick="loadAdmGallery(' + page + ')">🔄</button></div>'; });
+}
+function admDeletePhoto(i){
+  var it = admGalItems[i]; if(!it) return;
+  if(!confirm('למחוק את התמונה' + (it.by ? ' של ' + it.by : '') + ' מהגלריה?\nלא ניתן לבטל את הפעולה.')) return;
+  window.getIdToken().then(function(idToken){
+    return fetch(GALLERY_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ key: GALLERY_KEY, action: 'delete', id: it.id, idToken: idToken }) }).then(function(r){ return r.json(); });
+  }).then(function(r){
+    if(r && r.ok) loadAdmGallery(admGalPage);
+    else alert('המחיקה נכשלה (' + ((r && r.error) || 'שגיאה') + ')');
+  }).catch(function(err){ alert('המחיקה נכשלה (' + (err && err.message ? err.message : 'שגיאה') + ')'); });
 }
 window.addEventListener('beforeunload', function(e){
   if(document.getElementById('ctStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('inStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('scStatus').textContent === 'יש שינויים שלא נשמרו'){ e.preventDefault(); e.returnValue = ''; }

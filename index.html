@@ -150,6 +150,8 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .lightbox img{max-width:94vw;max-height:82vh;border-radius:8px;object-fit:contain;}
 .lightbox .lb-btn{position:absolute;background:rgba(255,255,255,0.15);border:none;color:#fff;width:44px;height:44px;border-radius:50%;font-size:1.4rem;cursor:pointer;}
 .lightbox .lb-close{top:14px;left:14px;}
+.lightbox .lb-del{top:14px;right:14px;font-size:1.1rem;background:rgba(192,57,43,0.75);display:none;}
+.gal-grid .mine{position:absolute;top:5px;right:5px;background:rgba(15,76,76,0.8);color:#fff;font-size:0.62rem;font-weight:700;padding:2px 6px;border-radius:999px;}
 .lightbox .lb-prev{right:10px;top:50%;transform:translateY(-50%);}
 .lightbox .lb-next{left:10px;top:50%;transform:translateY(-50%);}
 .lightbox .lb-cap{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#dfeeee;font-size:0.85rem;}
@@ -392,6 +394,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 <!-- GALLERY LIGHTBOX -->
 <div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLightbox()">
   <button class="lb-btn lb-close" onclick="closeLightbox()" aria-label="סגירה">✕</button>
+  <button class="lb-btn lb-del" id="lbDel" onclick="deleteOwnPhoto()" aria-label="מחיקת התמונה" title="מחיקת התמונה">🗑️</button>
   <button class="lb-btn lb-prev" onclick="lbStep(-1)" aria-label="הקודמת">›</button>
   <img id="lbImg" alt="">
   <button class="lb-btn lb-next" onclick="lbStep(1)" aria-label="הבאה">‹</button>
@@ -933,8 +936,9 @@ function loadGallery(page){
 function renderGallery(total){
   var grid = document.getElementById('galGrid');
   if(!galItems.length){ grid.innerHTML = '<div class="coming-soon" style="grid-column:1/-1"><span class="ic">📷</span>עוד אין תמונות — העלו את הראשונה!</div>'; document.getElementById('galPager').innerHTML = ''; return; }
+  var mine = galTokens();
   grid.innerHTML = galItems.map(function(it, i){
-    return '<button type="button" onclick="openLightbox(' + i + ')" aria-label="הגדלת תמונה"><img loading="lazy" src="' + galThumb(it.id, 400) + '" alt=""></button>';
+    return '<button type="button" onclick="openLightbox(' + i + ')" aria-label="הגדלת תמונה"><img loading="lazy" src="' + galThumb(it.id, 400) + '" alt="">' + (mine[it.id] ? '<span class="mine">שלי</span>' : '') + '</button>';
   }).join('');
   var pg = document.getElementById('galPager');
   if(galPages <= 1){ pg.innerHTML = ''; return; }
@@ -946,12 +950,40 @@ function renderGallery(total){
   h += '<button onclick="loadGallery(' + (galPage + 1) + ')"' + (galPage >= galPages ? ' disabled' : '') + '>‹</button>';
   pg.innerHTML = h;
 }
+// Delete-your-own-photos: each upload gets a random secret kept on this device only
+var GAL_TOKENS_KEY = 'chinuchGalTokens';
+function galTokens(){ try { return JSON.parse(localStorage.getItem(GAL_TOKENS_KEY) || '{}') || {}; } catch(e){ return {}; } }
+function galSaveToken(id, tok){ var t = galTokens(); t[id] = tok; try { localStorage.setItem(GAL_TOKENS_KEY, JSON.stringify(t)); } catch(e){} }
+function galNewToken(){
+  var a = new Uint8Array(16); (window.crypto || window.msCrypto).getRandomValues(a);
+  return Array.prototype.map.call(a, function(b){ return ('0' + b.toString(16)).slice(-2); }).join('');
+}
+function deleteOwnPhoto(){
+  var it = galItems[lbIndex], tok = it && galTokens()[it.id];
+  if(!tok) return;
+  if(!confirm('למחוק את התמונה מהגלריה?\nלא ניתן לבטל את הפעולה.')) return;
+  var btn = document.getElementById('lbDel'); btn.disabled = true;
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', GALLERY_URL);
+  xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+  xhr.onload = function(){
+    btn.disabled = false;
+    var r = null; try { r = JSON.parse(xhr.responseText); } catch(e){}
+    if(r && r.ok){
+      var t = galTokens(); delete t[it.id]; try { localStorage.setItem(GAL_TOKENS_KEY, JSON.stringify(t)); } catch(e){}
+      closeLightbox(); galSetStatus('✓ התמונה נמחקה', 'ok'); loadGallery(galPage);
+    } else alert('המחיקה נכשלה, נסו שוב בעוד רגע');
+  };
+  xhr.onerror = function(){ btn.disabled = false; alert('המחיקה נכשלה, בדקו חיבור לאינטרנט'); };
+  xhr.send(JSON.stringify({ key: GALLERY_KEY, action: 'delete', id: it.id, token: tok }));
+}
 function openLightbox(i){ lbIndex = i; lbShow(); document.getElementById('lightbox').classList.add('open'); }
 function closeLightbox(){ document.getElementById('lightbox').classList.remove('open'); document.getElementById('lbImg').src = ''; }
 function lbShow(){
   var it = galItems[lbIndex]; if(!it) return;
   document.getElementById('lbImg').src = galThumb(it.id, 1600);
   document.getElementById('lbCap').textContent = (it.by ? '📷 ' + it.by + ' · ' : '') + (lbIndex + 1) + ' / ' + galItems.length;
+  document.getElementById('lbDel').style.display = galTokens()[it.id] ? 'block' : 'none';
 }
 function lbStep(d){ lbIndex = (lbIndex + d + galItems.length) % galItems.length; lbShow(); }
 document.addEventListener('keydown', function(e){
@@ -1020,7 +1052,7 @@ function retryUpload(){ var f = galFailedFiles.slice(); if(f.length) runUpload(f
 function closeUpModal(){ document.getElementById('upOverlay').classList.remove('open'); }
 
 // One upload with real progress (XHR reports bytes sent)
-function postImage(dataUrl, name, onProgress){
+function postImage(dataUrl, name, onProgress, token){
   return new Promise(function(resolve){
     var xhr = new XMLHttpRequest();
     xhr.open('POST', GALLERY_URL);
@@ -1032,12 +1064,12 @@ function postImage(dataUrl, name, onProgress){
     function stop(){ clearInterval(timer); onProgress(1); }
     xhr.onload = function(){
       stop();
-      try { var r = JSON.parse(xhr.responseText); resolve(r && r.ok ? { ok: true } : { ok: false, error: (r && r.error) || 'server' }); }
+      try { var r = JSON.parse(xhr.responseText); resolve(r && r.ok ? { ok: true, id: r.id } : { ok: false, error: (r && r.error) || 'server' }); }
       catch(e){ resolve({ ok: false, error: 'not-json' }); }
     };
     xhr.onerror = function(){ stop(); resolve({ ok: false, error: 'network' }); };
     xhr.timeout = 90000; xhr.ontimeout = function(){ stop(); resolve({ ok: false, error: 'timeout' }); };
-    xhr.send(JSON.stringify({ key: GALLERY_KEY, data: dataUrl, name: name }));
+    xhr.send(JSON.stringify({ key: GALLERY_KEY, data: dataUrl, name: name, token: token }));
   });
 }
 function galUpload(fileList){
@@ -1069,7 +1101,9 @@ function runUpload(files, name){
     upProgress(overall(i, 0), 'תמונה ' + (i + 1) + ' מתוך ' + n + ' · מכין...');
     shrinkImage(files[i]).then(function(dataUrl){
       upProgress(overall(i, 0.15), 'תמונה ' + (i + 1) + ' מתוך ' + n + ' · מעלה...');
-      return postImage(dataUrl, name, function(f){ upProgress(overall(i, 0.15 + 0.8 * f)); });
+      var tok = galNewToken();
+      return postImage(dataUrl, name, function(f){ upProgress(overall(i, 0.15 + 0.8 * f)); }, tok)
+        .then(function(res){ if(res.ok && res.id) galSaveToken(res.id, tok); return res; });
     }, function(){ return { ok: false, error: 'decode' }; })
     .then(function(res){ if(res.ok) done++; else { failed++; lastErr = res.error; galFailedFiles.push(files[i]); } upProgress(overall(i, 1)); next(i + 1); });
   }
