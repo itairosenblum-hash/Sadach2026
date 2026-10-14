@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>ניהול · סדרת חינוך</title>
+<link rel="icon" href="favicon.png">
+<meta name="theme-color" content="#0f4c4c">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --teal-dark:#0f4c4c;
+  --teal:#2f8f7a;
+  --teal-soft:#dff0ea;
+  --bg1:#eaf6f6;
+  --bg2:#dff0ea;
+  --text-dark:#123434;
+  --text-mid:#3a6b63;
+  --accent:#d97b3f;
+  --accent-light:#f0a86b;
+  --white:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{direction:rtl;}
+body{font-family:'Rubik',sans-serif;background:transparent;color:var(--text-dark);direction:rtl;overflow-x:hidden;}
+
+/* AMBIENT WATER-RIPPLE BACKGROUND (Kinneret theme) */
+.bg-waves{position:fixed;inset:0;z-index:-1;overflow:hidden;}
+.bg-wave-layer{position:absolute;inset:0;background-repeat:repeat-x;background-size:1440px 100%;animation:bgwaveslide 40s linear infinite;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Crect width='1440' height='900' fill='%23eaf6f6'/%3E%3Cpath d='M0,560 C240,500 480,620 720,560 C960,500 1200,620 1440,560 L1440,900 L0,900 Z' fill='%23dff0ea'/%3E%3Cpath d='M0,630 C300,690 780,570 1440,630 L1440,900 L0,900 Z' fill='%232f8f7a' fill-opacity='0.22'/%3E%3C/svg%3E");}
+@keyframes bgwaveslide{from{background-position:0 0;}to{background-position:-1440px 0;}}
+@keyframes bgwave{from{transform:translateX(0);}to{transform:translateX(-1440px);}}
+button{font-family:'Rubik',sans-serif;}
+
+/* ENTRY CODE GATE */
+.gate-overlay{position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,var(--teal-dark),#0a2e2e);display:flex;align-items:center;justify-content:center;padding:20px;}
+.gate-box{background:#fff;border-radius:22px;padding:34px 26px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.gate-icon{font-size:2.6rem;margin-bottom:10px;}
+.gate-box h2{color:var(--teal-dark);font-size:1.15rem;font-weight:900;margin-bottom:4px;}
+.gate-box p{color:var(--text-mid);font-size:0.88rem;margin-bottom:16px;}
+.gate-box input{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.2);border-radius:12px;padding:13px 14px;font-family:'Rubik',sans-serif;font-size:1.1rem;text-align:center;letter-spacing:2px;outline:none;margin-bottom:10px;}
+.gate-box input:focus{border-color:var(--teal);}
+.gate-error{color:#c0392b;font-size:0.83rem;margin-bottom:10px;display:none;}
+.gate-error.visible{display:block;}
+.gate-box .btn-primary{width:100%;justify-content:center;}
+
+/* HEADER — fixed, always visible, holds the full official title */
+.header{position:fixed;top:0;left:0;right:0;z-index:700;background:rgba(234,246,246,0.96);backdrop-filter:blur(10px);border-bottom:1px solid rgba(15,76,76,0.12);padding:12px 16px;text-align:center;}
+.header .h-eyebrow{display:block;color:var(--accent);font-size:0.74rem;font-weight:700;letter-spacing:0.5px;margin-bottom:3px;}
+.header .h-main{display:block;color:var(--teal-dark);font-size:0.98rem;font-weight:900;line-height:1.35;}
+
+/* PAGES */
+.pages{padding-bottom:calc(86px + env(safe-area-inset-bottom));min-height:100vh;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* HERO (details/home page only) */
+.top-cta{padding:26px 22px 6px;text-align:center;background:linear-gradient(180deg,var(--bg1),var(--bg2));}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;border:none;padding:14px 28px;border-radius:999px;font-weight:700;font-size:0.95rem;cursor:pointer;box-shadow:0 8px 24px rgba(217,123,63,0.35);}
+
+/* SECTIONS */
+.section{max-width:640px;margin:0 auto;padding:30px 20px 40px;}
+.section-title{font-size:1.5rem;font-weight:900;color:var(--teal-dark);text-align:center;margin-bottom:4px;}
+.section-sub{text-align:center;color:var(--text-mid);font-size:0.85rem;margin-bottom:22px;}
+
+.info-grid,.goals-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+@media(min-width:560px){.info-grid,.goals-grid{grid-template-columns:repeat(3,1fr);}}
+.info-card,.goal-card{background:rgba(255,255,255,0.65);border:1px solid rgba(15,76,76,0.12);border-radius:16px;padding:18px;text-align:center;}
+.info-card .ic,.goal-card .ic{font-size:1.7rem;display:block;margin-bottom:6px;}
+.info-card .lbl{font-size:0.72rem;color:var(--teal);font-weight:700;letter-spacing:0.5px;margin-bottom:3px;}
+.info-card .val{font-weight:700;color:var(--text-dark);}
+.goal-num{width:32px;height:32px;border-radius:50%;background:var(--teal-dark);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:0.9rem;}
+.goal-card b{display:block;color:var(--teal-dark);margin-bottom:4px;}
+.goal-card span{font-size:0.85rem;color:var(--text-mid);}
+
+.coming-soon{background:rgba(255,255,255,0.5);border:1.5px dashed rgba(15,76,76,0.3);border-radius:16px;padding:30px 18px;text-align:center;color:var(--text-mid);font-size:0.9rem;}
+.coming-soon .ic{font-size:2.1rem;display:block;margin-bottom:8px;opacity:0.6;}
+.sub-block + .sub-block{margin-top:32px;}
+
+/* REGISTER PAGE */
+.reg-box{background:rgba(255,255,255,0.65);border:1px solid rgba(15,76,76,0.15);border-radius:18px;padding:26px 20px;text-align:center;margin-bottom:18px;}
+.reg-box p{color:var(--text-mid);margin-bottom:16px;font-size:0.92rem;}
+.registered-box{background:rgba(255,255,255,0.5);border-radius:16px;padding:16px 18px;}
+.registered-box h3{font-size:0.95rem;color:var(--teal-dark);margin-bottom:10px;text-align:center;}
+.gender-breakdown{display:flex;justify-content:center;gap:18px;margin-bottom:14px;font-size:0.88rem;color:var(--text-dark);font-weight:600;}
+.gender-breakdown span{display:inline-flex;align-items:center;gap:5px;}
+.reg-table-wrap{max-height:280px;overflow-y:auto;border-radius:10px;}
+table.reg-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table.reg-table thead th{position:sticky;top:0;background:var(--teal-soft);color:var(--teal-dark);font-weight:700;padding:8px 10px;text-align:right;}
+table.reg-table tbody td{padding:8px 10px;border-bottom:1px solid rgba(15,76,76,0.08);background:rgba(255,255,255,0.6);}
+table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
+.reg-empty{text-align:center;color:var(--text-mid);font-size:0.85rem;padding:10px;}
+.retry-btn{margin-top:8px;background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);padding:7px 16px;border-radius:999px;font-size:0.8rem;font-weight:700;cursor:pointer;}
+
+/* ADMIN */
+.admin-link{text-align:center;margin-top:26px;}
+.admin-link button{background:none;border:none;color:var(--text-mid);font-size:0.78rem;text-decoration:underline;cursor:pointer;opacity:0.7;}
+.admin-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,0.65);border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:0.82rem;color:var(--text-mid);}
+.admin-bar .retry-btn{margin-top:0;}
+.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.admin-stat{background:rgba(255,255,255,0.7);border:1.5px solid rgba(15,76,76,0.12);border-radius:12px;padding:10px 4px;text-align:center;cursor:pointer;font-family:'Rubik',sans-serif;transition:background .15s,border-color .15s;}
+.admin-stat:active{transform:scale(0.97);}
+.admin-stat.active{background:var(--teal-dark);border-color:var(--teal-dark);}
+.admin-stat.active b,.admin-stat.active span{color:#fff;}
+.admin-filter-label{display:none;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:0.82rem;color:var(--text-mid);margin-bottom:10px;}
+.admin-filter-label b{color:var(--teal-dark);}
+.admin-filter-label button{background:none;border:1px solid var(--teal);color:var(--teal-dark);border-radius:999px;padding:3px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;}
+.admin-stat b{display:block;font-size:1.3rem;color:var(--teal-dark);font-weight:900;}
+.admin-stat span{font-size:0.7rem;color:var(--text-mid);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.admin-actions{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;}
+.admin-actions .retry-btn{margin-top:0;}
+.admin-search{width:100%;background:#fff;border:1.5px solid rgba(15,76,76,0.15);border-radius:12px;padding:11px 14px;font-family:'Rubik',sans-serif;font-size:0.92rem;outline:none;margin-bottom:12px;}
+.admin-search:focus{border-color:var(--teal);}
+.admin-card{background:rgba(255,255,255,0.8);border:1px solid rgba(15,76,76,0.12);border-radius:12px;margin-bottom:6px;overflow:hidden;}
+.admin-card .ac-row{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:11px 12px;cursor:pointer;font-family:'Rubik',sans-serif;text-align:right;}
+.admin-card .ac-num{font-size:0.72rem;color:var(--text-mid);min-width:18px;}
+.admin-card .ac-row .ac-name{flex:1;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.admin-card .ac-plus{flex:none;width:26px;height:26px;border-radius:50%;background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);font-weight:900;font-size:1.05rem;line-height:24px;text-align:center;}
+.admin-card.open .ac-plus{background:var(--teal-dark);color:#fff;border-color:var(--teal-dark);}
+.admin-card .ac-detail{display:none;padding:0 14px 12px;border-top:1px solid rgba(15,76,76,0.08);}
+.admin-card.open .ac-detail{display:block;padding-top:10px;}
+.admin-card .ac-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;}
+.admin-card .ac-name{font-weight:700;color:var(--teal-dark);}
+.admin-unit-head{display:flex;align-items:center;justify-content:space-between;margin:16px 2px 6px;padding:7px 12px;border-radius:10px;background:var(--teal-dark);color:#fff;font-weight:800;font-size:0.9rem;}
+.admin-unit-head:first-child{margin-top:4px;}
+.admin-unit-head b{background:rgba(255,255,255,0.2);border-radius:999px;padding:1px 10px;font-size:0.8rem;}
+.admin-card .ac-unit{font-size:0.78rem;color:var(--accent);font-weight:700;white-space:nowrap;}
+.admin-card .ac-body{font-size:0.8rem;color:var(--text-mid);line-height:1.7;}
+.admin-card .ac-body b{color:var(--text-dark);font-weight:600;}
+.admin-card .ac-btns{display:flex;gap:8px;margin-top:8px;}
+.admin-card .ac-btns button{flex:1;padding:8px;border-radius:10px;font-size:0.8rem;font-weight:700;cursor:pointer;border:1px solid var(--teal);background:var(--teal-soft);color:var(--teal-dark);}
+.admin-card .ac-btns button.del{border-color:#e3a59d;background:#fbecea;color:#a5352a;}
+
+/* BOTTOM TAB BAR — full width, all tabs visible, no scrolling */
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:600;background:var(--teal-dark);display:flex;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 20px rgba(0,0,0,0.15);}
+.tabbar{padding-top:6px;padding-left:4px;padding-right:4px;}
+.tab{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;margin:0 2px 6px;padding:7px 1px 6px;border-radius:12px;color:#fff;font-family:'Rubik',sans-serif;font-size:0.68rem;font-weight:700;cursor:pointer;border:none;background:rgba(255,255,255,0.08);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;transition:background .15s,transform .1s;}
+.tab .ic{font-size:1.3rem;line-height:1;}
+.tab .wa-ic{display:flex;align-items:center;justify-content:center;}
+.tab:active{transform:scale(0.95);}
+.tab.active{background:#fff;color:var(--teal-dark);box-shadow:0 2px 8px rgba(0,0,0,0.18);}
+.tab.cta{background:var(--accent);color:#fff;}
+.tab.cta.active{background:#fff;color:var(--accent);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:9000;background:rgba(10,30,30,0.6);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .3s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:#fff;border-radius:22px;padding:26px 22px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;transform:translateY(24px);transition:transform .3s;position:relative;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-close{position:absolute;top:14px;left:14px;background:rgba(15,76,76,0.08);border:none;width:30px;height:30px;border-radius:50%;color:var(--teal-dark);font-size:1.1rem;cursor:pointer;line-height:1;}
+.modal h2{font-size:1.25rem;font-weight:900;text-align:center;color:var(--teal-dark);margin-bottom:4px;}
+.modal .modal-sub{text-align:center;color:var(--text-mid);font-size:0.85rem;margin-bottom:20px;}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:0.78rem;font-weight:700;color:var(--teal);margin-bottom:5px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:12px;padding:12px 14px;color:var(--text-dark);font-family:'Rubik',sans-serif;font-size:0.95rem;outline:none;}
+.form-group textarea{resize:vertical;min-height:60px;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--teal);}
+.checkbox-row{display:flex;align-items:center;}
+.checkbox-label{display:flex;align-items:center;gap:9px;font-size:0.92rem;color:var(--text-dark);cursor:pointer;user-select:none;}
+.checkbox-label input[type="checkbox"]{width:19px;height:19px;accent-color:var(--teal);cursor:pointer;flex-shrink:0;}
+.radio-group{display:flex;gap:8px;}
+.radio-btn{flex:1;padding:11px 6px;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;text-align:center;cursor:pointer;font-size:0.9rem;color:var(--text-mid);user-select:none;}
+.radio-btn.selected{background:var(--teal-soft);border-color:var(--teal);color:var(--teal-dark);font-weight:700;}
+.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;font-size:1rem;font-weight:700;border:none;border-radius:14px;cursor:pointer;margin-top:6px;}
+.submit-btn:disabled{opacity:0.5;}
+.form-error{color:#c0392b;font-size:0.83rem;margin-bottom:10px;display:none;}
+.form-error.visible{display:block;}
+.form-success{text-align:center;padding:10px 4px;display:none;}
+.form-success.visible{display:block;}
+.success-icon{font-size:3rem;display:block;margin-bottom:10px;}
+.success-details{background:var(--bg1);border-radius:12px;padding:14px;text-align:right;font-size:0.85rem;color:var(--text-mid);margin:14px 0;line-height:1.8;}
+.success-details b{color:var(--teal-dark);}
+.close-btn{background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);padding:10px 22px;border-radius:999px;font-weight:700;cursor:pointer;}
+
+/* DESKTOP: turn bottom bar into a left rail */
+@media(min-width:860px){
+  body{display:flex;}
+  .tabbar{position:fixed;top:0;bottom:0;left:0;right:auto;width:80px;flex-direction:column;padding-bottom:0;padding-top:16px;box-shadow:4px 0 20px rgba(0,0,0,0.1);}
+  .tab{flex:none;padding:12px 4px;margin:4px 8px;}
+  .app{margin-left:80px;width:100%;}
+  .header{left:80px;}
+}
+
+/* COMPUTER (mouse): rail hidden, slides in from the left edge on hover */
+.edge-hot{display:none;}
+@media(min-width:860px) and (hover:hover) and (pointer:fine){
+  .tabbar{z-index:800;transform:translateX(-100%);transition:transform .25s ease, box-shadow .25s;box-shadow:none;}
+  .tabbar.open{transform:translateX(0);box-shadow:6px 0 28px rgba(0,0,0,0.22);}
+  .app{margin-left:0;}
+  .header{left:0;}
+  .edge-hot{display:flex;position:fixed;top:0;bottom:0;left:0;width:14px;z-index:790;align-items:center;justify-content:flex-start;cursor:pointer;}
+  .edge-hot::after{content:'';width:5px;height:64px;border-radius:0 6px 6px 0;background:var(--teal-dark);opacity:.45;transition:opacity .2s,width .2s;}
+  .edge-hot:hover::after{opacity:.9;width:7px;}
+}
+
+/* ADMIN PAGE */
+.app{margin:0 !important;}
+.header{left:0 !important;right:0 !important;}
+.pages{padding-bottom:40px;}
+.admin-tabs{display:flex;gap:6px;background:rgba(255,255,255,0.6);border:1px solid rgba(15,76,76,0.12);border-radius:14px;padding:5px;margin-bottom:16px;}
+.admin-tabs button{flex:1;border:none;background:none;padding:10px;border-radius:10px;font-weight:700;font-size:0.9rem;color:var(--text-mid);cursor:pointer;}
+.admin-tabs button.active{background:var(--teal-dark);color:#fff;}
+.admin-pane{display:none;}
+.admin-pane.active{display:block;}
+.back-link{display:block;text-align:center;margin-top:22px;font-size:0.8rem;color:var(--text-mid);}
+.ct-card{background:rgba(255,255,255,0.85);border:1px solid rgba(15,76,76,0.12);border-radius:14px;padding:12px;margin-bottom:10px;}
+.ct-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ct-grid .full{grid-column:1/-1;}
+.ct-card input{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;padding:10px 12px;font-family:'Rubik',sans-serif;font-size:0.92rem;outline:none;}
+.ct-card input:focus{border-color:var(--teal);}
+.ct-card label{display:block;font-size:0.72rem;font-weight:700;color:var(--teal);margin-bottom:3px;}
+.ct-tools{display:flex;gap:6px;margin-top:8px;justify-content:flex-end;}
+.ct-tools button{border:1px solid rgba(15,76,76,0.2);background:#fff;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:0.8rem;color:var(--teal-dark);}
+.ct-tools button.del{border-color:#e3a59d;background:#fbecea;color:#a5352a;}
+.ct-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px;}
+.ct-status{text-align:center;font-size:0.82rem;margin-top:10px;min-height:1.2em;color:var(--text-mid);}
+.ct-status.ok{color:var(--teal);font-weight:700;}
+.ct-status.err{color:#c0392b;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="bg-waves" aria-hidden="true"><div class="bg-wave-layer"></div></div>
+<div class="header"><span class="h-eyebrow">🔐 ניהול · סדרת חינוך טבריה</span><span class="h-main">עמוד מנהל</span></div>
+
+<div class="app">
+<div class="pages" id="pages">
+  <div class="section">
+    <div id="adminLoggedOut" class="reg-box">
+      <p id="adminMsg">התחברו עם חשבון Google של מנהל המערכת</p>
+      <button class="btn-primary" id="adminSignInBtn" onclick="doAdminSignIn()">התחברות עם Google</button>
+      <div style="margin-top:12px;"><button class="retry-btn" id="adminSwitchBtn" style="display:none" onclick="adminSignOut()">התנתקות והחלפת חשבון</button></div>
+    </div>
+
+    <div id="adminLoggedIn" style="display:none">
+      <div class="admin-bar"><span id="adminWho"></span><button class="retry-btn" onclick="adminSignOut()">התנתקות</button></div>
+      <div class="admin-tabs">
+        <button type="button" class="active" data-pane="regs" onclick="showPane('regs')">📋 נרשמים</button>
+        <button type="button" data-pane="contacts" onclick="showPane('contacts')">📞 אנשי קשר</button>
+      </div>
+
+      <div class="admin-pane active" id="pane-regs">
+        <div class="admin-stats" id="adminStats"></div>
+        <div class="admin-filter-label" id="adminFilterLabel"></div>
+        <div class="admin-actions">
+          <button class="retry-btn" onclick="loadAdmin()">🔄 רענון</button>
+          <button class="retry-btn" onclick="exportCsv()">⬇️ ייצוא לאקסל</button>
+        </div>
+        <input class="admin-search" id="adminSearch" placeholder="חיפוש לפי שם, יחידה, מספר אישי או טלפון" oninput="renderAdmin()">
+        <div id="adminList"><div class="reg-empty">טוען...</div></div>
+      </div>
+
+      <div class="admin-pane" id="pane-contacts">
+        <p class="section-sub" style="margin-bottom:12px">אנשי הקשר מוצגים לכולם בלשונית "חירום" באתר</p>
+        <div id="ctList"><div class="reg-empty">טוען...</div></div>
+        <div class="ct-actions">
+          <button class="retry-btn" onclick="addContact()">➕ הוספת איש קשר</button>
+          <button class="btn-primary" id="ctSaveBtn" onclick="saveContacts()">💾 שמירה</button>
+        </div>
+        <div class="ct-status" id="ctStatus"></div>
+      </div>
+    </div>
+    <a class="back-link" href="./">← חזרה לאתר</a>
+  </div>
+</div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 id="modalTitle">✅ הרשמה לסדרת החינוך</h2>
+    <div class="modal-sub">טבריה</div>
+    <div id="formWrap">
+      <div class="form-group">
+        <label>יחידה *</label>
+        <select id="f-unit">
+          <option value="">בחר יחידה</option>
+          <option>אילת</option>
+          <option>אשדוד</option>
+          <option>קריה</option>
+          <option>עתלית</option>
+          <option>בצ"ת</option>
+          <option>מספנה</option>
+          <option>ב"ח</option>
+          <option>בה"ד</option>
+        </select>
+      </div>
+      <div class="form-group"><label>שם תפקיד *</label><input type="text" id="f-role" placeholder="לדוגמה: קצין חינוך"></div>
+      <div class="form-group"><label>דרגה *</label>
+        <select id="f-rank">
+          <option value="">בחר דרגה</option>
+          <optgroup label="נגדים">
+            <option>רס"ל</option>
+            <option>רס"ר</option>
+            <option>רס"ם</option>
+            <option>רס"ב</option>
+            <option>רנ"ג</option>
+          </optgroup>
+          <optgroup label="קצינים">
+            <option>סג"ם</option>
+            <option>סגן</option>
+            <option>סרן</option>
+            <option>רס"ן</option>
+            <option>סא"ל</option>
+            <option>אל"ם</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-group"><label>מספר אישי *</label><input type="text" inputmode="numeric" id="f-personalnum" placeholder="מספר אישי" dir="ltr"></div>
+      <div class="form-group"><label>שם מלא *</label><input type="text" id="f-name" placeholder="ישראל ישראלי"></div>
+      <div class="form-group"><label>טלפון *</label><input type="tel" inputmode="tel" id="f-phone" placeholder="050-1234567" dir="ltr"></div>
+      <div class="form-group"><label>מגדר *</label>
+        <div class="radio-group" id="genderGroup">
+          <div class="radio-btn" onclick="selectRadio('genderGroup',this)">👨 זכר</div>
+          <div class="radio-btn" onclick="selectRadio('genderGroup',this)">👩 נקבה</div>
+        </div>
+      </div>
+      <div class="form-group checkbox-row"><label class="checkbox-label"><input type="checkbox" id="f-overnight"> נשאר/ת ללינה</label></div>
+      <div class="form-group checkbox-row"><label class="checkbox-label"><input type="checkbox" id="f-weapon"> יכול/ה לשאת נשק</label></div>
+      <div class="form-group">
+        <label>העדפת תזונה</label>
+        <select id="f-diet">
+          <option value="רגיל">רגיל</option>
+          <option value="צמחוני">צמחוני</option>
+          <option value="טבעוני">טבעוני</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>הערות חופשיות</label>
+        <textarea id="f-notes" rows="3" placeholder="משהו שחשוב שנדע?"></textarea>
+      </div>
+      <div class="form-error" id="formError"></div>
+      <button class="submit-btn" id="submitBtn" onclick="submitForm()">שלח הרשמה</button>
+    </div>
+    <div class="form-success" id="formSuccess">
+      <span class="success-icon">🎉</span>
+      <h3 style="color:var(--teal-dark);margin-bottom:6px;">ההרשמה התקבלה!</h3>
+      <p style="color:var(--text-mid);">תודה! נתראה בטבריה</p>
+      <div class="success-details" id="successDetails"></div>
+      <button class="close-btn" onclick="closeModal()">סגירה</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, writeBatch, getDocs, getDoc, setDoc, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI",
+  authDomain: "sadach-a63c7.firebaseapp.com",
+  projectId: "sadach-a63c7",
+  storageBucket: "sadach-a63c7.firebasestorage.app",
+  messagingSenderId: "894150719654",
+  appId: "1:894150719654:web:948fbecd825c178c389c67"
+};
+
+// Must match the list in firestore.rules.
+const ADMIN_EMAILS = ["itai.rosenblum@gmail.com", "henshvarts@gmail.com"];
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+window.adminSignIn = async function(){
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  try { await signInWithPopup(auth, provider); }
+  catch (e) {
+    if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) {
+      await signInWithRedirect(auth, provider);
+    } else { throw e; }
+  }
+};
+window.adminSignOut = function(){ return signOut(auth); };
+
+window.fetchAllRegistrations = async function(){
+  const snap = await getDocs(query(collection(db, 'registrations'), orderBy('createdAt', 'asc')));
+  return snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+};
+window.updateRegistration = async function(id, record){
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'registrations', id), record);
+  batch.set(doc(db, 'public_list', id), { unit: record.unit, name: record.name, gender: record.gender }, { merge: true });
+  await batch.commit();
+};
+window.deleteRegistration = async function(id){
+  const batch = writeBatch(db);
+  batch.delete(doc(db, 'registrations', id));
+  batch.delete(doc(db, 'public_list', id));
+  await batch.commit();
+};
+
+// Trip contacts — shown publicly on the "חירום" tab
+window.fetchContacts = async function(){
+  const s = await getDoc(doc(db, 'settings', 'contacts'));
+  return s.exists() && Array.isArray(s.data().items) ? s.data().items : [];
+};
+window.saveContactsDoc = async function(items){
+  await setDoc(doc(db, 'settings', 'contacts'), { items: items, updatedAt: serverTimestamp() });
+};
+
+onAuthStateChanged(auth, function(user){
+  const isAdmin = !!(user && user.emailVerified && user.email && ADMIN_EMAILS.indexOf(user.email.toLowerCase()) !== -1);
+  if (typeof window.onAdminState === 'function') window.onAdminState(user, isAdmin);
+});
+</script>
+
+<script>
+function loadRegistrations(){}  // public list lives on the main site
+var editingId = null;
+function openModal(){
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('formWrap').style.display='block';
+  document.getElementById('formSuccess').classList.remove('visible');
+  var btn = document.getElementById('submitBtn'); btn.disabled = false;
+  document.getElementById('formError').classList.remove('visible');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); editingId = null; }
+function closeModalOnBg(e){ if(e.target.id==='modalOverlay') closeModal(); }
+// RADIO GROUPS
+function selectRadio(groupId, el){
+  var group = document.getElementById(groupId);
+  Array.prototype.forEach.call(group.children, function(c){ c.classList.remove('selected'); });
+  el.classList.add('selected');
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+// SAVE EDITED REGISTRATION
+function submitForm(){
+  if(!editingId) return;
+  var unit = document.getElementById('f-unit').value;
+  var role = document.getElementById('f-role').value.trim();
+  var rank = document.getElementById('f-rank').value.trim();
+  var personalNum = document.getElementById('f-personalnum').value.trim();
+  var name = document.getElementById('f-name').value.trim();
+  var phone = document.getElementById('f-phone').value.trim();
+  var overnight = document.getElementById('f-overnight').checked ? 'כן' : 'לא';
+  var weapon = document.getElementById('f-weapon').checked ? 'כן' : 'לא';
+  var diet = document.getElementById('f-diet').value;
+  var notes = document.getElementById('f-notes').value.trim();
+  var genderBtn = document.querySelector('#genderGroup .selected');
+  var gender = genderBtn ? (genderBtn.textContent.indexOf('נקבה') !== -1 ? 'נקבה' : 'זכר') : '';
+  var errEl = document.getElementById('formError');
+  var btn = document.getElementById('submitBtn');
+  if(!unit || !role || !rank || !personalNum || !name || !phone || !gender){
+    errEl.textContent = 'נא למלא את כל השדות המסומנים בכוכבית'; errEl.classList.add('visible'); return;
+  }
+  errEl.classList.remove('visible');
+  var record = { unit:unit, role:role, rank:rank, personalNum:personalNum, name:name, phone:phone, gender:gender, overnight:overnight, weapon:weapon, diet:diet, notes:notes };
+  btn.disabled = true; btn.textContent = 'שומר...';
+  window.updateRegistration(editingId, record).then(function(){
+    clearForm(); closeModal(); loadAdmin();
+  }).catch(function(err){
+    console.error(err);
+    btn.disabled = false; btn.textContent = 'שמור שינויים';
+    errEl.textContent = 'השמירה נכשלה: ' + (err && err.code ? err.code : 'שגיאה'); errEl.classList.add('visible');
+  });
+}
+
+function showPane(id){
+  document.querySelectorAll('.admin-pane').forEach(function(p){ p.classList.toggle('active', p.id === 'pane-' + id); });
+  document.querySelectorAll('.admin-tabs button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-pane') === id); });
+}
+
+function adjustHeaderSpace(){
+  var h = document.querySelector('.header').offsetHeight;
+  document.getElementById('pages').style.paddingTop = (h + 6) + 'px';
+}
+window.addEventListener('load', adjustHeaderSpace);
+window.addEventListener('resize', adjustHeaderSpace);
+// ===================== ADMIN =====================
+var adminRegs = [];
+
+function clearForm(){
+  ['f-unit','f-role','f-rank','f-personalnum','f-name','f-phone','f-notes'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('f-diet').value = 'רגיל';
+  document.getElementById('f-overnight').checked = false;
+  document.getElementById('f-weapon').checked = false;
+  Array.prototype.forEach.call(document.getElementById('genderGroup').children, function(c){ c.classList.remove('selected'); });
+}
+
+window.onAdminState = function(user, isAdmin){
+  var out = document.getElementById('adminLoggedOut');
+  var inn = document.getElementById('adminLoggedIn');
+  var msg = document.getElementById('adminMsg');
+  var signBtn = document.getElementById('adminSignInBtn');
+  var switchBtn = document.getElementById('adminSwitchBtn');
+  if(isAdmin){
+    out.style.display = 'none';
+    inn.style.display = 'block';
+    document.getElementById('adminWho').textContent = 'מחובר: ' + user.email;
+    loadAdmin();
+    loadContacts();
+  } else {
+    inn.style.display = 'none';
+    out.style.display = 'block';
+    adminRegs = [];
+    if(user){
+      msg.textContent = 'החשבון ' + user.email + ' אינו מורשה לגשת לניהול.';
+      signBtn.style.display = 'none';
+      switchBtn.style.display = 'inline-block';
+    } else {
+      msg.textContent = 'התחברו עם חשבון Google של מנהל המערכת';
+      signBtn.style.display = 'inline-flex';
+      switchBtn.style.display = 'none';
+    }
+  }
+};
+
+function doAdminSignIn(){
+  if(typeof window.adminSignIn !== 'function'){ alert('המערכת עדיין נטענת, נסו שוב בעוד רגע'); return; }
+  window.adminSignIn().catch(function(err){
+    console.error(err);
+    if(err && err.code === 'auth/popup-closed-by-user') return;
+    document.getElementById('adminMsg').textContent = 'ההתחברות נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
+  });
+}
+
+function loadAdmin(){
+  var listEl = document.getElementById('adminList');
+  listEl.innerHTML = '<div class="reg-empty">טוען...</div>';
+  window.fetchAllRegistrations().then(function(regs){
+    adminRegs = regs;
+    renderAdmin();
+  }).catch(function(err){
+    console.error(err);
+    listEl.innerHTML = '<div class="reg-empty">לא ניתן לטעון (' + escapeHtml(err && err.code ? err.code : 'שגיאה') + ')</div>';
+  });
+}
+
+function fmtDate(ts){
+  if(!ts || !ts.toDate) return '';
+  var d = ts.toDate();
+  function p(n){ return (n<10?'0':'')+n; }
+  return p(d.getDate()) + '/' + p(d.getMonth()+1) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+var adminFilter = 'all';
+var ADMIN_FILTERS = [
+  ['all',       'נרשמים',          function(r){ return true; }],
+  ['male',      'גברים',           function(r){ return r.gender === 'זכר'; }],
+  ['female',    'נשים',            function(r){ return r.gender === 'נקבה'; }],
+  ['notes',     'עם הערות',        function(r){ return !!(r.notes && r.notes.trim()); }],
+  ['overnight', 'לינה',            function(r){ return r.overnight === 'כן'; }],
+  ['noovernight','ללא לינה',       function(r){ return r.overnight !== 'כן'; }],
+  ['weapon',    'נושאי נשק',       function(r){ return r.weapon === 'כן'; }],
+  ['veg',       'צמחוני/טבעוני',   function(r){ return !!r.diet && r.diet !== 'רגיל'; }]
+];
+function setAdminFilter(key){
+  adminFilter = (adminFilter === key) ? 'all' : key;
+  renderAdmin();
+}
+
+function renderAdmin(){
+  var regs = adminRegs;
+  document.getElementById('adminStats').innerHTML = ADMIN_FILTERS.map(function(f){
+    var n = regs.filter(f[2]).length;
+    return '<button type="button" class="admin-stat' + (adminFilter === f[0] ? ' active' : '') + '" onclick="setAdminFilter(\'' + f[0] + '\')">' +
+      '<b>' + n + '</b><span>' + f[1] + '</span></button>';
+  }).join('');
+
+  var activeF = ADMIN_FILTERS.filter(function(f){ return f[0] === adminFilter; })[0] || ADMIN_FILTERS[0];
+  var shown = regs.filter(activeF[2]);
+  var q = (document.getElementById('adminSearch').value || '').trim();
+  if(q){
+    shown = shown.filter(function(r){
+      return [r.name, r.unit, r.personalNum, r.phone, r.role, r.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; });
+    });
+  }
+  var fl = document.getElementById('adminFilterLabel');
+  if(adminFilter !== 'all'){
+    fl.innerHTML = 'מסונן: <b>' + activeF[1] + '</b> · ' + shown.length + ' אנשים <button type="button" onclick="setAdminFilter(\'all\')">✕ הצג הכול</button>';
+    fl.style.display = 'flex';
+  } else {
+    fl.style.display = 'none';
+  }
+
+  var listEl = document.getElementById('adminList');
+  if(!shown.length){ listEl.innerHTML = '<div class="reg-empty">' + (regs.length ? 'אין אנשים שמתאימים לסינון' : 'עדיין אין נרשמים') + '</div>'; return; }
+
+  // No filter and no search → group by unit (א-ב), and by name (א-ב) inside each unit
+  var grouped = (adminFilter === 'all' && !q);
+  var unitCount = {};
+  if(grouped){
+    var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
+    shown = shown.slice().sort(function(a, b){
+      var u = heCmp(a.unit || 'תתת', b.unit || 'תתת');
+      return u !== 0 ? u : heCmp(a.name, b.name);
+    });
+    shown.forEach(function(r){ var k = r.unit || 'ללא יחידה'; unitCount[k] = (unitCount[k] || 0) + 1; });
+  }
+  var lastUnit = null, inUnit = 0;
+  listEl.innerHTML = shown.map(function(r, i){
+    var open = !!adminOpen[r.id];
+    var head = '';
+    if(grouped){
+      var uk = r.unit || 'ללא יחידה';
+      if(uk !== lastUnit){ lastUnit = uk; inUnit = 0; head = '<div class="admin-unit-head"><span>' + escapeHtml(uk) + '</span><b>' + unitCount[uk] + '</b></div>'; }
+      inUnit++;
+    }
+    return head + '<div class="admin-card' + (open ? ' open' : '') + '" id="ac-' + r.id + '">' +
+      '<button type="button" class="ac-row" onclick="toggleAdminRow(\'' + r.id + '\')" aria-expanded="' + open + '">' +
+        '<span class="ac-num">' + (grouped ? inUnit : i + 1) + '</span>' +
+        '<span class="ac-name">' + escapeHtml(r.rank || '') + ' ' + escapeHtml(r.name || '') + '</span>' +
+        '<span class="ac-unit">' + escapeHtml(r.unit || '') + '</span>' +
+        '<span class="ac-plus">' + (open ? '−' : '+') + '</span>' +
+      '</button>' +
+      '<div class="ac-detail">' +
+      '<div class="ac-body">' +
+        '<b>תפקיד:</b> ' + escapeHtml(r.role || '') + ' · <b>מ"א:</b> ' + escapeHtml(r.personalNum || '') + '<br>' +
+        '<b>טלפון:</b> <a href="tel:' + escapeHtml(r.phone || '') + '" dir="ltr">' + escapeHtml(r.phone || '') + '</a> · <b>מגדר:</b> ' + escapeHtml(r.gender || '') + '<br>' +
+        '<b>לינה:</b> ' + escapeHtml(r.overnight || '') + ' · <b>נשק:</b> ' + escapeHtml(r.weapon || '') + ' · <b>תזונה:</b> ' + escapeHtml(r.diet || '') +
+        (r.notes ? '<br><b>הערות:</b> ' + escapeHtml(r.notes) : '') +
+        (r.createdAt ? '<br><b>נרשם:</b> ' + fmtDate(r.createdAt) : '') +
+      '</div>' +
+      '<div class="ac-btns"><button onclick="adminEdit(\'' + r.id + '\')">✏️ עריכה</button><button class="del" onclick="adminDelete(\'' + r.id + '\')">🗑️ מחיקה</button></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+var adminOpen = {};
+function toggleAdminRow(id){
+  adminOpen[id] = !adminOpen[id];
+  var card = document.getElementById('ac-' + id);
+  if(!card) return;
+  card.classList.toggle('open', !!adminOpen[id]);
+  card.querySelector('.ac-plus').textContent = adminOpen[id] ? '−' : '+';
+  card.querySelector('.ac-row').setAttribute('aria-expanded', !!adminOpen[id]);
+}
+
+function adminEdit(id){
+  var r = adminRegs.filter(function(x){ return x.id === id; })[0];
+  if(!r) return;
+  openModal();
+  editingId = id;
+  document.getElementById('modalTitle').textContent = '✏️ עריכת הרשמה';
+  document.getElementById('f-unit').value = r.unit || '';
+  document.getElementById('f-role').value = r.role || '';
+  document.getElementById('f-rank').value = r.rank || '';
+  document.getElementById('f-personalnum').value = r.personalNum || '';
+  document.getElementById('f-name').value = r.name || '';
+  document.getElementById('f-phone').value = r.phone || '';
+  document.getElementById('f-notes').value = r.notes || '';
+  document.getElementById('f-diet').value = r.diet || 'רגיל';
+  document.getElementById('f-overnight').checked = r.overnight === 'כן';
+  document.getElementById('f-weapon').checked = r.weapon === 'כן';
+  Array.prototype.forEach.call(document.getElementById('genderGroup').children, function(c){
+    c.classList.toggle('selected', !!r.gender && c.textContent.indexOf(r.gender) !== -1);
+  });
+  document.getElementById('submitBtn').textContent = 'שמור שינויים';
+}
+
+function adminDelete(id){
+  var r = adminRegs.filter(function(x){ return x.id === id; })[0];
+  if(!r || !confirm('למחוק את ההרשמה של ' + (r.name || '') + '?')) return;
+  window.deleteRegistration(id).then(function(){
+    loadAdmin();
+    loadRegistrations();
+  }).catch(function(err){
+    console.error(err);
+    alert('המחיקה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')');
+  });
+}
+
+function exportCsv(){
+  var cols = [['unit','יחידה'],['rank','דרגה'],['name','שם מלא'],['role','תפקיד'],['personalNum','מספר אישי'],['phone','טלפון'],['gender','מגדר'],['overnight','לינה'],['weapon','נשק'],['diet','תזונה'],['notes','הערות'],['createdAt','תאריך הרשמה']];
+  function cell(v){ v = (v == null ? '' : String(v)); return '"' + v.replace(/"/g, '""') + '"'; }
+  var lines = [cols.map(function(c){ return cell(c[1]); }).join(',')];
+  adminRegs.forEach(function(r){
+    lines.push(cols.map(function(c){
+      var v = r[c[0]];
+      if(c[0] === 'createdAt') v = fmtDate(v);
+      if(c[0] === 'personalNum' || c[0] === 'phone') v = v ? '\t' + v : ''; // keep leading zeros in Excel
+      return cell(v);
+    }).join(','));
+  });
+  var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'registrations-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+}
+
+// ===================== CONTACTS =====================
+var contacts = [];
+function loadContacts(){
+  document.getElementById('ctList').innerHTML = '<div class="reg-empty">טוען...</div>';
+  window.fetchContacts().then(function(items){ contacts = items.map(function(c){ return { name:c.name||'', role:c.role||'', phone:c.phone||'' }; }); renderContacts(); })
+    .catch(function(err){ console.error(err); document.getElementById('ctList').innerHTML = '<div class="reg-empty">לא ניתן לטעון (' + escapeHtml(err && err.code ? err.code : 'שגיאה') + ')</div>'; });
+}
+function renderContacts(){
+  var el = document.getElementById('ctList');
+  if(!contacts.length){ el.innerHTML = '<div class="reg-empty">אין עדיין אנשי קשר. לחצו "הוספת איש קשר".</div>'; return; }
+  el.innerHTML = contacts.map(function(c, i){
+    return '<div class="ct-card"><div class="ct-grid">' +
+      '<div><label>שם</label><input value="' + escapeHtml(c.name) + '" oninput="setCt(' + i + ',\'name\',this.value)" placeholder="שם מלא"></div>' +
+      '<div><label>תפקיד</label><input value="' + escapeHtml(c.role) + '" oninput="setCt(' + i + ',\'role\',this.value)" placeholder="למשל: מפקד הסדרה"></div>' +
+      '<div class="full"><label>טלפון</label><input type="tel" dir="ltr" value="' + escapeHtml(c.phone) + '" oninput="setCt(' + i + ',\'phone\',this.value)" placeholder="050-1234567"></div>' +
+      '</div><div class="ct-tools">' +
+      (i > 0 ? '<button onclick="moveCt(' + i + ',-1)" title="למעלה">▲</button>' : '') +
+      (i < contacts.length - 1 ? '<button onclick="moveCt(' + i + ',1)" title="למטה">▼</button>' : '') +
+      '<button class="del" onclick="delCt(' + i + ')">🗑️ הסרה</button></div></div>';
+  }).join('');
+}
+function ctDirty(){ var s = document.getElementById('ctStatus'); s.className = 'ct-status'; s.textContent = 'יש שינויים שלא נשמרו'; }
+function setCt(i, k, v){ contacts[i][k] = v; ctDirty(); }
+function addContact(){ contacts.push({ name:'', role:'', phone:'' }); renderContacts(); ctDirty(); var ins = document.querySelectorAll('#ctList .ct-card:last-child input'); if(ins[0]) ins[0].focus(); }
+function delCt(i){ if(!confirm('להסיר את ' + (contacts[i].name || 'איש הקשר') + '?')) return; contacts.splice(i, 1); renderContacts(); ctDirty(); }
+function moveCt(i, d){ var t = contacts[i]; contacts[i] = contacts[i + d]; contacts[i + d] = t; renderContacts(); ctDirty(); }
+function saveContacts(){
+  var st = document.getElementById('ctStatus'), btn = document.getElementById('ctSaveBtn');
+  var items = contacts.map(function(c){ return { name:c.name.trim(), role:c.role.trim(), phone:c.phone.trim() }; })
+    .filter(function(c){ return c.name || c.role || c.phone; });
+  var bad = items.filter(function(c){ return !c.name || !c.phone; });
+  if(bad.length){ st.className = 'ct-status err'; st.textContent = 'לכל איש קשר חייבים שם וטלפון'; return; }
+  btn.disabled = true; st.className = 'ct-status'; st.textContent = 'שומר...';
+  window.saveContactsDoc(items).then(function(){
+    contacts = items; renderContacts();
+    st.className = 'ct-status ok'; st.textContent = '✓ נשמר — מופיע עכשיו באתר';
+  }).catch(function(err){
+    console.error(err);
+    st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
+  }).then(function(){ btn.disabled = false; });
+}
+window.addEventListener('beforeunload', function(e){
+  if(document.getElementById('ctStatus').textContent === 'יש שינויים שלא נשמרו'){ e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+</body>
+</html>
