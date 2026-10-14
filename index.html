@@ -153,6 +153,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .lightbox .lb-prev{right:10px;top:50%;transform:translateY(-50%);}
 .lightbox .lb-next{left:10px;top:50%;transform:translateY(-50%);}
 .lightbox .lb-cap{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#dfeeee;font-size:0.85rem;}
+.gal-closed{text-align:center;background:rgba(255,255,255,0.6);border:1.5px dashed rgba(15,76,76,0.3);border-radius:14px;padding:12px;color:var(--text-mid);font-size:0.88rem;margin-bottom:14px;}
 /* SCHEDULE */
 .sch-sub{text-align:center;color:var(--text-mid);font-size:0.88rem;margin:-2px 0 4px;}
 .sch-title{text-align:center;color:var(--accent);font-weight:700;font-size:0.95rem;margin-bottom:16px;}
@@ -317,12 +318,13 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
     <div class="section">
       <h2 class="section-title">🖼️ גלריה</h2>
       <p class="section-sub">תמונות מהסדרה — כולם יכולים להעלות ולצפות</p>
-      <div class="gal-upload">
+      <div class="gal-upload" id="galUploadBox">
         <input type="text" id="galName" placeholder="השם שלך (לא חובה)" maxlength="40">
         <button class="btn-primary" id="galUpBtn" onclick="document.getElementById('galFile').click()">📷 העלאת תמונות</button>
         <input type="file" id="galFile" accept="image/*" multiple hidden onchange="galUpload(this.files)">
         <div class="gal-status" id="galStatus"></div>
       </div>
+      <div class="gal-closed" id="galClosed" style="display:none">🔒 העלאת תמונות סגורה כרגע</div>
       <div id="galGrid" class="gal-grid"></div>
       <div id="galPager" class="gal-pager"></div>
     </div>
@@ -869,7 +871,22 @@ var GALLERY_KEY = 'chinuch-tiberias-2026';
 var galLoaded = false, galPage = 1, galItems = [], galPages = 1, lbIndex = 0;
 function galThumb(id, w){ return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w' + w; }
 function galSetStatus(t, cls){ var el = document.getElementById('galStatus'); el.textContent = t; el.className = 'gal-status' + (cls ? ' ' + cls : ''); }
+// Upload on/off switch — set from admin.html (Firestore settings/gallery)
+var GAL_SETTING_URL = 'https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/settings/gallery'
+  + '?key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI';
+var galUploadsOpen = true;
+function applyGalUploads(){
+  document.getElementById('galUploadBox').style.display = galUploadsOpen ? '' : 'none';
+  document.getElementById('galClosed').style.display = galUploadsOpen ? 'none' : 'block';
+}
+function loadGalSetting(){
+  return fetch(GAL_SETTING_URL, { cache: 'no-store' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){ galUploadsOpen = !(d && d.fields && d.fields.uploadsOpen && d.fields.uploadsOpen.booleanValue === false); applyGalUploads(); })
+    .catch(function(){});
+}
 function loadGallery(page){
+  if(page === 1) loadGalSetting();
   var grid = document.getElementById('galGrid');
   if(!GALLERY_URL){
     grid.innerHTML = '<div class="coming-soon" style="grid-column:1/-1"><span class="ic">🖼️</span>הגלריה תיפתח בקרוב</div>';
@@ -932,6 +949,7 @@ function shrinkImage(file){
   });
 }
 function galUpload(fileList){
+  if(!galUploadsOpen){ galSetStatus('העלאת תמונות סגורה כרגע', 'err'); return; }
   var files = Array.prototype.slice.call(fileList || []).filter(function(f){ return /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic)$/i.test(f.name); });
   document.getElementById('galFile').value = '';
   if(!files.length) return;

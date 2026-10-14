@@ -241,6 +241,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <button type="button" data-pane="contacts" onclick="showPane('contacts')">📞 אנשי קשר</button>
         <button type="button" data-pane="instr" onclick="showPane('instr')">📢 הנחיות וציוד</button>
         <button type="button" data-pane="sched" onclick="showPane('sched')">🗓️ לו"ז</button>
+        <button type="button" data-pane="gal" onclick="showPane('gal')">🖼️ גלריה</button>
       </div>
 
       <div class="admin-pane active" id="pane-regs">
@@ -252,6 +253,15 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         </div>
         <input class="admin-search" id="adminSearch" placeholder="חיפוש לפי שם, יחידה, מספר אישי או טלפון" oninput="renderAdmin()">
         <div id="adminList"><div class="reg-empty">טוען...</div></div>
+      </div>
+
+      <div class="admin-pane" id="pane-gal">
+        <div class="pub-toggle" id="galToggle" onclick="toggleGalUploads()">
+          <span class="pub-switch"><span></span></span>
+          <span class="pub-label" id="galLabel">טוען...</span>
+        </div>
+        <p class="section-sub" style="margin:10px 0 0">השינוי נשמר מיד. כשההעלאה חסומה, כולם עדיין יכולים לצפות בגלריה.</p>
+        <div class="ct-status" id="galAdmStatus"></div>
       </div>
 
       <div class="admin-pane" id="pane-sched">
@@ -557,6 +567,7 @@ window.onAdminState = function(user, isAdmin){
     loadContacts();
     loadInstr();
     loadSched();
+    loadGalSetting();
   } else {
     inn.style.display = 'none';
     out.style.display = 'block';
@@ -899,6 +910,29 @@ function saveSched(){
     console.error(err);
     st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
   }).then(function(){ btn.disabled = false; });
+}
+
+// ===================== GALLERY UPLOAD PERMISSION =====================
+var galUploadsOpen = true;
+function renderGalToggle(){
+  document.getElementById('galToggle').classList.toggle('on', galUploadsOpen);
+  document.getElementById('galLabel').textContent = galUploadsOpen ? 'העלאת תמונות פתוחה' : 'העלאת תמונות חסומה';
+}
+function loadGalSetting(){
+  window.fetchSettings('gallery').then(function(d){ galUploadsOpen = !d || d.uploadsOpen !== false; renderGalToggle(); })
+    .catch(function(err){ console.error(err); document.getElementById('galLabel').textContent = 'לא ניתן לטעון (' + (err && err.code ? err.code : 'שגיאה') + ')'; });
+}
+function toggleGalUploads(){
+  var st = document.getElementById('galAdmStatus');
+  var next = !galUploadsOpen;
+  st.className = 'ct-status'; st.textContent = 'שומר...';
+  window.saveSettings('gallery', { uploadsOpen: next }).then(function(){
+    galUploadsOpen = next; renderGalToggle();
+    st.className = 'ct-status ok'; st.textContent = next ? '✓ ההעלאה נפתחה' : '✓ ההעלאה נחסמה';
+  }).catch(function(err){
+    console.error(err);
+    st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
+  });
 }
 window.addEventListener('beforeunload', function(e){
   if(document.getElementById('ctStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('inStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('scStatus').textContent === 'יש שינויים שלא נשמרו'){ e.preventDefault(); e.returnValue = ''; }
