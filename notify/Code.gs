@@ -1,28 +1,21 @@
 /**
- * סדרת חינוך · טבריה — התראה לנייד (Push) על כל נרשם חדש
+ * סדרת חינוך · טבריה — התראת מייל על כל נרשם חדש
  *
  * איך זה עובד: הסקריפט בודק כל דקה את רשימת הנרשמים הציבורית ב-Firestore
- * (public_list — שם, יחידה ומין בלבד) ושולח התראת Push לנייד דרך אפליקציית ntfy
- * על כל רשומה חדשה (ואם רוצים — גם מייל, ראו SEND_EMAIL).
+ * (public_list — שם, יחידה ומין בלבד) ושולח מייל על כל רשומה חדשה.
  * רשומה ב-public_list נוצרת רק יחד עם הרשמה אמיתית (כלל existsAfter),
  * כך שאי אפשר לזייף התראות. אין צורך בשינוי באתר.
  *
  * התקנה חד-פעמית:
  * 1. script.google.com ← פרויקט חדש ← להדביק את הקובץ הזה במקום הקוד הקיים.
  * 2. לבחור בפונקציה setup בסרגל העליון ← הפעלה ← לאשר הרשאות.
- * 3. בנייד: להתקין את האפליקציה ntfy (חינם, Android/iPhone) ← "+" ← Subscribe to topic
- *    ← להקליד את שם הנושא מ-NTFY_TOPIC למטה (בדיוק כמו שהוא) ← Subscribe.
- * 4. להריץ sendTestPush — אמורה להגיע התראה לנייד תוך שניות.
- *
- * שם הנושא הוא כמו סיסמה: מי שיודע אותו יכול לקבל את ההתראות. לא לשתף.
+ * 3. (לא חובה) להריץ sendTestEmail כדי לראות איך המייל נראה.
  */
 
 const CONFIG = {
   PROJECT_ID: 'sadach-a63c7',
   API_KEY: 'AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI',
-  NTFY_TOPIC: 'PASTE_TOPIC_HERE',           // שם הנושא באפליקציית ntfy
-  SEND_EMAIL: false,                        // true = לשלוח גם מייל כמו קודם
-  NOTIFY_TO: 'itai.rosenblum@gmail.com',   // למייל, אם SEND_EMAIL פעיל
+  NOTIFY_TO: 'itai.rosenblum@gmail.com',   // אפשר כמה כתובות מופרדות בפסיק
   SITE_URL: 'https://itairosenblum-hash.github.io/Sadach2026/',
   TIMEZONE: 'Asia/Jerusalem'
 };
@@ -41,7 +34,7 @@ function setup() {
   PropertiesService.getScriptProperties().setProperty(PROP_LAST, new Date().toISOString());
 
   ScriptApp.newTrigger('checkNewRegistrations').timeBased().everyMinutes(1).create();
-  Logger.log('הוגדר. התראות Push נשלחות לנושא: ' + CONFIG.NTFY_TOPIC);
+  Logger.log('הוגדר. התראות יישלחו אל: ' + CONFIG.NOTIFY_TO);
 }
 
 /** רץ אוטומטית כל דקה. */
@@ -57,19 +50,12 @@ function checkNewRegistrations() {
 
     const total = countAll_();
     rows.forEach(function (r) {
-      sendPush_(r, total);
-      if (CONFIG.SEND_EMAIL) sendMail_(r, total);
-      props.setProperty(PROP_LAST, r.createdAt);   // מתקדם אחרי כל התראה — בלי כפילויות
+      sendMail_(r, total);
+      props.setProperty(PROP_LAST, r.createdAt);   // מתקדם אחרי כל מייל — בלי כפילויות
     });
   } finally {
     lock.releaseLock();
   }
-}
-
-/** התראת Push לדוגמה, בלי לגעת בנתונים. */
-function sendTestPush() {
-  sendPush_({ name: 'ישראל ישראלי (בדיקה)', unit: 'קריה', gender: 'זכר',
-              createdAt: new Date().toISOString() }, countAll_());
 }
 
 /** מייל לדוגמה, בלי לגעת בנתונים. */
@@ -137,26 +123,6 @@ function post_(url, body) {
 }
 
 function str_(v) { return v && v.stringValue ? v.stringValue : ''; }
-
-// ---------- Push (ntfy) ----------
-
-function sendPush_(r, total) {
-  const when = Utilities.formatDate(new Date(r.createdAt), CONFIG.TIMEZONE, 'HH:mm');
-  const verb = r.gender === 'נקבה' ? 'נרשמה' : 'נרשם';
-  const resp = UrlFetchApp.fetch('https://ntfy.sh/', {
-    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-    payload: JSON.stringify({
-      topic: CONFIG.NTFY_TOPIC,
-      title: r.name + ' ' + verb + ' (' + r.unit + ')',
-      message: 'סדרת חינוך · ' + when + (total != null ? ' · סה"כ נרשמים: ' + total : ''),
-      tags: ['tada'],
-      click: CONFIG.SITE_URL + 'admin.html'
-    })
-  });
-  if (resp.getResponseCode() !== 200) {
-    throw new Error('ntfy ' + resp.getResponseCode() + ': ' + resp.getContentText());
-  }
-}
 
 // ---------- Email ----------
 
