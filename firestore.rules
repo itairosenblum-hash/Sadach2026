@@ -42,10 +42,10 @@ service cloud.firestore {
 
     // Site settings edited from admin.html (contacts, instructions + gear) — everyone reads, only admins write.
     match /settings/{docId} {
-      allow read: if docId in ['contacts', 'instructions'];
-      allow write: if isAdmin()
-        && docId in ['contacts', 'instructions']
-        && request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'updatedAt']);
+      allow read: if docId in ['contacts', 'instructions']
+        || (docId == 'schedule' && (isAdmin() || resource.data.published == true));
+      allow write: if isAdmin() && docId in ['contacts', 'instructions', 'schedule']
+        && request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'published', 'title', 'subtitle', 'days', 'updatedAt']);
     }
 
     // Public list shown on the site — unit, name, gender only.

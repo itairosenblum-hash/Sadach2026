@@ -106,6 +106,15 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .reg-empty{text-align:center;color:var(--text-mid);font-size:0.85rem;padding:10px;}
 .retry-btn{margin-top:8px;background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);padding:7px 16px;border-radius:999px;font-size:0.8rem;font-weight:700;cursor:pointer;}
 
+/* SCHEDULE */
+.sch-sub{text-align:center;color:var(--text-mid);font-size:0.88rem;margin:-2px 0 4px;}
+.sch-title{text-align:center;color:var(--accent);font-weight:700;font-size:0.95rem;margin-bottom:16px;}
+.sch-day{background:rgba(255,255,255,0.75);border:1px solid rgba(15,76,76,0.12);border-radius:16px;overflow:hidden;margin-bottom:14px;}
+.sch-day h3{background:var(--teal-dark);color:#fff;font-size:0.95rem;padding:10px 16px;}
+.sch-row{display:flex;gap:12px;padding:10px 16px;align-items:baseline;}
+.sch-row + .sch-row{border-top:1px solid rgba(15,76,76,0.07);}
+.sch-time{flex:none;min-width:82px;font-weight:800;color:var(--teal);font-size:0.86rem;unicode-bidi:isolate;text-align:right;}
+.sch-text{flex:1;font-size:0.92rem;color:var(--text-dark);}
 /* INSTRUCTIONS + GEAR */
 .rules-box{background:rgba(255,255,255,0.75);border:1px solid rgba(15,76,76,0.12);border-right:4px solid var(--accent);border-radius:14px;padding:6px 16px;margin-top:14px;}
 .rules-box li{list-style:none;padding:10px 0;font-weight:600;color:var(--text-dark);display:flex;gap:10px;align-items:flex-start;}
@@ -246,7 +255,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
   <div class="page" id="page-schedule">
     <div class="section">
       <h2 class="section-title">🗓️ לו"ז</h2>
-      <div class="coming-soon"><span class="ic">🗓️</span>הלו"ז יפורסם בהמשך</div>
+      <div id="scheduleBox"><div class="coming-soon"><span class="ic">🗓️</span>הלו"ז יפורסם בהמשך</div></div>
     </div>
   </div>
 
@@ -744,6 +753,40 @@ function loadInstructions(){
     .catch(function(){});
 }
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadInstructions); } else { loadInstructions(); }
+
+// SCHEDULE — edited from admin.html; Firestore only lets the public read it once "published" is on
+var SCHED_URL = 'https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/settings/schedule'
+  + '?key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI';
+var SCHED_CACHE_KEY = 'chinuchSchedV1';
+function splitSchedLine(line){
+  var m = String(line).match(/^\s*([~\d:\.\s–\-]+?)\s+[–\-]\s+(.+)$/);
+  return m ? { time: m[1].trim(), text: m[2].trim() } : { time: '', text: String(line).trim() };
+}
+function renderSchedule(d){
+  var box = document.getElementById('scheduleBox');
+  if(!d || !d.published || !(d.days || []).length){ box.innerHTML = '<div class="coming-soon"><span class="ic">🗓️</span>הלו"ז יפורסם בהמשך</div>'; return; }
+  box.innerHTML = (d.subtitle ? '<div class="sch-sub">' + escapeHtml(d.subtitle) + '</div>' : '') +
+    (d.title ? '<div class="sch-title">' + escapeHtml(d.title) + '</div>' : '') +
+    d.days.map(function(day){
+      return '<div class="sch-day">' + (day.title ? '<h3>' + escapeHtml(day.title) + '</h3>' : '') +
+        (day.items || []).map(function(l){ var x = splitSchedLine(l);
+          return '<div class="sch-row"><span class="sch-time" dir="ltr">' + escapeHtml(x.time) + '</span><span class="sch-text">' + escapeHtml(x.text) + '</span></div>';
+        }).join('') + '</div>';
+    }).join('');
+}
+function loadSchedule(){
+  try { var c = JSON.parse(localStorage.getItem(SCHED_CACHE_KEY) || 'null'); if(c) renderSchedule(c); } catch(e){}
+  fetch(SCHED_URL, { cache: 'no-store' })
+    .then(function(r){ if(r.status === 403 || r.status === 404) return null; if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(doc){
+      var d = null;
+      if(doc){ var f = doc.fields || {}; d = { published: fsVal(f.published) === true, title: fsVal(f.title) || '', subtitle: fsVal(f.subtitle) || '', days: fsVal(f.days) || [] }; }
+      renderSchedule(d);
+      try { if(d) localStorage.setItem(SCHED_CACHE_KEY, JSON.stringify(d)); else localStorage.removeItem(SCHED_CACHE_KEY); } catch(e){}
+    })
+    .catch(function(){});
+}
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadSchedule); } else { loadSchedule(); }
 </script>
 </body>
 </html>

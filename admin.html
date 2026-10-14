@@ -203,6 +203,16 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .ct-status{text-align:center;font-size:0.82rem;margin-top:10px;min-height:1.2em;color:var(--text-mid);}
 .ct-status.ok{color:var(--teal);font-weight:700;}
 .ct-status.err{color:#c0392b;font-weight:700;}
+.admin-tabs{flex-wrap:wrap;}
+.admin-tabs button{flex:1 1 40%;}
+@media(min-width:560px){.admin-tabs button{flex:1 1 0;}}
+.pub-toggle{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid rgba(15,76,76,0.15);border-radius:14px;padding:12px 16px;cursor:pointer;user-select:none;}
+.pub-switch{flex:none;width:46px;height:26px;border-radius:999px;background:#c9d6d4;position:relative;transition:background .2s;}
+.pub-switch span{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:right .2s;}
+.pub-toggle.on .pub-switch{background:var(--teal);}
+.pub-toggle.on .pub-switch span{right:23px;}
+.pub-label{font-weight:700;color:var(--text-mid);}
+.pub-toggle.on .pub-label{color:var(--teal-dark);}
 .in-ta{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;padding:10px 12px;font-family:'Rubik',sans-serif;font-size:0.92rem;line-height:1.7;outline:none;resize:vertical;}
 .in-ta:focus{border-color:var(--teal);}
 .ct-card label + .in-ta, .ct-card input + label{margin-top:6px;}
@@ -227,6 +237,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <button type="button" class="active" data-pane="regs" onclick="showPane('regs')">📋 נרשמים</button>
         <button type="button" data-pane="contacts" onclick="showPane('contacts')">📞 אנשי קשר</button>
         <button type="button" data-pane="instr" onclick="showPane('instr')">📢 הנחיות וציוד</button>
+        <button type="button" data-pane="sched" onclick="showPane('sched')">🗓️ לו"ז</button>
       </div>
 
       <div class="admin-pane active" id="pane-regs">
@@ -238,6 +249,24 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         </div>
         <input class="admin-search" id="adminSearch" placeholder="חיפוש לפי שם, יחידה, מספר אישי או טלפון" oninput="renderAdmin()">
         <div id="adminList"><div class="reg-empty">טוען...</div></div>
+      </div>
+
+      <div class="admin-pane" id="pane-sched">
+        <div class="pub-toggle" id="pubToggle" onclick="togglePub()">
+          <span class="pub-switch"><span></span></span>
+          <span class="pub-label" id="pubLabel">הלו"ז מוסתר מהאתר</span>
+        </div>
+        <p class="section-sub" style="margin:8px 0 12px">השינויים נכנסים לתוקף רק אחרי "שמירה" · בכל יום: שורה לכל פעילות, בפורמט <b dir="ltr">10:00 – פעילות</b></p>
+        <div class="ct-card">
+          <label>כותרת</label><input id="scTitle" oninput="scDirty()">
+          <label style="margin-top:8px">כותרת משנה</label><input id="scSub" oninput="scDirty()">
+        </div>
+        <div id="dayEdit"><div class="reg-empty">טוען...</div></div>
+        <div class="ct-actions">
+          <button class="retry-btn" onclick="addDay()">➕ הוספת יום</button>
+          <button class="btn-primary" id="scSaveBtn" onclick="saveSched()">💾 שמירה</button>
+        </div>
+        <div class="ct-status" id="scStatus"></div>
       </div>
 
       <div class="admin-pane" id="pane-instr">
@@ -523,6 +552,7 @@ window.onAdminState = function(user, isAdmin){
     loadAdmin();
     loadContacts();
     loadInstr();
+    loadSched();
   } else {
     inn.style.display = 'none';
     out.style.display = 'block';
@@ -808,8 +838,66 @@ function saveInstr(){
     st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
   }).then(function(){ btn.disabled = false; });
 }
+
+// ===================== SCHEDULE =====================
+var SCHED_DEFAULT = {"published": false, "title": "סדרת חינוך – \"בדרכו של אלי כהן\" 🇮🇱", "subtitle": "אהבת מולדת | לכידות | ציונות", "days": [{"title": "יום א' | רביעי 4.11 – \"מאיפה צמחנו\"", "items": ["10:00 – התכנסות ופתיחה, חצר כנרת 📍", "11:45–16:30 – סדנת ODT (כולל צהריים) 💪", "17:30 – התארגנות בבית החייל", "19:00 – ארוחת ערב 🍽️", "20:15 – הרצאה: בן סלע, \"פשוט לעוף על החיים\" 🎤", "21:45 – זמן חברתי חופשי"]}, {"title": "יום ב' | חמישי 5.11 – \"בדרכו של אלי כהן\"", "items": ["06:30 – ריצה בטיילת (רשות) 🏃", "07:15 – ארוחת בוקר ופינוי חדרים", "08:00 – נסיעה לגולן 🚌", "09:00 – הר בנטל 📍", "11:15 – מצפה גדות 📍", "12:15 – ארוחת צהריים 🍽️", "13:45 – תל פאחר וטקס סיום 🌳", "15:30 – נסיעה חזרה", "~18:15 – הגעה למרכז"]}]};
+var schedDays = [], schedPub = false;
+function loadSched(){
+  window.fetchSettings('schedule').then(function(d){
+    var isNew = !d; if(!d) d = SCHED_DEFAULT;
+    schedPub = d.published === true;
+    document.getElementById('scTitle').value = d.title || '';
+    document.getElementById('scSub').value = d.subtitle || '';
+    schedDays = (d.days || []).map(function(x){ return { title: x.title || '', items: (x.items || []).join('\n') }; });
+    renderPub(); renderDays();
+    if(isNew){ var st = document.getElementById('scStatus'); st.className = 'ct-status'; st.textContent = 'הלו"ז הוזן — לחצו "שמירה" כדי לשמור (הוא יישאר מוסתר עד שתפעילו)'; }
+  }).catch(function(err){
+    console.error(err);
+    document.getElementById('dayEdit').innerHTML = '<div class="reg-empty">לא ניתן לטעון (' + escapeHtml(err && err.code ? err.code : 'שגיאה') + ')</div>';
+  });
+}
+function renderPub(){
+  document.getElementById('pubToggle').classList.toggle('on', schedPub);
+  document.getElementById('pubLabel').textContent = schedPub ? 'הלו"ז מוצג באתר' : 'הלו"ז מוסתר מהאתר';
+}
+function togglePub(){ schedPub = !schedPub; renderPub(); scDirty(); }
+function renderDays(){
+  var el = document.getElementById('dayEdit');
+  if(!schedDays.length){ el.innerHTML = '<div class="reg-empty">אין ימים. לחצו "הוספת יום".</div>'; return; }
+  el.innerHTML = schedDays.map(function(g, i){
+    return '<div class="ct-card"><label>כותרת היום</label>' +
+      '<input value="' + escapeHtml(g.title) + '" oninput="schedDays[' + i + '].title=this.value;scDirty()" placeholder="למשל: יום א\' | רביעי 4.11">' +
+      '<label style="margin-top:8px">פעילויות (שורה לכל פעילות)</label>' +
+      '<textarea class="in-ta" rows="' + Math.max(3, g.items.split('\n').length + 1) + '" oninput="schedDays[' + i + '].items=this.value;scDirty()">' + escapeHtml(g.items) + '</textarea>' +
+      '<div class="ct-tools">' +
+      (i > 0 ? '<button onclick="moveDay(' + i + ',-1)">▲</button>' : '') +
+      (i < schedDays.length - 1 ? '<button onclick="moveDay(' + i + ',1)">▼</button>' : '') +
+      '<button class="del" onclick="delDay(' + i + ')">🗑️ הסרת יום</button></div></div>';
+  }).join('');
+}
+function scDirty(){ var s = document.getElementById('scStatus'); s.className = 'ct-status'; s.textContent = 'יש שינויים שלא נשמרו'; }
+function addDay(){ schedDays.push({ title:'', items:'' }); renderDays(); scDirty(); }
+function delDay(i){ if(!confirm('להסיר את "' + (schedDays[i].title || 'היום') + '"?')) return; schedDays.splice(i, 1); renderDays(); scDirty(); }
+function moveDay(i, d){ var t = schedDays[i]; schedDays[i] = schedDays[i + d]; schedDays[i + d] = t; renderDays(); scDirty(); }
+function saveSched(){
+  var st = document.getElementById('scStatus'), btn = document.getElementById('scSaveBtn');
+  var data = {
+    published: schedPub,
+    title: document.getElementById('scTitle').value.trim(),
+    subtitle: document.getElementById('scSub').value.trim(),
+    days: schedDays.map(function(g){ return { title: g.title.trim(), items: lines(g.items) }; }).filter(function(g){ return g.title || g.items.length; })
+  };
+  btn.disabled = true; st.className = 'ct-status'; st.textContent = 'שומר...';
+  window.saveSettings('schedule', data).then(function(){
+    schedDays = data.days.map(function(g){ return { title: g.title, items: g.items.join('\n') }; }); renderDays();
+    st.className = 'ct-status ok'; st.textContent = data.published ? '✓ נשמר — הלו"ז מוצג באתר' : '✓ נשמר — הלו"ז מוסתר מהאתר';
+  }).catch(function(err){
+    console.error(err);
+    st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
+  }).then(function(){ btn.disabled = false; });
+}
 window.addEventListener('beforeunload', function(e){
-  if(document.getElementById('ctStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('inStatus').textContent === 'יש שינויים שלא נשמרו'){ e.preventDefault(); e.returnValue = ''; }
+  if(document.getElementById('ctStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('inStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('scStatus').textContent === 'יש שינויים שלא נשמרו'){ e.preventDefault(); e.returnValue = ''; }
 });
 </script>
 </body>
