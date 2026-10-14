@@ -3,7 +3,7 @@
 // Everything here is namespaced to this app only: unique cache prefix, cleanup touches
 // only our own caches, and we only handle requests inside /Sadach2026/.
 const APP_PREFIX = 'sadach2026-chinuch-';
-const CACHE_NAME = APP_PREFIX + 'v26';
+const CACHE_NAME = APP_PREFIX + 'v27';
 const SCOPE_PATH = new URL('./', self.location).pathname; // "/Sadach2026/"
 
 const SHELL = [

@@ -342,6 +342,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
       <div class="gal-closed" id="galClosed" style="display:none">🔒 העלאת תמונות סגורה כרגע</div>
       <div id="galGrid" class="gal-grid"></div>
       <div id="galPager" class="gal-pager"></div>
+      <div style="text-align:center;margin-top:10px"><button class="retry-btn" onclick="loadGallery(galPage)">🔄 רענון הגלריה</button></div>
     </div>
   </div>
 
@@ -608,7 +609,7 @@ function showPage(id){
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-target') === id); });
   window.scrollTo({top:0});
-  if(id === 'gallery' && !galLoaded) loadGallery(1);
+  if(id === 'gallery') loadGallery(galLoaded ? galPage : 1);   // always fresh when the tab is opened
 }
 
 // Open a page from the URL hash (used by links from admin.html, e.g. ./#schedule)
