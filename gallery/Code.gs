@@ -16,7 +16,7 @@
  */
 
 const CONFIG = {
-  FOLDER_ID: '',                               // ריק = הסקריפט יוצר תיקייה חדשה בעצמו
+  FOLDER_ID: '1c1WyuG02oyfehayScsgo9yQibiZvZWTL',   // תיקיית הגלריה בדרייב
   FOLDER_NAME: 'סדרת חינוך טבריה – גלריה',
   PAGE_SIZE: 20,
   MAX_BYTES: 4 * 1024 * 1024,                  // תקרה לתמונה אחרי הקטנה
