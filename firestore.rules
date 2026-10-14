@@ -40,13 +40,12 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // Trip contacts shown on the "חירום" tab — everyone reads, only admins edit (from admin.html).
-    match /settings/contacts {
-      allow read: if true;
+    // Site settings edited from admin.html (contacts, instructions + gear) — everyone reads, only admins write.
+    match /settings/{docId} {
+      allow read: if docId in ['contacts', 'instructions'];
       allow write: if isAdmin()
-        && request.resource.data.keys().hasOnly(['items','updatedAt'])
-        && request.resource.data.items is list
-        && request.resource.data.items.size() <= 30;
+        && docId in ['contacts', 'instructions']
+        && request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'updatedAt']);
     }
 
     // Public list shown on the site — unit, name, gender only.

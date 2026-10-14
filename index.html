@@ -106,6 +106,17 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .reg-empty{text-align:center;color:var(--text-mid);font-size:0.85rem;padding:10px;}
 .retry-btn{margin-top:8px;background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);padding:7px 16px;border-radius:999px;font-size:0.8rem;font-weight:700;cursor:pointer;}
 
+/* INSTRUCTIONS + GEAR */
+.rules-box{background:rgba(255,255,255,0.75);border:1px solid rgba(15,76,76,0.12);border-right:4px solid var(--accent);border-radius:14px;padding:6px 16px;margin-top:14px;}
+.rules-box li{list-style:none;padding:10px 0;font-weight:600;color:var(--text-dark);display:flex;gap:10px;align-items:flex-start;}
+.rules-box li + li{border-top:1px solid rgba(15,76,76,0.08);}
+.rules-box li::before{content:'⚠️';flex:none;}
+.gear-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px;}
+@media(min-width:560px){.gear-grid{grid-template-columns:1fr 1fr;}}
+.gear-card{background:rgba(255,255,255,0.75);border:1px solid rgba(15,76,76,0.12);border-radius:16px;padding:14px 16px;}
+.gear-card h3{font-size:1rem;color:var(--teal-dark);margin-bottom:8px;}
+.gear-card li{list-style:none;padding:5px 0;font-size:0.9rem;color:var(--text-dark);display:flex;gap:8px;}
+.gear-card li::before{content:'✓';color:var(--teal);font-weight:900;flex:none;}
 /* EMERGENCY CONTACTS */
 .ct-pub a.ct-wa{background:#25D366 !important;}
 .ct-pub{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.75);border:1px solid rgba(15,76,76,0.12);border-radius:16px;padding:14px 16px;margin-bottom:10px;}
@@ -223,11 +234,11 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
     <div class="section">
       <div class="sub-block">
         <h2 class="section-title">📢 הנחיות מיוחדות</h2>
-        <div class="coming-soon"><span class="ic">📢</span>ההנחיות יפורסמו בהמשך</div>
+        <div id="rulesList"></div>
       </div>
       <div class="sub-block">
         <h2 class="section-title">🎒 ציוד נדרש</h2>
-        <div class="coming-soon"><span class="ic">📦</span>רשימת הציוד תפורסם בהמשך</div>
+        <div id="gearList"></div>
       </div>
     </div>
   </div>
@@ -690,6 +701,49 @@ function loadContactsPublic(){
     .catch(function(){});
 }
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadContactsPublic); } else { loadContactsPublic(); }
+
+// INSTRUCTIONS + GEAR — edited from admin.html, stored in Firestore settings/instructions
+var INSTR_DEFAULT = {"rules": ["חל איסור מוחלט על שתיית אלכוהול", "יש להקפיד ולשמור על כללי השילוב הראוי", "אין להגיע למסלולים עם כפכפים"], "gear": [{"title": "👕 לבוש", "items": ["ביגוד אזרחי נוח", "נעליים סגורות ונוחות להליכה", "ביגוד ונעלי ספורט לסדנת ODT", "שכבה חמה לערב (סווטשרט / מעיל קל)", "כובע"]}, {"title": "🎒 לסיורים", "items": ["בקבוק מים (1.5 ליטר לפחות)", "קרם הגנה ומשקפי שמש", "תיק גב קטן", "פנקס ועט"]}, {"title": "🛏️ ללינה", "items": ["ערכת רחצה", "בגדים להחלפה ליום השני", "תרופות אישיות (במידת הצורך)", "מטען לטלפון", "מגבת ומצעים — מסופקים ע\"י בית החייל"]}, {"title": "📄 כללי", "items": ["חוגר / תעודה צבאית", "נושאי נשק: נשק אישי ומחסניות", "סוללת גיבוי לטלפון"]}]};
+var INSTR_URL = 'https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/settings/instructions'
+  + '?key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI';
+var INSTR_CACHE_KEY = 'chinuchInstrV1';
+function fsVal(v){
+  if(!v) return null;
+  if('stringValue' in v) return v.stringValue;
+  if('arrayValue' in v) return (v.arrayValue.values || []).map(fsVal);
+  if('mapValue' in v){ var o = {}, f = v.mapValue.fields || {}; for(var k in f) o[k] = fsVal(f[k]); return o; }
+  if('integerValue' in v) return Number(v.integerValue);
+  if('booleanValue' in v) return v.booleanValue;
+  return null;
+}
+function renderInstructions(d){
+  var rules = (d && d.rules) || [], gear = (d && d.gear) || [];
+  document.getElementById('rulesList').innerHTML = rules.length
+    ? '<ul class="rules-box">' + rules.map(function(r){ return '<li>' + escapeHtml(r) + '</li>'; }).join('') + '</ul>'
+    : '<div class="coming-soon"><span class="ic">📢</span>ההנחיות יפורסמו בהמשך</div>';
+  document.getElementById('gearList').innerHTML = gear.length
+    ? '<div class="gear-grid">' + gear.map(function(g){
+        return '<div class="gear-card">' + (g.title ? '<h3>' + escapeHtml(g.title) + '</h3>' : '') +
+          '<ul>' + (g.items || []).map(function(it){ return '<li>' + escapeHtml(it) + '</li>'; }).join('') + '</ul></div>';
+      }).join('') + '</div>'
+    : '<div class="coming-soon"><span class="ic">📦</span>רשימת הציוד תפורסם בהמשך</div>';
+}
+function loadInstructions(){
+  var shown = false;
+  try { var c = JSON.parse(localStorage.getItem(INSTR_CACHE_KEY) || 'null'); if(c){ renderInstructions(c); shown = true; } } catch(e){}
+  if(!shown) renderInstructions(INSTR_DEFAULT);
+  fetch(INSTR_URL, { cache: 'no-store' })
+    .then(function(r){ if(r.status === 404) return null; if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(doc){
+      if(!doc){ renderInstructions(INSTR_DEFAULT); return; }
+      var f = doc.fields || {};
+      var d = { rules: fsVal(f.rules) || [], gear: fsVal(f.gear) || [] };
+      renderInstructions(d);
+      try { localStorage.setItem(INSTR_CACHE_KEY, JSON.stringify(d)); } catch(e){}
+    })
+    .catch(function(){});
+}
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadInstructions); } else { loadInstructions(); }
 </script>
 </body>
 </html>

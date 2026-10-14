@@ -214,6 +214,9 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .ct-status{text-align:center;font-size:0.82rem;margin-top:10px;min-height:1.2em;color:var(--text-mid);}
 .ct-status.ok{color:var(--teal);font-weight:700;}
 .ct-status.err{color:#c0392b;font-weight:700;}
+.in-ta{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;padding:10px 12px;font-family:'Rubik',sans-serif;font-size:0.92rem;line-height:1.7;outline:none;resize:vertical;}
+.in-ta:focus{border-color:var(--teal);}
+.ct-card label + .in-ta, .ct-card input + label{margin-top:6px;}
 </style>
 </head>
 <body>
@@ -234,6 +237,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
       <div class="admin-tabs">
         <button type="button" class="active" data-pane="regs" onclick="showPane('regs')">📋 נרשמים</button>
         <button type="button" data-pane="contacts" onclick="showPane('contacts')">📞 אנשי קשר</button>
+        <button type="button" data-pane="instr" onclick="showPane('instr')">📢 הנחיות וציוד</button>
       </div>
 
       <div class="admin-pane active" id="pane-regs">
@@ -245,6 +249,21 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         </div>
         <input class="admin-search" id="adminSearch" placeholder="חיפוש לפי שם, יחידה, מספר אישי או טלפון" oninput="renderAdmin()">
         <div id="adminList"><div class="reg-empty">טוען...</div></div>
+      </div>
+
+      <div class="admin-pane" id="pane-instr">
+        <p class="section-sub" style="margin-bottom:12px">מוצג לכולם בלשונית "הנחיות" באתר · כל שורה = סעיף</p>
+        <div class="ct-card">
+          <label>📢 הנחיות מיוחדות (שורה לכל הנחיה)</label>
+          <textarea id="inRules" class="in-ta" rows="5" oninput="inDirty()"></textarea>
+        </div>
+        <h3 style="color:var(--teal-dark);font-size:1rem;margin:16px 0 8px;text-align:center">🎒 רשימת ציוד</h3>
+        <div id="gearEdit"><div class="reg-empty">טוען...</div></div>
+        <div class="ct-actions">
+          <button class="retry-btn" onclick="addGearSec()">➕ הוספת קטגוריה</button>
+          <button class="btn-primary" id="inSaveBtn" onclick="saveInstr()">💾 שמירה</button>
+        </div>
+        <div class="ct-status" id="inStatus"></div>
       </div>
 
       <div class="admin-pane" id="pane-contacts">
@@ -406,6 +425,13 @@ window.fetchContacts = async function(){
   const s = await getDoc(doc(db, 'settings', 'contacts'));
   return s.exists() && Array.isArray(s.data().items) ? s.data().items : [];
 };
+window.fetchSettings = async function(id){
+  const s = await getDoc(doc(db, 'settings', id));
+  return s.exists() ? s.data() : null;
+};
+window.saveSettings = async function(id, data){
+  await setDoc(doc(db, 'settings', id), Object.assign({}, data, { updatedAt: serverTimestamp() }));
+};
 window.saveContactsDoc = async function(items){
   await setDoc(doc(db, 'settings', 'contacts'), { items: items, updatedAt: serverTimestamp() });
 };
@@ -507,6 +533,7 @@ window.onAdminState = function(user, isAdmin){
     document.getElementById('adminWho').textContent = 'מחובר: ' + user.email;
     loadAdmin();
     loadContacts();
+    loadInstr();
   } else {
     inn.style.display = 'none';
     out.style.display = 'block';
@@ -740,8 +767,60 @@ function saveContacts(){
     st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
   }).then(function(){ btn.disabled = false; });
 }
+
+// ===================== INSTRUCTIONS + GEAR =====================
+var INSTR_DEFAULT = {"rules": ["חל איסור מוחלט על שתיית אלכוהול", "יש להקפיד ולשמור על כללי השילוב הראוי", "אין להגיע למסלולים עם כפכפים"], "gear": [{"title": "👕 לבוש", "items": ["ביגוד אזרחי נוח", "נעליים סגורות ונוחות להליכה", "ביגוד ונעלי ספורט לסדנת ODT", "שכבה חמה לערב (סווטשרט / מעיל קל)", "כובע"]}, {"title": "🎒 לסיורים", "items": ["בקבוק מים (1.5 ליטר לפחות)", "קרם הגנה ומשקפי שמש", "תיק גב קטן", "פנקס ועט"]}, {"title": "🛏️ ללינה", "items": ["ערכת רחצה", "בגדים להחלפה ליום השני", "תרופות אישיות (במידת הצורך)", "מטען לטלפון", "מגבת ומצעים — מסופקים ע\"י בית החייל"]}, {"title": "📄 כללי", "items": ["חוגר / תעודה צבאית", "נושאי נשק: נשק אישי ומחסניות", "סוללת גיבוי לטלפון"]}]};
+var gearSecs = [];
+function loadInstr(){
+  window.fetchSettings('instructions').then(function(d){
+    if(!d) d = INSTR_DEFAULT;
+    document.getElementById('inRules').value = (d.rules || []).join('\n');
+    gearSecs = (d.gear || []).map(function(g){ return { title: g.title || '', items: (g.items || []).join('\n') }; });
+    renderGearEdit();
+    if(d === INSTR_DEFAULT){ var st = document.getElementById('inStatus'); st.className = 'ct-status'; st.textContent = 'זו רשימה מוצעת — לחצו "שמירה" כדי לקבע אותה'; }
+  }).catch(function(err){
+    console.error(err);
+    document.getElementById('gearEdit').innerHTML = '<div class="reg-empty">לא ניתן לטעון (' + escapeHtml(err && err.code ? err.code : 'שגיאה') + ')</div>';
+  });
+}
+function renderGearEdit(){
+  var el = document.getElementById('gearEdit');
+  if(!gearSecs.length){ el.innerHTML = '<div class="reg-empty">אין קטגוריות. לחצו "הוספת קטגוריה".</div>'; return; }
+  el.innerHTML = gearSecs.map(function(g, i){
+    return '<div class="ct-card"><label>שם הקטגוריה</label>' +
+      '<input value="' + escapeHtml(g.title) + '" oninput="gearSecs[' + i + '].title=this.value;inDirty()" placeholder="למשל: 👕 לבוש">' +
+      '<label style="margin-top:8px">פריטים (שורה לכל פריט)</label>' +
+      '<textarea class="in-ta" rows="' + Math.max(3, g.items.split('\n').length + 1) + '" oninput="gearSecs[' + i + '].items=this.value;inDirty()">' + escapeHtml(g.items) + '</textarea>' +
+      '<div class="ct-tools">' +
+      (i > 0 ? '<button onclick="moveGear(' + i + ',-1)">▲</button>' : '') +
+      (i < gearSecs.length - 1 ? '<button onclick="moveGear(' + i + ',1)">▼</button>' : '') +
+      '<button class="del" onclick="delGear(' + i + ')">🗑️ הסרת קטגוריה</button></div></div>';
+  }).join('');
+}
+function inDirty(){ var s = document.getElementById('inStatus'); s.className = 'ct-status'; s.textContent = 'יש שינויים שלא נשמרו'; }
+function addGearSec(){ gearSecs.push({ title:'', items:'' }); renderGearEdit(); inDirty(); var ins = document.querySelectorAll('#gearEdit .ct-card:last-child input'); if(ins[0]) ins[0].focus(); }
+function delGear(i){ if(!confirm('להסיר את הקטגוריה "' + (gearSecs[i].title || '') + '"?')) return; gearSecs.splice(i, 1); renderGearEdit(); inDirty(); }
+function moveGear(i, d){ var t = gearSecs[i]; gearSecs[i] = gearSecs[i + d]; gearSecs[i + d] = t; renderGearEdit(); inDirty(); }
+function lines(t){ return String(t || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean); }
+function saveInstr(){
+  var st = document.getElementById('inStatus'), btn = document.getElementById('inSaveBtn');
+  var data = {
+    rules: lines(document.getElementById('inRules').value),
+    gear: gearSecs.map(function(g){ return { title: g.title.trim(), items: lines(g.items) }; })
+      .filter(function(g){ return g.title || g.items.length; })
+  };
+  btn.disabled = true; st.className = 'ct-status'; st.textContent = 'שומר...';
+  window.saveSettings('instructions', data).then(function(){
+    gearSecs = data.gear.map(function(g){ return { title: g.title, items: g.items.join('\n') }; });
+    renderGearEdit();
+    st.className = 'ct-status ok'; st.textContent = '✓ נשמר — מופיע עכשיו באתר';
+  }).catch(function(err){
+    console.error(err);
+    st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
+  }).then(function(){ btn.disabled = false; });
+}
 window.addEventListener('beforeunload', function(e){
-  if(document.getElementById('ctStatus').textContent === 'יש שינויים שלא נשמרו'){ e.preventDefault(); e.returnValue = ''; }
+  if(document.getElementById('ctStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('inStatus').textContent === 'יש שינויים שלא נשמרו'){ e.preventDefault(); e.returnValue = ''; }
 });
 </script>
 </body>
