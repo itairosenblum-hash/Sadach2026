@@ -135,6 +135,9 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .admin-card.open .ac-detail{display:block;padding-top:10px;}
 .admin-card .ac-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;}
 .admin-card .ac-name{font-weight:700;color:var(--teal-dark);}
+.admin-unit-head{display:flex;align-items:center;justify-content:space-between;margin:16px 2px 6px;padding:7px 12px;border-radius:10px;background:var(--teal-dark);color:#fff;font-weight:800;font-size:0.9rem;}
+.admin-unit-head:first-child{margin-top:4px;}
+.admin-unit-head b{background:rgba(255,255,255,0.2);border-radius:999px;padding:1px 10px;font-size:0.8rem;}
 .admin-card .ac-unit{font-size:0.78rem;color:var(--accent);font-weight:700;white-space:nowrap;}
 .admin-card .ac-body{font-size:0.8rem;color:var(--text-mid);line-height:1.7;}
 .admin-card .ac-body b{color:var(--text-dark);font-weight:600;}
@@ -895,11 +898,30 @@ function renderAdmin(){
 
   var listEl = document.getElementById('adminList');
   if(!shown.length){ listEl.innerHTML = '<div class="reg-empty">' + (regs.length ? 'אין אנשים שמתאימים לסינון' : 'עדיין אין נרשמים') + '</div>'; return; }
+
+  // No filter and no search → group by unit (א-ב), and by name (א-ב) inside each unit
+  var grouped = (adminFilter === 'all' && !q);
+  var unitCount = {};
+  if(grouped){
+    var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
+    shown = shown.slice().sort(function(a, b){
+      var u = heCmp(a.unit || 'תתת', b.unit || 'תתת');
+      return u !== 0 ? u : heCmp(a.name, b.name);
+    });
+    shown.forEach(function(r){ var k = r.unit || 'ללא יחידה'; unitCount[k] = (unitCount[k] || 0) + 1; });
+  }
+  var lastUnit = null, inUnit = 0;
   listEl.innerHTML = shown.map(function(r, i){
     var open = !!adminOpen[r.id];
-    return '<div class="admin-card' + (open ? ' open' : '') + '" id="ac-' + r.id + '">' +
+    var head = '';
+    if(grouped){
+      var uk = r.unit || 'ללא יחידה';
+      if(uk !== lastUnit){ lastUnit = uk; inUnit = 0; head = '<div class="admin-unit-head"><span>' + escapeHtml(uk) + '</span><b>' + unitCount[uk] + '</b></div>'; }
+      inUnit++;
+    }
+    return head + '<div class="admin-card' + (open ? ' open' : '') + '" id="ac-' + r.id + '">' +
       '<button type="button" class="ac-row" onclick="toggleAdminRow(\'' + r.id + '\')" aria-expanded="' + open + '">' +
-        '<span class="ac-num">' + (i + 1) + '</span>' +
+        '<span class="ac-num">' + (grouped ? inUnit : i + 1) + '</span>' +
         '<span class="ac-name">' + escapeHtml(r.rank || '') + ' ' + escapeHtml(r.name || '') + '</span>' +
         '<span class="ac-unit">' + escapeHtml(r.unit || '') + '</span>' +
         '<span class="ac-plus">' + (open ? '−' : '+') + '</span>' +
