@@ -974,6 +974,12 @@ function deleteOwnPhoto(){
     if(r && r.ok){
       var t = galTokens(); delete t[it.id]; try { localStorage.setItem(GAL_TOKENS_KEY, JSON.stringify(t)); } catch(e){}
       closeLightbox(); galSetStatus('✓ התמונה נמחקה', 'ok'); loadGallery(galPage);
+    } else if(r && r.error === 'not allowed'){
+      // uploaded before delete support existed — the server has no code for it
+      var t2 = galTokens(); delete t2[it.id]; try { localStorage.setItem(GAL_TOKENS_KEY, JSON.stringify(t2)); } catch(e){}
+      document.getElementById('lbDel').style.display = 'none';
+      renderGallery();
+      alert('את התמונה הזו לא ניתן למחוק מכאן (היא הועלתה לפני שנוספה אפשרות המחיקה).\nמנהל האתר יכול למחוק אותה מעמוד הניהול.');
     } else alert('המחיקה נכשלה, נסו שוב בעוד רגע');
   };
   xhr.onerror = function(){ btn.disabled = false; alert('המחיקה נכשלה, בדקו חיבור לאינטרנט'); };
