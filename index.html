@@ -106,6 +106,31 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .reg-empty{text-align:center;color:var(--text-mid);font-size:0.85rem;padding:10px;}
 .retry-btn{margin-top:8px;background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);padding:7px 16px;border-radius:999px;font-size:0.8rem;font-weight:700;cursor:pointer;}
 
+/* DETAILS PAGE — compact, fits one screen */
+#page-details .top-cta{padding:14px 16px 2px;}
+#page-details .section{padding:14px 14px 10px;}
+#page-details .sub-block + .sub-block{margin-top:18px;}
+#page-details .section-title{font-size:1.2rem;}
+#page-details .section-sub{margin-bottom:10px;font-size:0.8rem;}
+#page-details .info-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+#page-details .goals-grid{grid-template-columns:repeat(3,1fr);gap:8px;}
+@media(min-width:560px){#page-details .info-grid{grid-template-columns:repeat(4,1fr);}}
+#page-details .info-card,#page-details .goal-card{padding:10px 6px;border-radius:12px;}
+#page-details .info-card .ic,#page-details .goal-card .ic{font-size:1.25rem;margin-bottom:2px;}
+#page-details .info-card .lbl{font-size:0.68rem;margin-bottom:1px;}
+#page-details .info-card .val{font-size:0.86rem;line-height:1.3;}
+#page-details .goal-num{width:22px;height:22px;font-size:0.72rem;margin-bottom:4px;}
+#page-details .goal-card b{font-size:0.8rem;line-height:1.3;margin-bottom:2px;}
+#page-details .goal-card span{font-size:0.7rem;line-height:1.35;display:block;}
+#page-details .cal-row{text-align:center;margin-top:12px;}
+#page-details .btn-primary{padding:11px 22px;font-size:0.9rem;}
+@media(max-height:720px){
+  #page-details .section-sub{display:none;}
+  #page-details .top-cta{padding-top:8px;}
+  #page-details .section{padding-top:10px;}
+  #page-details .sub-block + .sub-block{margin-top:12px;}
+  #page-details .cal-row{margin-top:8px;}
+}
 /* SCHEDULE */
 .sch-sub{text-align:center;color:var(--text-mid);font-size:0.88rem;margin:-2px 0 4px;}
 .sch-title{text-align:center;color:var(--accent);font-weight:700;font-size:0.95rem;margin-bottom:16px;}
@@ -223,7 +248,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <div class="info-card"><span class="ic">🎓</span><div class="lbl">מסגרת</div><div class="val">סדרת חינוך יחידתית</div></div>
           <div class="info-card"><span class="ic">🌤️</span><div class="lbl">מזג אוויר</div><div class="val">יתעדכן בהמשך</div></div>
         </div>
-        <div style="text-align:center;margin-top:20px;">
+        <div class="cal-row">
           <button class="btn-primary" onclick="addToCalendar()">📅 הוסף ליומן</button>
         </div>
       </div>
