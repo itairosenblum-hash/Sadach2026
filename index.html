@@ -1077,7 +1077,6 @@ function galUpload(fileList){
   var files = Array.prototype.slice.call(fileList || []).filter(function(f){ return /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic)$/i.test(f.name); });
   document.getElementById('galFile').value = '';
   if(!files.length) return;
-  if(files.length > 10){ galSetStatus('אפשר להעלות עד 10 תמונות בכל פעם', 'err'); return; }
   var name = document.getElementById('galName').value.trim();
   try { localStorage.setItem('chinuchGalName', name); } catch(e){}
   galSetStatus('');
