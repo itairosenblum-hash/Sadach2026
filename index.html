@@ -1013,13 +1013,18 @@ function postImage(dataUrl, name, onProgress){
     var xhr = new XMLHttpRequest();
     xhr.open('POST', GALLERY_URL);
     xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
-    xhr.upload.onprogress = function(e){ if(e.lengthComputable) onProgress(e.loaded / e.total); };
+    // NOTE: no xhr.upload listener — it would force a CORS preflight that Apps Script rejects.
+    // Progress is estimated from the payload size instead (~fills to 95% until the server answers).
+    var est = Math.max(1500, dataUrl.length / 120), t0 = Date.now();
+    var timer = setInterval(function(){ onProgress(Math.min(0.95, 1 - Math.exp(-(Date.now() - t0) / est))); }, 150);
+    function stop(){ clearInterval(timer); onProgress(1); }
     xhr.onload = function(){
+      stop();
       try { var r = JSON.parse(xhr.responseText); resolve(r && r.ok ? { ok: true } : { ok: false, error: (r && r.error) || 'server' }); }
       catch(e){ resolve({ ok: false, error: 'not-json' }); }
     };
-    xhr.onerror = function(){ resolve({ ok: false, error: 'network' }); };
-    xhr.timeout = 90000; xhr.ontimeout = function(){ resolve({ ok: false, error: 'timeout' }); };
+    xhr.onerror = function(){ stop(); resolve({ ok: false, error: 'network' }); };
+    xhr.timeout = 90000; xhr.ontimeout = function(){ stop(); resolve({ ok: false, error: 'timeout' }); };
     xhr.send(JSON.stringify({ key: GALLERY_KEY, data: dataUrl, name: name }));
   });
 }
