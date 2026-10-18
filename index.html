@@ -180,6 +180,8 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
 .sch-row + .sch-row{border-top:1px solid rgba(15,76,76,0.07);}
 .sch-time{flex:none;min-width:82px;font-weight:800;color:var(--teal);font-size:0.86rem;unicode-bidi:isolate;text-align:right;}
 .sch-text{flex:1;font-size:0.92rem;color:var(--text-dark);}
+.sch-nav{display:inline-flex;align-items:center;gap:4px;margin-top:6px;margin-inline-start:8px;padding:4px 12px;border-radius:999px;background:#33ccff;color:#06283d;font-size:0.8rem;font-weight:800;text-decoration:none;white-space:nowrap;}
+.sch-text .sch-nav:first-of-type{margin-inline-start:0;display:flex;width:max-content;}
 /* INSTRUCTIONS + GEAR */
 .rules-box{background:rgba(255,255,255,0.75);border:1px solid rgba(15,76,76,0.12);border-right:4px solid var(--accent);border-radius:14px;padding:6px 16px;margin-top:14px;}
 .rules-box li{list-style:none;padding:10px 0;font-weight:600;color:var(--text-dark);display:flex;gap:10px;align-items:flex-start;}
@@ -896,7 +898,9 @@ function renderSchedule(d){
     d.days.map(function(day){
       return '<div class="sch-day">' + (day.title ? '<h3>' + escapeHtml(day.title) + '</h3>' : '') +
         (day.items || []).map(function(l){ var x = splitSchedLine(l);
-          return '<div class="sch-row"><span class="sch-time" dir="ltr">' + escapeHtml(x.time) + '</span><span class="sch-text">' + escapeHtml(x.text) + '</span></div>';
+          var urls = x.text.match(/https?:\/\/\S+/g) || [], txt = x.text.replace(/\s*https?:\/\/\S+/g, '').trim();
+          var nav = urls.map(function(u){ return '<a class="sch-nav" href="' + escapeHtml(u) + '" target="_blank" rel="noopener">' + (/waze\.com/i.test(u) ? '🚗 ניווט ב-Waze' : '🔗 קישור') + '</a>'; }).join('');
+          return '<div class="sch-row"><span class="sch-time" dir="ltr">' + escapeHtml(x.time) + '</span><span class="sch-text">' + escapeHtml(txt) + nav + '</span></div>';
         }).join('') + '</div>';
     }).join('');
 }
