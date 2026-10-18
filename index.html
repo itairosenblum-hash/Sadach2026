@@ -182,6 +182,16 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
 .sch-text{flex:1;font-size:0.92rem;color:var(--text-dark);}
 .sch-nav{display:inline-flex;align-items:center;gap:4px;margin-top:6px;margin-inline-start:8px;padding:4px 12px;border-radius:999px;background:#33ccff;color:#06283d;font-size:0.8rem;font-weight:800;text-decoration:none;white-space:nowrap;}
 .sch-text .sch-nav:first-of-type{margin-inline-start:0;display:flex;width:max-content;}
+.sch-map-wrap{border-top:1px solid rgba(15,76,76,0.1);padding:12px 16px 14px;}
+.sch-map-title{font-size:0.82rem;font-weight:800;color:var(--teal-dark);margin-bottom:8px;}
+.sch-map{height:260px;border-radius:12px;overflow:hidden;border:1px solid rgba(15,76,76,0.15);background:#e8eef0;z-index:0;position:relative;}
+.sch-map-note{font-size:0.72rem;color:var(--text-mid);margin-top:6px;}
+.sch-pin{width:26px;height:26px;border-radius:50%;background:var(--teal-dark);color:#fff;font-weight:900;font-size:0.8rem;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);}
+.sch-pin.end{background:var(--accent);}
+.sch-pop{direction:rtl;text-align:right;font-family:inherit;}
+.sch-pop b{display:block;color:var(--teal-dark);margin-bottom:2px;}
+.sch-pop small{display:block;color:#555;margin-bottom:6px;}
+.sch-pop a.sch-nav{margin:0;color:#06283d;}
 /* INSTRUCTIONS + GEAR */
 .rules-box{background:rgba(255,255,255,0.75);border:1px solid rgba(15,76,76,0.12);border-right:4px solid var(--accent);border-radius:14px;padding:6px 16px;margin-top:14px;}
 .rules-box li{list-style:none;padding:10px 0;font-weight:600;color:var(--text-dark);display:flex;gap:10px;align-items:flex-start;}
@@ -620,6 +630,7 @@ function showPage(id){
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-target') === id); });
   window.scrollTo({top:0});
   if(id === 'gallery') loadGallery(galLoaded ? galPage : 1);   // always fresh when the tab is opened
+  if(id === 'schedule') setTimeout(refreshSchedMaps, 50);   // maps built while hidden need a resize
 }
 
 // Open a page from the URL hash (used by links from admin.html, e.g. ./#schedule)
@@ -901,8 +912,78 @@ function renderSchedule(d){
           var urls = x.text.match(/https?:\/\/\S+/g) || [], txt = x.text.replace(/\s*https?:\/\/\S+/g, '').trim();
           var nav = urls.map(function(u){ return '<a class="sch-nav" href="' + escapeHtml(u) + '" target="_blank" rel="noopener">' + (/waze\.com/i.test(u) ? '🚗 ניווט ב-Waze' : '🔗 קישור') + '</a>'; }).join('');
           return '<div class="sch-row"><span class="sch-time" dir="ltr">' + escapeHtml(x.time) + '</span><span class="sch-text">' + escapeHtml(txt) + nav + '</span></div>';
-        }).join('') + '</div>';
+        }).join('') + schedMapHtml(day) + '</div>';
     }).join('');
+  initSchedMaps();
+}
+// ROUTE MAPS — stops shown on a map under each schedule day (matched by the date in the day title)
+var SCHED_ROUTES = {
+  '4.11': { title: '🗺️ מפת היום', loop: true, stops: [
+    { n: 'מצפור סוסיתא', t: '09:30 · התכנסות וסקירה', ll: [32.7778, 35.6615] },
+    { n: 'נחל אל-על', t: '10:45 · מסלול הליכה', ll: [32.8228, 35.7490] },
+    { n: 'עגלת הקפה "דורא", נוב', t: '13:40 · ארוחת צהריים', ll: [32.8323, 35.7832] },
+    { n: 'מרפסת הר נבו, אפיק', t: '14:45 · הדרכה על אלי כהן', ll: [32.7788, 35.7013] },
+    { n: 'מצפה אופיר', t: '15:45 · דיון', ll: [32.8148, 35.6627] }
+  ] },
+  '5.11': { title: '🗺️ מפת היום', stops: [
+    { n: 'בית החייל, טבריה', t: '07:00 · ארוחת בוקר', ll: [32.7905, 35.5395], q: 'בית החייל טבריה' },
+    { n: 'מצפה דדו, מטולה', t: '09:45 · סקירת ישראל–לבנון', ll: [33.2749, 35.5741] },
+    { n: 'פארק הזהב, קריית שמונה', t: '13:00 · צהריים וסיכום', ll: [33.2042, 35.5739] }
+  ] }
+};
+var schedMaps = [];
+function schedRouteFor(day){
+  var t = (day && day.title) || '';
+  for(var k in SCHED_ROUTES){ if(t.indexOf(k) !== -1) return SCHED_ROUTES[k]; }
+  return null;
+}
+function schedMapHtml(day){
+  var r = schedRouteFor(day); if(!r) return '';
+  return '<div class="sch-map-wrap"><div class="sch-map-title">' + escapeHtml(r.title) + '</div>' +
+    '<div class="sch-map" data-route="' + escapeHtml(Object.keys(SCHED_ROUTES).filter(function(k){ return SCHED_ROUTES[k] === r; })[0]) + '"></div>' +
+    '<div class="sch-map-note">לחצו על נקודה לפרטים ולניווט · הקווים מראים את סדר התחנות, לא את דרך הנסיעה</div></div>';
+}
+var leafletLoading = null;
+function loadLeaflet(){
+  if(window.L) return Promise.resolve();
+  if(leafletLoading) return leafletLoading;
+  leafletLoading = new Promise(function(res, rej){
+    var css = document.createElement('link'); css.rel = 'stylesheet';
+    css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
+    var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    s.onload = res; s.onerror = function(){ leafletLoading = null; rej(); }; document.head.appendChild(s);
+  });
+  return leafletLoading;
+}
+function wazeFor(st){
+  return st.q ? 'https://waze.com/ul?q=' + encodeURIComponent(st.q) + '&navigate=yes'
+              : 'https://waze.com/ul?ll=' + st.ll[0] + ',' + st.ll[1] + '&navigate=yes';
+}
+function initSchedMaps(){
+  schedMaps.forEach(function(m){ try{ m.remove(); }catch(e){} }); schedMaps = [];
+  var els = document.querySelectorAll('#scheduleBox .sch-map'); if(!els.length) return;
+  loadLeaflet().then(function(){
+    els.forEach(function(el){
+      if(!document.body.contains(el)) return;
+      var r = SCHED_ROUTES[el.getAttribute('data-route')]; if(!r) return;
+      var mobile = L.Browser.mobile;
+      var map = L.map(el, { scrollWheelZoom: false, dragging: !mobile, tap: false, attributionControl: true });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(map);
+      var pts = r.stops.map(function(s){ return s.ll; });
+      L.polyline(r.loop ? pts.concat([pts[0]]) : pts, { color: '#0f4c4c', weight: 3, opacity: 0.75, dashArray: '6 7' }).addTo(map);
+      r.stops.forEach(function(st, i){
+        var last = !r.loop && i === r.stops.length - 1;
+        var icon = L.divIcon({ className: '', html: '<div class="sch-pin' + (last ? ' end' : '') + '">' + (last ? '🏁' : (i + 1)) + '</div>', iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -12] });
+        L.marker(st.ll, { icon: icon }).addTo(map).bindPopup('<div class="sch-pop"><b>' + escapeHtml(st.n) + '</b><small>' + escapeHtml(st.t) + '</small><a class="sch-nav" href="' + wazeFor(st) + '" target="_blank" rel="noopener">🚗 ניווט ב-Waze</a></div>');
+      });
+      map._schedBounds = L.latLngBounds(pts).pad(0.15);
+      map.fitBounds(map._schedBounds);
+      schedMaps.push(map);
+    });
+  }).catch(function(){});
+}
+function refreshSchedMaps(){
+  schedMaps.forEach(function(m){ m.invalidateSize(); if(m._schedBounds) m.fitBounds(m._schedBounds); });
 }
 function loadSchedule(){
   try { var c = JSON.parse(localStorage.getItem(SCHED_CACHE_KEY) || 'null'); if(c) renderSchedule(c); } catch(e){}
