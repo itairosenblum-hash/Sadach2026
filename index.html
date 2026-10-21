@@ -123,6 +123,10 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 #page-details .goal-card b{font-size:0.8rem;line-height:1.3;margin-bottom:2px;}
 #page-details .goal-card span{font-size:0.7rem;line-height:1.35;display:block;}
 #page-details .cal-row{text-align:center;margin-top:12px;}
+#page-details .cal-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+.btn-wa{display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;border:none;padding:11px 22px;border-radius:999px;font-family:'Rubik',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;box-shadow:0 8px 24px rgba(37,211,102,0.35);}
+.btn-wa:active{transform:scale(0.97);}
+.btn-wa svg{flex:none;}
 #page-details .btn-primary{padding:11px 22px;font-size:0.9rem;}
 @media(max-height:720px){
   #page-details .section-sub{display:none;}
@@ -309,6 +313,7 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
         </div>
         <div class="cal-row">
           <button class="btn-primary" onclick="addToCalendar()">📅 הוסף ליומן</button>
+          <button class="btn-wa" onclick="shareWhatsApp()"><svg viewBox="0 0 24 24" width="18" height="18" fill="#fff" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.79.47 3.47 1.29 4.94L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm-4.68 6.27c-.16 0-.42.06-.64.31-.22.25-.85.83-.85 2.02 0 1.19.87 2.34.99 2.5.12.16 1.7 2.72 4.19 3.71 2.07.82 2.49.66 2.94.62.45-.04 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28-.24-.12-1.45-.72-1.68-.8-.22-.08-.39-.12-.55.12-.16.24-.63.8-.78.96-.14.16-.29.18-.53.06-.24-.12-1.03-.38-1.96-1.21-.72-.64-1.21-1.43-1.35-1.67-.14-.24-.01-.37.11-.49.11-.11.24-.29.36-.43.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.55-1.34-.76-1.83-.2-.48-.4-.42-.55-.42h-.47z"/></svg>שתפו בוואטסאפ</button>
         </div>
       </div>
       <div class="sub-block">
@@ -545,6 +550,27 @@ window.dispatchEvent(new Event('firebase-ready'));
 <script>
 
 var SITE_CODE = "2026";
+var SITE_URL = "https://itairosenblum-hash.github.io/Sadach2026/";
+function shareWhatsApp(){
+  var msg = [
+    "🎓 *סדרת חינוך – המערך הלוגיסטי · טבריה*",
+    "🗓️ 4–5 בנובמבר 2026",
+    "",
+    "כל המידע על הסדרה – לו\"ז, הנחיות, אנשי קשר והרשמה – נמצא באתר:",
+    "👉 " + SITE_URL,
+    "",
+    "🔑 *קוד כניסה: " + SITE_CODE + "*",
+    "",
+    "*איך נכנסים?*",
+    "1️⃣ לוחצים על הקישור",
+    "2️⃣ מקלידים את הקוד " + SITE_CODE + " ולוחצים \"כניסה\"",
+    "3️⃣ עוברים ללשונית ✅ *הרשמה* בתחתית המסך וממלאים את הפרטים",
+    "",
+    "💡 הקוד נשמר במכשיר – בפעם הבאה תיכנסו ישר.",
+    "📲 אפשר גם להוסיף את האתר למסך הבית כמו אפליקציה."
+  ].join("\n");
+  window.open("https://wa.me/?text=" + encodeURIComponent(msg), "_blank", "noopener");
+}
 function checkGateCode(){
   var val = document.getElementById('gateCode').value.trim();
   var errEl = document.getElementById('gateError');
