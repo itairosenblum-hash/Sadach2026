@@ -135,6 +135,34 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
   #page-details .sub-block + .sub-block{margin-top:12px;}
   #page-details .cal-row{margin-top:8px;}
 }
+/* WEATHER */
+.wx-card{cursor:pointer;transition:transform .15s;}
+.wx-card:active{transform:scale(0.97);}
+.wx-more{font-size:0.62rem;color:var(--accent);font-weight:700;margin-top:3px;}
+.wx-overlay{position:fixed;inset:0;background:rgba(10,40,40,0.45);z-index:9000;display:none;align-items:flex-end;justify-content:center;}
+.wx-overlay.open{display:flex;}
+.wx-sheet{background:#f7fbfa;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;border-radius:22px 22px 0 0;padding:16px 14px 22px;box-shadow:0 -10px 40px rgba(0,0,0,0.2);}
+@media(min-width:680px){.wx-overlay{align-items:center;}.wx-sheet{border-radius:22px;}}
+.wx-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.wx-head h3{font-size:1.1rem;color:var(--teal-dark);}
+.wx-x{background:var(--teal-soft);border:none;width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer;color:var(--teal-dark);}
+.wx-note{font-size:0.74rem;color:var(--text-mid);margin-bottom:12px;line-height:1.4;}
+.wx-day{background:#fff;border:1px solid rgba(15,76,76,0.12);border-radius:16px;padding:12px;margin-bottom:12px;}
+.wx-day h4{font-size:0.95rem;color:var(--teal-dark);margin-bottom:2px;}
+.wx-sum{font-size:0.8rem;color:var(--text-mid);margin-bottom:8px;}
+.wx-sum b{color:var(--text-dark);}
+.wx-hours{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
+.wx-h{flex:0 0 58px;background:var(--bg1);border-radius:12px;padding:7px 2px;text-align:center;font-size:0.72rem;}
+.wx-h.rain{background:#e3eefb;}
+.wx-h .t{font-weight:700;color:var(--text-mid);}
+.wx-h .i{font-size:1.2rem;margin:2px 0;}
+.wx-h .c{font-weight:900;font-size:0.95rem;color:var(--text-dark);}
+.wx-h .p{color:#2b6cb0;font-weight:700;margin-top:2px;}
+.wx-h .mm{color:#2b6cb0;font-size:0.64rem;}
+.wx-h .loc{font-size:0.58rem;color:var(--text-mid);margin-top:2px;line-height:1.1;}
+.wx-empty{font-size:0.82rem;color:var(--text-mid);text-align:center;padding:10px;}
+.wx-src{font-size:0.66rem;color:var(--text-mid);text-align:center;margin-top:4px;}
+.wx-src a{color:var(--teal);}
 /* GALLERY */
 .gal-upload{background:rgba(255,255,255,0.7);border:1px solid rgba(15,76,76,0.12);border-radius:16px;padding:14px;text-align:center;margin-bottom:14px;}
 .gal-upload input[type=text]{width:100%;max-width:320px;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:12px;padding:10px 12px;font-family:'Rubik',sans-serif;font-size:0.9rem;outline:none;margin-bottom:10px;text-align:center;}
@@ -297,6 +325,15 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
 
 <div class="header"><span class="h-eyebrow">⚓ זרוע הים · המערך הלוגיסטי</span><span class="h-main">סדרת חינוך לאוכלוסיית הקבע המובהק והבכיר</span></div>
 
+
+<div class="wx-overlay" id="wxOverlay" onclick="if(event.target===this)closeWx()">
+  <div class="wx-sheet" role="dialog" aria-modal="true" aria-labelledby="wxTitle">
+    <div class="wx-head"><h3 id="wxTitle">🌤️ תחזית מזג אוויר</h3><button class="wx-x" onclick="closeWx()" aria-label="סגירה">✕</button></div>
+    <p class="wx-note" id="wxNote">התחזית מתעדכנת אוטומטית בכל כניסה לאתר, לפי מיקום הפעילות בכל שעה.</p>
+    <div id="wxBody"><div class="wx-empty">טוען תחזית…</div></div>
+    <div class="wx-src">נתונים: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a></div>
+  </div>
+</div>
 <div class="app">
 <div class="pages" id="pages">
 
@@ -309,7 +346,7 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
           <div class="info-card"><span class="ic">📍</span><div class="lbl">מיקום</div><div class="val">טבריה</div></div>
           <div class="info-card"><span class="ic">🗓️</span><div class="lbl">מועד</div><div class="val">4–5 בנובמבר 2026</div></div>
           <div class="info-card"><span class="ic">🎓</span><div class="lbl">מסגרת</div><div class="val">סדרת חינוך יחידתית</div></div>
-          <div class="info-card"><span class="ic">🌤️</span><div class="lbl">מזג אוויר</div><div class="val">יתעדכן בהמשך</div></div>
+          <div class="info-card wx-card" id="wxCard" role="button" tabindex="0" onclick="openWx()" onkeydown="if(event.key==='Enter')openWx()"><span class="ic" id="wxCardIc">🌤️</span><div class="lbl">מזג אוויר</div><div class="val" id="wxCardVal">בודק תחזית…</div><div class="wx-more">לתחזית לפי שעות ›</div></div>
         </div>
         <div class="cal-row">
           <button class="btn-primary" onclick="addToCalendar()">📅 הוסף ליומן</button>
@@ -1301,6 +1338,124 @@ function runUpload(files, name){
   next(0);
 }
 (function(){ try { var n = localStorage.getItem('chinuchGalName'); if(n) document.getElementById('galName').value = n; } catch(e){} })();
+</script>
+
+<script>
+/* ===== WEATHER FORECAST (Open-Meteo, no key) ===== */
+var WX_CACHE_KEY = 'chinuchWxV1';
+var WX_LOCS = [
+  { k:'golan', n:'רמת הגולן', lat:32.80, lon:35.72 },
+  { k:'tib',   n:'טבריה',     lat:32.79, lon:35.54 },
+  { k:'met',   n:'מטולה',     lat:33.277, lon:35.576 },
+  { k:'ks',    n:'קריית שמונה', lat:33.204, lon:35.574 }
+];
+var WX_DAYS = [
+  { date:'2026-11-04', title:'יום רביעי · 4.11', area:'רמת הגולן (סוסיתא, נחל אל-על, אפיק)', from:7, to:19,
+    locFor:function(h){ return 'golan'; } },
+  { date:'2026-11-05', title:'יום חמישי · 5.11', area:'טבריה ← מטולה ← קריית שמונה', from:6, to:15,
+    locFor:function(h){ return h < 9 ? 'tib' : (h < 12 ? 'met' : 'ks'); } }
+];
+function wxIcon(code, hour){
+  var night = (hour < 6 || hour >= 18);
+  if(code === 0) return night ? '🌙' : '☀️';
+  if(code === 1) return night ? '🌙' : '🌤️';
+  if(code === 2) return '⛅';
+  if(code === 3) return '☁️';
+  if(code === 45 || code === 48) return '🌫️';
+  if(code >= 51 && code <= 57) return '🌦️';
+  if((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return '🌧️';
+  if((code >= 71 && code <= 77) || code === 85 || code === 86) return '🌨️';
+  if(code >= 95) return '⛈️';
+  return '🌡️';
+}
+function wxFetch(){
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + WX_LOCS.map(function(l){return l.lat;}).join(',') +
+    '&longitude=' + WX_LOCS.map(function(l){return l.lon;}).join(',') +
+    '&hourly=temperature_2m,precipitation_probability,precipitation,weather_code' +
+    '&timezone=Asia%2FJerusalem&start_date=' + WX_DAYS[0].date + '&end_date=' + WX_DAYS[WX_DAYS.length-1].date;
+  return fetch(url).then(function(r){
+    if(!r.ok) throw new Error('not-yet');
+    return r.json();
+  }).then(function(j){
+    var arr = Array.isArray(j) ? j : [j];
+    var data = { ts: Date.now(), locs: {} };
+    WX_LOCS.forEach(function(l, i){ if(arr[i] && arr[i].hourly) data.locs[l.k] = arr[i].hourly; });
+    return data;
+  });
+}
+function wxBuild(data){
+  return WX_DAYS.map(function(d){
+    var hours = [];
+    for(var h = d.from; h <= d.to; h++){
+      var lk = d.locFor(h), H = data.locs[lk]; if(!H) continue;
+      var key = d.date + 'T' + (h < 10 ? '0' : '') + h + ':00';
+      var idx = H.time.indexOf(key); if(idx < 0) continue;
+      var t = H.temperature_2m[idx];
+      if(t === null || t === undefined) continue;
+      hours.push({ h:h, loc:lk, t:Math.round(t), p:H.precipitation_probability[idx], mm:H.precipitation[idx], c:H.weather_code[idx] });
+    }
+    return { day:d, hours:hours };
+  });
+}
+function wxLocName(k){ for(var i=0;i<WX_LOCS.length;i++) if(WX_LOCS[i].k===k) return WX_LOCS[i].n; return ''; }
+function wxRender(data){
+  var body = document.getElementById('wxBody');
+  var cardVal = document.getElementById('wxCardVal');
+  var cardIc = document.getElementById('wxCardIc');
+  var built = data ? wxBuild(data) : [];
+  var any = built.some(function(b){ return b.hours.length; });
+  if(!any){
+    body.innerHTML = '<div class="wx-empty">התחזית לימי הסדרה עדיין לא זמינה.<br>היא תופיע כאן אוטומטית כשיתקרב המועד.</div>';
+    cardVal.textContent = 'תתעדכן קרוב למועד';
+    return;
+  }
+  var short = [];
+  body.innerHTML = built.map(function(b){
+    if(!b.hours.length) return '<div class="wx-day"><h4>' + b.day.title + '</h4><div class="wx-empty">התחזית ליום זה עדיין לא זמינה</div></div>';
+    var temps = b.hours.map(function(x){return x.t;});
+    var mn = Math.min.apply(null, temps), mx = Math.max.apply(null, temps);
+    var maxP = Math.max.apply(null, b.hours.map(function(x){return x.p || 0;}));
+    var sumMm = b.hours.reduce(function(a,x){return a + (x.mm || 0);}, 0);
+    short.push(mn + '–' + mx + '°' + (maxP >= 30 ? ' 🌧️' : ''));
+    var rainTxt = maxP > 0 ? ('סיכוי לגשם עד <b>' + maxP + '%</b>' + (sumMm >= 0.1 ? ' · כ-<b>' + sumMm.toFixed(1) + '</b> מ"מ' : '')) : 'ללא גשם צפוי';
+    var lastLoc = null;
+    var cells = b.hours.map(function(x){
+      var showLoc = (b.day.locFor(b.day.from) !== b.day.locFor(b.day.to)) && x.loc !== lastLoc;
+      lastLoc = x.loc;
+      return '<div class="wx-h' + ((x.p || 0) >= 40 || (x.mm || 0) > 0 ? ' rain' : '') + '">' +
+        '<div class="t">' + (x.h < 10 ? '0' : '') + x.h + ':00</div>' +
+        '<div class="i">' + wxIcon(x.c, x.h) + '</div>' +
+        '<div class="c">' + x.t + '°</div>' +
+        '<div class="p">💧' + (x.p || 0) + '%</div>' +
+        ((x.mm || 0) > 0 ? '<div class="mm">' + x.mm.toFixed(1) + ' מ"מ</div>' : '') +
+        (showLoc ? '<div class="loc">' + wxLocName(x.loc) + '</div>' : '') +
+      '</div>';
+    }).join('');
+    return '<div class="wx-day"><h4>' + b.day.title + '</h4>' +
+      '<div class="wx-sum">' + b.day.area + '<br>🌡️ <b>' + mn + '°–' + mx + '°</b> · ' + rainTxt + '</div>' +
+      '<div class="wx-hours">' + cells + '</div></div>';
+  }).join('');
+  var d = new Date(data.ts);
+  document.getElementById('wxNote').textContent = 'עודכן ' + d.toLocaleDateString('he-IL') + ' ' + d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}) +
+    ' · מתעדכן אוטומטית בכל כניסה. תחזית רחוקה עשויה להשתנות.';
+  cardVal.textContent = short.join(' · ');
+  var first = built[0].hours.length ? built[0].hours : built[1].hours;
+  var mid = first[Math.floor(first.length/2)];
+  if(mid) cardIc.textContent = wxIcon(mid.c, 12);
+}
+function loadWx(){
+  var cached = null;
+  try { cached = JSON.parse(localStorage.getItem(WX_CACHE_KEY) || 'null'); } catch(e){}
+  if(cached) wxRender(cached);
+  wxFetch().then(function(data){
+    try { localStorage.setItem(WX_CACHE_KEY, JSON.stringify(data)); } catch(e){}
+    wxRender(data);
+  }).catch(function(){ if(!cached) wxRender(null); });
+}
+function openWx(){ document.getElementById('wxOverlay').classList.add('open'); }
+function closeWx(){ document.getElementById('wxOverlay').classList.remove('open'); }
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeWx(); });
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadWx); } else { loadWx(); }
 </script>
 </body>
 </html>
