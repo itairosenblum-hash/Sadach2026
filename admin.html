@@ -228,6 +228,43 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .in-ta{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;padding:10px 12px;font-family:'Rubik',sans-serif;font-size:0.92rem;line-height:1.7;outline:none;resize:vertical;}
 .in-ta:focus{border-color:var(--teal);}
 .ct-card label + .in-ta, .ct-card input + label{margin-top:6px;}
+
+/* ATTENDANCE */
+.att-select{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;padding:10px 12px;font-family:'Rubik',sans-serif;font-size:0.92rem;outline:none;color:var(--text-dark);}
+.att-h3{color:var(--teal-dark);font-size:1rem;margin:18px 0 8px;text-align:center;}
+.att-item{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.85);border:1px solid rgba(15,76,76,0.12);border-radius:14px;padding:10px 12px;margin-bottom:8px;}
+.att-item .ai-main{flex:1;min-width:0;background:none;border:none;text-align:right;cursor:pointer;font-family:'Rubik',sans-serif;padding:0;}
+.att-item .ai-title{display:block;font-weight:700;color:var(--teal-dark);font-size:0.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.att-item .ai-sub{display:block;font-size:0.75rem;color:var(--text-mid);margin-top:2px;}
+.att-item .ai-badge{flex:none;font-weight:900;font-size:0.85rem;border-radius:999px;padding:4px 10px;background:#fbecea;color:#a5352a;}
+.att-item .ai-badge.full{background:var(--teal-soft);color:var(--teal-dark);}
+.att-item .ai-del{flex:none;border:1px solid #e3a59d;background:#fbecea;color:#a5352a;border-radius:8px;width:32px;height:32px;cursor:pointer;}
+.att-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.att-top .retry-btn{margin-top:0;flex:none;}
+.att-top span{flex:1;font-weight:900;color:var(--teal-dark);font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.att-prog{background:rgba(255,255,255,0.85);border:1px solid rgba(15,76,76,0.12);border-radius:16px;padding:14px;text-align:center;margin-bottom:10px;position:sticky;top:calc(var(--hdr,70px) + 4px);z-index:5;backdrop-filter:blur(8px);}
+.att-count{font-size:1rem;color:var(--text-mid);font-weight:700;}
+.att-count b{font-size:2rem;color:var(--teal-dark);font-weight:900;}
+.att-bar{height:10px;border-radius:999px;background:#f3d9d4;overflow:hidden;margin:8px 0 6px;}
+.att-bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),#3fb38f);transition:width .25s;}
+.att-miss{font-size:0.85rem;font-weight:700;color:#a5352a;}
+.att-miss.ok{color:var(--teal);}
+.att-seg{display:flex;gap:6px;margin-bottom:10px;}
+.att-seg button{flex:1;border:1.5px solid rgba(15,76,76,0.15);background:#fff;border-radius:10px;padding:8px 4px;font-weight:700;font-size:0.82rem;color:var(--text-mid);cursor:pointer;}
+.att-seg button.active{background:var(--teal-dark);border-color:var(--teal-dark);color:#fff;}
+.att-unit-head{display:flex;align-items:center;gap:8px;margin:14px 2px 6px;padding:7px 12px;border-radius:10px;background:var(--teal-dark);color:#fff;font-weight:800;font-size:0.9rem;}
+.att-unit-head span{flex:1;}
+.att-unit-head b{background:rgba(255,255,255,0.2);border-radius:999px;padding:1px 10px;font-size:0.8rem;}
+.att-unit-head button{border:1px solid rgba(255,255,255,0.5);background:none;color:#fff;border-radius:999px;padding:3px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;}
+.att-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.85);border:1.5px solid rgba(15,76,76,0.12);border-radius:12px;margin-bottom:6px;padding:0 8px 0 0;transition:background .15s,border-color .15s;}
+.att-row .ar-btn{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;border:none;padding:12px 4px;cursor:pointer;font-family:'Rubik',sans-serif;text-align:right;}
+.att-row .ar-chk{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid rgba(15,76,76,0.3);background:#fff;color:#fff;font-weight:900;font-size:1rem;line-height:26px;text-align:center;}
+.att-row .ar-name{flex:1;min-width:0;font-size:0.95rem;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.att-row .ar-name small{display:block;font-size:0.72rem;color:var(--text-mid);}
+.att-row .ar-tel{flex:none;width:36px;height:36px;margin-left:6px;border-radius:50%;background:var(--teal-soft);border:1px solid var(--teal);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1rem;}
+.att-row.here{background:#e3f4ec;border-color:#7cc7a7;}
+.att-row.here .ar-chk{background:var(--teal);border-color:var(--teal);}
+.att-row.here .ar-name{color:var(--teal-dark);font-weight:700;}
 </style>
 </head>
 <body>
@@ -247,6 +284,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
       <div class="admin-bar"><span id="adminWho"></span><button class="retry-btn" onclick="adminSignOut()">התנתקות</button></div>
       <div class="admin-tabs">
         <button type="button" class="active" data-pane="regs" onclick="showPane('regs')">📋 נרשמים</button>
+        <button type="button" data-pane="att" onclick="showPane('att')">🚌 נוכחות</button>
         <button type="button" data-pane="contacts" onclick="showPane('contacts')">📞 אנשי קשר</button>
         <button type="button" data-pane="instr" onclick="showPane('instr')">📢 הנחיות וציוד</button>
         <button type="button" data-pane="sched" onclick="showPane('sched')">🗓️ לו"ז</button>
@@ -262,6 +300,44 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         </div>
         <input class="admin-search" id="adminSearch" placeholder="חיפוש לפי שם, יחידה, מספר אישי או טלפון" oninput="renderAdmin()">
         <div id="adminList"><div class="reg-empty">טוען...</div></div>
+      </div>
+
+      <div class="admin-pane" id="pane-att">
+        <div id="attHome">
+          <div class="ct-card">
+            <label>שם הבדיקה</label>
+            <input id="attTitle" placeholder="למשל: עלייה לאוטובוס – בוקר">
+            <label style="margin-top:8px">מי ברשימה</label>
+            <select id="attScope" class="att-select">
+              <option value="all">כל הנרשמים</option>
+              <option value="overnight">רק הנשארים ללינה</option>
+            </select>
+            <button class="btn-primary" id="attNewBtn" style="width:100%;justify-content:center;margin-top:12px" onclick="attNew()">➕ פתיחת בדיקה חדשה</button>
+          </div>
+          <div class="ct-status" id="attStatus"></div>
+          <h3 class="att-h3">🗂️ בדיקות קודמות</h3>
+          <div id="attList"><div class="reg-empty">טוען...</div></div>
+        </div>
+
+        <div id="attCheck" style="display:none">
+          <div class="att-top"><button class="retry-btn" onclick="attClose()">→ כל הבדיקות</button><span id="attCheckTitle"></span></div>
+          <div class="att-prog">
+            <div class="att-count"><b id="attHere">0</b> / <span id="attTotal">0</span> נוכחים</div>
+            <div class="att-bar"><span id="attBarFill"></span></div>
+            <div class="att-miss" id="attMissTxt"></div>
+          </div>
+          <div class="att-seg" id="attSeg">
+            <button type="button" data-f="missing" onclick="attSetFilter('missing')">❌ חסרים</button>
+            <button type="button" data-f="all" class="active" onclick="attSetFilter('all')">כולם</button>
+            <button type="button" data-f="here" onclick="attSetFilter('here')">✅ הגיעו</button>
+          </div>
+          <input class="admin-search" id="attSearch" placeholder="חיפוש שם או יחידה" oninput="renderAttCheck()">
+          <div id="attRows"></div>
+          <div class="ct-actions" style="margin-top:14px">
+            <button class="retry-btn" onclick="attShareMissing()">📤 שליחת רשימת החסרים בוואטסאפ</button>
+            <button class="retry-btn" onclick="attReset()">↺ איפוס הבדיקה</button>
+          </div>
+        </div>
       </div>
 
       <div class="admin-pane" id="pane-gal">
@@ -414,7 +490,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, writeBatch, getDocs, getDoc, setDoc, query, orderBy, serverTimestamp }
+import { getFirestore, collection, doc, writeBatch, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, deleteField, onSnapshot, query, orderBy, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -480,6 +556,26 @@ window.saveSettings = async function(id, data){
 window.saveContactsDoc = async function(items){
   await setDoc(doc(db, 'settings', 'contacts'), { items: items, updatedAt: serverTimestamp() });
 };
+
+// Attendance checks — admin only. Each check: { title, scope, present: { regId: true }, createdAt }
+function attData(s){ return Object.assign({ id: s.id }, s.data({ serverTimestamps: 'estimate' })); }
+window.attCreate = async function(title, scope){
+  const r = await addDoc(collection(db, 'attendance'), { title: title, scope: scope, present: {}, createdAt: serverTimestamp() });
+  return r.id;
+};
+window.attWatchList = function(cb, errCb){
+  return onSnapshot(query(collection(db, 'attendance'), orderBy('createdAt', 'desc')), function(s){ cb(s.docs.map(attData)); }, errCb);
+};
+window.attWatch = function(id, cb, errCb){
+  return onSnapshot(doc(db, 'attendance', id), function(s){ cb(s.exists() ? attData(s) : null); }, errCb);
+};
+window.attMarkMany = function(id, regIds, on){
+  const upd = {};
+  regIds.forEach(function(r){ upd['present.' + r] = on ? true : deleteField(); });
+  return updateDoc(doc(db, 'attendance', id), upd);
+};
+window.attResetDoc = function(id){ return updateDoc(doc(db, 'attendance', id), { present: {} }); };
+window.attDeleteDoc = function(id){ return deleteDoc(doc(db, 'attendance', id)); };
 
 onAuthStateChanged(auth, function(user){
   const isAdmin = !!(user && user.emailVerified && user.email && ADMIN_EMAILS.indexOf(user.email.toLowerCase()) !== -1);
@@ -552,6 +648,7 @@ function showPane(id){
 function adjustHeaderSpace(){
   var h = document.querySelector('.header').offsetHeight;
   document.getElementById('pages').style.paddingTop = (h + 6) + 'px';
+  document.documentElement.style.setProperty('--hdr', h + 'px');
 }
 window.addEventListener('load', adjustHeaderSpace);
 window.addEventListener('resize', adjustHeaderSpace);
@@ -582,10 +679,12 @@ window.onAdminState = function(user, isAdmin){
     loadSched();
     loadGalSetting();
     loadAdmGallery(1);
+    attStart();
   } else {
     inn.style.display = 'none';
     out.style.display = 'block';
     adminRegs = [];
+    attStop();
     if(user){
       msg.textContent = 'החשבון ' + user.email + ' אינו מורשה לגשת לניהול.';
       signBtn.style.display = 'none';
@@ -613,6 +712,7 @@ function loadAdmin(){
   window.fetchAllRegistrations().then(function(regs){
     adminRegs = regs;
     renderAdmin();
+    renderAttList(); renderAttCheck();
   }).catch(function(err){
     console.error(err);
     listEl.innerHTML = '<div class="reg-empty">לא ניתן לטעון (' + escapeHtml(err && err.code ? err.code : 'שגיאה') + ')</div>';
@@ -924,6 +1024,173 @@ function saveSched(){
     console.error(err);
     st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
   }).then(function(){ btn.disabled = false; });
+}
+
+// ===================== ATTENDANCE =====================
+var attChecks = [], attCur = null, attCurId = null, attFilter = 'all';
+var attUnsubList = null, attUnsubCur = null;
+var ATT_SCOPES = { all: 'כל הנרשמים', overnight: 'נשארים ללינה' };
+function attErrText(err){
+  if(err && err.code === 'permission-denied') return 'אין הרשאה — צריך לעדכן את חוקי Firestore (בדיקת נוכחות)';
+  return 'שגיאה (' + (err && err.code ? err.code : 'לא ידוע') + ')';
+}
+function attRoster(scope){
+  return adminRegs.filter(function(r){ return scope === 'overnight' ? r.overnight === 'כן' : true; });
+}
+function attHereCount(c, roster){ var p = (c && c.present) || {}; return roster.filter(function(r){ return p[r.id]; }).length; }
+function attStart(){
+  attStop();
+  attUnsubList = window.attWatchList(function(items){ attChecks = items; renderAttList(); },
+    function(err){ console.error(err); document.getElementById('attList').innerHTML = '<div class="reg-empty">' + escapeHtml(attErrText(err)) + '</div>'; });
+}
+function attStop(){
+  if(attUnsubList){ attUnsubList(); attUnsubList = null; }
+  if(attUnsubCur){ attUnsubCur(); attUnsubCur = null; }
+  attCur = null; attCurId = null;
+}
+function renderAttList(){
+  var el = document.getElementById('attList');
+  if(!el || !attUnsubList) return;
+  if(!attChecks.length){ el.innerHTML = '<div class="reg-empty">עדיין לא נפתחו בדיקות</div>'; return; }
+  el.innerHTML = attChecks.map(function(c){
+    var roster = attRoster(c.scope), here = attHereCount(c, roster), full = roster.length && here === roster.length;
+    return '<div class="att-item">' +
+      '<button type="button" class="ai-main" onclick="attOpen(\'' + c.id + '\')">' +
+        '<span class="ai-title">' + escapeHtml(c.title || 'בדיקה') + '</span>' +
+        '<span class="ai-sub">' + fmtDate(c.createdAt) + ' · ' + (ATT_SCOPES[c.scope] || ATT_SCOPES.all) + '</span>' +
+      '</button>' +
+      '<span class="ai-badge' + (full ? ' full' : '') + '">' + here + '/' + roster.length + '</span>' +
+      '<button type="button" class="ai-del" onclick="attDelete(\'' + c.id + '\')" aria-label="מחיקה">🗑️</button>' +
+    '</div>';
+  }).join('');
+}
+function attNew(){
+  var titleEl = document.getElementById('attTitle'), st = document.getElementById('attStatus'), btn = document.getElementById('attNewBtn');
+  var scope = document.getElementById('attScope').value;
+  var title = titleEl.value.trim();
+  if(!title){
+    var d = new Date(); var p = function(n){ return (n < 10 ? '0' : '') + n; };
+    title = 'בדיקת נוכחות ' + p(d.getDate()) + '/' + p(d.getMonth() + 1) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  btn.disabled = true; st.className = 'ct-status'; st.textContent = 'פותח...';
+  window.attCreate(title.slice(0, 80), scope).then(function(id){
+    titleEl.value = ''; st.textContent = '';
+    attOpen(id);
+  }).catch(function(err){
+    console.error(err); st.className = 'ct-status err'; st.textContent = attErrText(err);
+  }).then(function(){ btn.disabled = false; });
+}
+function attOpen(id){
+  if(attUnsubCur){ attUnsubCur(); attUnsubCur = null; }
+  attCurId = id; attCur = attChecks.filter(function(c){ return c.id === id; })[0] || null;
+  attFilter = 'all'; document.getElementById('attSearch').value = '';
+  document.getElementById('attHome').style.display = 'none';
+  document.getElementById('attCheck').style.display = 'block';
+  renderAttCheck();
+  window.scrollTo(0, 0);
+  attUnsubCur = window.attWatch(id, function(c){
+    if(!c){ attClose(); return; }
+    attCur = c; renderAttCheck();
+  }, function(err){ console.error(err); document.getElementById('attRows').innerHTML = '<div class="reg-empty">' + escapeHtml(attErrText(err)) + '</div>'; });
+}
+function attClose(){
+  if(attUnsubCur){ attUnsubCur(); attUnsubCur = null; }
+  attCur = null; attCurId = null;
+  document.getElementById('attCheck').style.display = 'none';
+  document.getElementById('attHome').style.display = 'block';
+  renderAttList();
+}
+function attSetFilter(f){
+  attFilter = f;
+  document.querySelectorAll('#attSeg button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-f') === f); });
+  renderAttCheck();
+}
+function renderAttCheck(){
+  if(!attCurId || !attCur) return;
+  var present = attCur.present || {};
+  var roster = attRoster(attCur.scope);
+  var here = attHereCount(attCur, roster), total = roster.length, miss = total - here;
+  document.getElementById('attCheckTitle').textContent = attCur.title || 'בדיקה';
+  document.getElementById('attHere').textContent = here;
+  document.getElementById('attTotal').textContent = total;
+  document.getElementById('attBarFill').style.width = (total ? Math.round(here * 100 / total) : 0) + '%';
+  var mt = document.getElementById('attMissTxt');
+  mt.className = 'att-miss' + (total && !miss ? ' ok' : '');
+  mt.textContent = !total ? 'אין נרשמים ברשימה' : (miss ? 'חסרים: ' + miss : '✓ כולם כאן!');
+
+  var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
+  var q = (document.getElementById('attSearch').value || '').trim();
+  var shown = roster.filter(function(r){
+    var isHere = !!present[r.id];
+    if(attFilter === 'missing' && isHere) return false;
+    if(attFilter === 'here' && !isHere) return false;
+    if(q && ![r.name, r.unit, r.rank, r.role].some(function(v){ return v && String(v).indexOf(q) !== -1; })) return false;
+    return true;
+  }).sort(function(a, b){ var u = heCmp(a.unit || 'תתת', b.unit || 'תתת'); return u !== 0 ? u : heCmp(a.name, b.name); });
+
+  var el = document.getElementById('attRows');
+  if(!shown.length){
+    el.innerHTML = '<div class="reg-empty">' + (attFilter === 'missing' && !q ? '🎉 אין חסרים' : 'אין אנשים להצגה') + '</div>';
+    return;
+  }
+  var unitStats = {};
+  roster.forEach(function(r){ var k = r.unit || 'ללא יחידה'; unitStats[k] = unitStats[k] || { t: 0, h: 0 }; unitStats[k].t++; if(present[r.id]) unitStats[k].h++; });
+  var lastUnit = null;
+  el.innerHTML = shown.map(function(r){
+    var uk = r.unit || 'ללא יחידה', head = '';
+    if(uk !== lastUnit){
+      lastUnit = uk; var us = unitStats[uk];
+      var allHere = us.h === us.t;
+      head = '<div class="att-unit-head"><span>' + escapeHtml(uk) + '</span><b>' + us.h + '/' + us.t + '</b>' +
+        '<button type="button" onclick="attMarkUnit(\'' + escapeHtml(uk).replace(/'/g, '&#39;') + '\',' + (!allHere) + ')">' + (allHere ? 'ביטול היחידה' : '✓ כל היחידה') + '</button></div>';
+    }
+    var isHere = !!present[r.id];
+    return head + '<div class="att-row' + (isHere ? ' here' : '') + '">' +
+      '<button type="button" class="ar-btn" onclick="attToggle(\'' + r.id + '\')">' +
+        '<span class="ar-chk">' + (isHere ? '✓' : '') + '</span>' +
+        '<span class="ar-name">' + escapeHtml(r.rank || '') + ' ' + escapeHtml(r.name || '') + (r.role ? '<small>' + escapeHtml(r.role) + '</small>' : '') + '</span>' +
+      '</button>' +
+      (r.phone ? '<a class="ar-tel" href="tel:' + escapeHtml(r.phone) + '" aria-label="התקשרות">📞</a>' : '') +
+    '</div>';
+  }).join('');
+}
+function attApply(regIds, on){
+  if(!attCur) return;
+  var id = attCurId;
+  attCur.present = Object.assign({}, attCur.present || {});
+  regIds.forEach(function(r){ if(on) attCur.present[r] = true; else delete attCur.present[r]; });
+  renderAttCheck();
+  window.attMarkMany(id, regIds, on).catch(function(err){ console.error(err); alert('השמירה נכשלה — ' + attErrText(err)); });
+}
+function attToggle(regId){
+  if(!attCur) return;
+  attApply([regId], !(attCur.present && attCur.present[regId]));
+}
+function attMarkUnit(unit, on){
+  if(!attCur) return;
+  var ids = attRoster(attCur.scope).filter(function(r){ return (r.unit || 'ללא יחידה') === unit; }).map(function(r){ return r.id; });
+  if(ids.length) attApply(ids, on);
+}
+function attReset(){
+  if(!attCur || !confirm('לאפס את כל הסימונים בבדיקה "' + (attCur.title || '') + '"?')) return;
+  attCur.present = {}; renderAttCheck();
+  window.attResetDoc(attCurId).catch(function(err){ console.error(err); alert('האיפוס נכשל — ' + attErrText(err)); });
+}
+function attDelete(id){
+  var c = attChecks.filter(function(x){ return x.id === id; })[0];
+  if(!c || !confirm('למחוק את הבדיקה "' + (c.title || '') + '"?')) return;
+  window.attDeleteDoc(id).catch(function(err){ console.error(err); alert('המחיקה נכשלה — ' + attErrText(err)); });
+}
+function attShareMissing(){
+  if(!attCur) return;
+  var present = attCur.present || {};
+  var missing = attRoster(attCur.scope).filter(function(r){ return !present[r.id]; })
+    .sort(function(a, b){ return String(a.unit || '').localeCompare(String(b.unit || ''), 'he') || String(a.name || '').localeCompare(String(b.name || ''), 'he'); });
+  var txt = '🚌 ' + (attCur.title || 'בדיקת נוכחות') + '\n';
+  txt += missing.length ? 'חסרים (' + missing.length + '):\n' + missing.map(function(r){
+    return '• ' + [((r.rank || '') + ' ' + (r.name || '')).trim(), r.unit, r.phone].filter(Boolean).join(' – ');
+  }).join('\n') : '✓ כולם כאן!';
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
 }
 
 // ===================== GALLERY UPLOAD PERMISSION =====================
