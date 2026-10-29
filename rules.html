@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>העתקת חוקי Firestore</title>
+<link rel="icon" href="favicon.png">
+<style>
+body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#eaf6f6;color:#123434;margin:0;padding:16px;}
+.box{max-width:720px;margin:0 auto;}
+h1{font-size:1.2rem;color:#0f4c4c;text-align:center;margin:8px 0 4px;}
+p{font-size:0.9rem;color:#3a6b63;text-align:center;margin:0 0 14px;line-height:1.6;}
+button{display:block;width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#d97b3f,#f0a86b);color:#fff;font-size:1.05rem;font-weight:700;cursor:pointer;font-family:inherit;}
+button.ok{background:#2f8f7a;}
+#info{text-align:center;font-size:0.85rem;margin:10px 0;color:#3a6b63;min-height:1.2em;}
+pre{direction:ltr;text-align:left;background:#fff;border:1px solid rgba(15,76,76,0.15);border-radius:12px;padding:12px;font-size:11px;line-height:1.45;overflow:auto;max-height:55vh;white-space:pre;}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>📋 חוקי Firestore</h1>
+  <p>לוחצים "העתקה", ואז ב-Firebase Console → Firestore Database → Rules:<br>מוחקים את כל מה שיש, מדביקים ולוחצים Publish.</p>
+  <button id="btn" onclick="copyRules()">📋 העתקת כל החוקים</button>
+  <div id="info">טוען...</div>
+  <pre id="rules"></pre>
+</div>
+<script>
+var rulesText = '';
+fetch('firestore.rules?v=' + Date.now(), { cache: 'no-store' })
+  .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
+  .then(function(t){
+    rulesText = t;
+    document.getElementById('rules').textContent = t;
+    document.getElementById('info').textContent = t.split('\n').length + ' שורות — השורה האחרונה צריכה להיות }';
+  })
+  .catch(function(){ document.getElementById('info').textContent = 'לא ניתן לטעון — רעננו את הדף'; });
+function copyRules(){
+  if(!rulesText) return;
+  var btn = document.getElementById('btn');
+  var done = function(){ btn.textContent = '✓ הועתק! עכשיו להדביק ב-Firebase'; btn.className = 'ok'; };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(rulesText).then(done, fallback);
+  } else fallback();
+  function fallback(){
+    var ta = document.createElement('textarea');
+    ta.value = rulesText; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, rulesText.length);
+    try { document.execCommand('copy'); done(); } catch(e){ btn.textContent = 'ההעתקה נכשלה — סמנו את הטקסט ידנית'; }
+    document.body.removeChild(ta);
+  }
+}
+</script>
+</body>
+</html>
