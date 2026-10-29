@@ -307,6 +307,25 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
 
 
 /* ROOMS (public) */
+.rooms-me{background:rgba(255,255,255,0.85);border:1.5px solid var(--teal);border-radius:16px;padding:14px;margin-bottom:12px;}
+.rooms-me h4{color:var(--teal-dark);font-size:0.98rem;margin-bottom:8px;text-align:center;}
+.rooms-me select,.rooms-me input{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:12px;padding:11px 12px;font-family:'Rubik',sans-serif;font-size:0.95rem;outline:none;margin-bottom:8px;color:var(--text-dark);}
+.rooms-me select:focus,.rooms-me input:focus{border-color:var(--teal);}
+.rooms-me .btn-primary{width:100%;justify-content:center;}
+.rooms-me .who{display:flex;align-items:center;gap:8px;font-size:0.92rem;color:var(--text-dark);}
+.rooms-me .who span{flex:1;min-width:0;}
+.rooms-me .who button{background:none;border:none;color:var(--text-mid);text-decoration:underline;font-size:0.8rem;cursor:pointer;font-family:'Rubik',sans-serif;}
+.rooms-me .mine{margin-top:8px;text-align:center;font-size:0.95rem;}
+.rooms-me .mine b{color:var(--accent);font-size:1.15rem;}
+.rooms-me .rm-err{color:#c0392b;font-size:0.84rem;font-weight:700;text-align:center;margin-top:6px;}
+.room-card .room-act{padding:0 14px 12px;}
+.room-card .room-act button{width:100%;padding:10px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;font-family:'Rubik',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;}
+.room-card .room-act button.out{background:#fff;border:1px solid #e3a59d;color:#a5352a;}
+.room-card .room-act button:disabled{opacity:0.5;}
+.room-card .room-act .full{display:block;text-align:center;font-size:0.82rem;color:var(--text-mid);font-weight:700;padding:4px 0;}
+.room-card.mine{border:2px solid var(--accent);}
+.room-card li.free{color:var(--text-mid);font-size:0.82rem;}
+
 .rooms-cta{display:none;align-items:center;gap:12px;width:100%;margin:0 0 18px;padding:14px 16px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--teal-dark),var(--teal));color:#fff;font-family:'Rubik',sans-serif;text-align:right;cursor:pointer;box-shadow:0 8px 22px rgba(15,76,76,0.25);}
 .rooms-cta.on{display:flex;}
 .rooms-cta .ic{font-size:1.8rem;}
@@ -442,7 +461,7 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
   <div class="page" id="page-rooms">
     <div class="section">
       <h2 class="section-title">🛏️ שיבוץ חדרים</h2>
-      <p class="section-sub">לינה בבית החייל, טבריה · חפשו את השם שלכם</p>
+      <p class="section-sub">לינה בבית החייל, טבריה</p>
       <div id="roomsBox"><div class="coming-soon"><span class="ic">🛏️</span>שיבוץ החדרים יפורסם בהמשך</div></div>
     </div>
   </div>
@@ -590,7 +609,7 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
 <!-- FIREBASE (Firestore + Auth) BACKEND -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, writeBatch, getDocs, query, orderBy, serverTimestamp }
+import { getFirestore, collection, doc, writeBatch, getDocs, query, orderBy, serverTimestamp, onSnapshot }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -621,6 +640,19 @@ window.saveRegistration = async function(record){
 window.fetchPublicList = async function(){
   const snap = await getDocs(query(collection(db, 'public_list'), orderBy('createdAt', 'asc')));
   return snap.docs.map(d => d.data());
+};
+
+// ---- rooms: people pick their own room ----
+// roomKeys/{regId} is write-only and proves the personal number in the same write (Firestore rules compare it to the registration)
+window.watchRoomPicks = function(cb, errCb){
+  return onSnapshot(collection(db, 'roomPicks'), function(s){ const o = {}; s.docs.forEach(function(d){ o[d.id] = d.data(); }); cb(o); }, errCb);
+};
+window.pickRoom = async function(regId, pn, data){
+  const b = writeBatch(db);
+  b.set(doc(db, 'roomKeys', regId), { pn: pn, t: serverTimestamp() });
+  if(data) b.set(doc(db, 'roomPicks', regId), Object.assign({}, data, { locked: false, updatedAt: serverTimestamp() }));
+  else b.delete(doc(db, 'roomPicks', regId));
+  await b.commit();
 };
 
 window.firebaseReady = true;
@@ -867,7 +899,8 @@ function showSuccess(record){
 // page HTML is parsed, and shows the last-seen list instantly from a local copy while it refreshes.
 var PUBLIC_LIST_URL = 'https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/public_list'
   + '?pageSize=1000&orderBy=createdAt&key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI';
-var LIST_CACHE_KEY = 'chinuchPublicListV1';
+var LIST_CACHE_KEY = 'chinuchPublicListV2';
+var publicRegs = [];
 
 function fetchPublicListFast(){
   return fetch(PUBLIC_LIST_URL, { cache: 'no-store' })
@@ -876,7 +909,7 @@ function fetchPublicListFast(){
       return (data.documents || []).map(function(d){
         var f = d.fields || {};
         function sv(k){ return f[k] && f[k].stringValue ? f[k].stringValue : ''; }
-        return { unit: sv('unit'), name: sv('name'), gender: sv('gender') };
+        return { id: String(d.name || '').split('/').pop(), unit: sv('unit'), name: sv('name'), gender: sv('gender') };
       });
     });
 }
@@ -890,6 +923,7 @@ function setTabBadge(id, n){
 }
 
 function renderPublicList(regs){
+  publicRegs = regs; if(typeof renderRooms === 'function' && roomsData) renderRooms();
   var listEl = document.getElementById('regList');
   setTabBadge('badgeRegister', regs.length);
   document.getElementById('regCount').textContent = regs.length;
@@ -992,6 +1026,7 @@ function fsVal(v){
   if('arrayValue' in v) return (v.arrayValue.values || []).map(fsVal);
   if('mapValue' in v){ var o = {}, f = v.mapValue.fields || {}; for(var k in f) o[k] = fsVal(f[k]); return o; }
   if('integerValue' in v) return Number(v.integerValue);
+  if('doubleValue' in v) return Number(v.doubleValue);
   if('booleanValue' in v) return v.booleanValue;
   return null;
 }
@@ -1151,48 +1186,139 @@ function loadSchedule(){
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadSchedule); } else { loadSchedule(); }
 
 
-// ROOMS — edited from admin.html; Firestore only lets the public read it once "published" is on
+// ROOMS — rooms set up in admin.html; each overnight participant picks a room (identified by name + personal number)
 var ROOMS_URL = 'https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/settings/roomsPublic'
   + '?key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI';
-var ROOMS_CACHE_KEY = 'chinuchRoomsV1';
-var roomsData = null, roomsG = 'all';
+var ROOMS_CACHE_KEY = 'chinuchRoomsV2', ROOMS_ME_KEY = 'chinuchRoomsMeV1';
+var roomsData = null, roomsG = 'all', roomPicks = {}, roomsUnsub = null, roomsBusy = false, roomsErr = '';
+var roomsMe = null; try { roomsMe = JSON.parse(localStorage.getItem(ROOMS_ME_KEY) || 'null'); } catch(e){}
 function roomsSetG(g){ roomsG = g; renderRooms(); }
+function roomsPersonOpts(){
+  var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
+  var list = publicRegs.filter(function(r){ return r.id; }).slice().sort(function(a, b){ return heCmp(a.unit, b.unit) || heCmp(a.name, b.name); });
+  var out = '<option value="">בחרו את השם שלכם</option>', last = null;
+  list.forEach(function(r){
+    if(r.unit !== last){ if(last !== null) out += '</optgroup>'; last = r.unit; out += '<optgroup label="' + escapeHtml(r.unit || 'ללא יחידה') + '">'; }
+    out += '<option value="' + escapeHtml(r.id) + '">' + escapeHtml(r.name) + '</option>';
+  });
+  return out + (last !== null ? '</optgroup>' : '');
+}
+function roomsIdentify(){
+  var id = document.getElementById('roomsWho').value, pn = document.getElementById('roomsPn').value.trim();
+  if(!id || !pn){ roomsErr = 'בחרו שם והקלידו מספר אישי'; renderRooms(); return; }
+  var r = publicRegs.filter(function(x){ return x.id === id; })[0];
+  roomsMe = { id: id, pn: pn, name: r ? r.name : '', gender: r ? r.gender : '' }; roomsErr = '';
+  try { localStorage.setItem(ROOMS_ME_KEY, JSON.stringify(roomsMe)); } catch(e){}
+  renderRooms();
+}
+function roomsForget(){ roomsMe = null; roomsErr = ''; try { localStorage.removeItem(ROOMS_ME_KEY); } catch(e){} renderRooms(); }
+function roomsCount(id){ var n = 0; for(var k in roomPicks){ if(roomPicks[k].room === id) n++; } return n; }
+function roomsChoose(roomId){
+  if(!roomsMe || roomsBusy) return;
+  var room = (roomsData.rooms || []).filter(function(r){ return r.id === roomId; })[0];
+  if(roomId && !room) return;
+  if(roomId && roomsCount(roomId) >= room.cap){ roomsErr = 'החדר התמלא — בחרו חדר אחר'; renderRooms(); return; }
+  if(roomId && !confirm('לבחור את חדר ' + room.num + '?')) return;
+  if(!roomId && !confirm('לצאת מהחדר?')) return;
+  if(typeof window.pickRoom !== 'function'){ roomsErr = 'המערכת עדיין נטענת, נסו שוב בעוד רגע'; renderRooms(); return; }
+  var me = publicRegs.filter(function(x){ return x.id === roomsMe.id; })[0] || roomsMe;
+  roomsBusy = true; roomsErr = ''; renderRooms();
+  window.pickRoom(roomsMe.id, roomsMe.pn, roomId ? { room: roomId, name: me.name || '', unit: me.unit || '', gender: me.gender || '' } : null)
+    .then(function(){ roomsBusy = false; roomsErr = ''; renderRooms(); })
+    .catch(function(err){
+      console.error(err); roomsBusy = false;
+      roomsErr = err && err.code === 'permission-denied'
+        ? 'לא ניתן לשמור — בדקו שהמספר האישי נכון ושסימנתם "נשאר/ת ללינה" בהרשמה (או שההרשמה לחדרים נסגרה)'
+        : 'השמירה נכשלה — בדקו חיבור לאינטרנט ונסו שוב';
+      renderRooms();
+    });
+}
 function renderRooms(){
   var d = roomsData, box = document.getElementById('roomsBox');
   var on = !!(d && d.published && (d.rooms || []).length);
   document.getElementById('roomsCta').classList.toggle('on', on);
-  if(!on){ box.innerHTML = '<div class="coming-soon"><span class="ic">🛏️</span>שיבוץ החדרים יפורסם בהמשך</div>'; return; }
+  if(on){
+    document.querySelector('#roomsCta b').textContent = d.open ? 'ההרשמה לחדרים פתוחה!' : 'שיבוץ החדרים';
+    document.querySelector('#roomsCta small').textContent = d.open ? 'לחצו כדי לבחור חדר' : 'לחצו כדי למצוא את החדר שלכם';
+  }
+  if(!on){ box.innerHTML = '<div class="coming-soon"><span class="ic">🛏️</span>החדרים יפורסמו בהמשך</div>'; return; }
   var inp = document.getElementById('roomsQ'), q = inp ? inp.value.trim() : '', hadFocus = inp && document.activeElement === inp;
+  var pnEl = document.getElementById('roomsPn'), pnKeep = pnEl ? pnEl.value : '', whoEl = document.getElementById('roomsWho'), whoKeep = whoEl ? whoEl.value : '';
+  var visible = {}; d.rooms.forEach(function(r){ visible[r.id] = r; });
+  var myPick = roomsMe ? roomPicks[roomsMe.id] : null, myRoom = myPick && visible[myPick.room];
+  var meReg = roomsMe ? publicRegs.filter(function(x){ return x.id === roomsMe.id; })[0] : null;
+  var myGender = meReg ? meReg.gender : (roomsMe && roomsMe.gender);
+
+  // "Who are you" card (only while self-signup is open)
+  var meHtml = '';
+  if(d.open){
+    if(!roomsMe){
+      meHtml = '<div class="rooms-me"><h4>✋ בחירת חדר</h4><select id="roomsWho">' + roomsPersonOpts() + '</select>' +
+        '<input id="roomsPn" inputmode="numeric" dir="ltr" placeholder="מספר אישי (לאימות)" autocomplete="off">' +
+        '<button class="btn-primary" onclick="roomsIdentify()">המשך לבחירת חדר</button>' + (roomsErr ? '<div class="rm-err">' + escapeHtml(roomsErr) + '</div>' : '') + '</div>';
+    } else {
+      meHtml = '<div class="rooms-me"><div class="who"><span>👤 ' + escapeHtml(roomsMe.name || '') + '</span><button onclick="roomsForget()">לא אני / החלפה</button></div>' +
+        '<div class="mine">' + (myRoom ? 'החדר שלך: <b>' + escapeHtml(myRoom.num) + '</b>' + (myPick.locked ? '<br><small>🔒 שובצת ע"י המנהל</small>' : '') :
+          myPick ? '🔒 שובצת לחדר ע"י המנהל' : 'עדיין לא בחרת חדר — לחצו "בחירת החדר הזה" באחד החדרים למטה') + '</div>' +
+        (roomsBusy ? '<div class="mine">שומר...</div>' : '') + (roomsErr ? '<div class="rm-err">' + escapeHtml(roomsErr) + '</div>' : '') + '</div>';
+    }
+  } else if(roomsMe && myRoom){
+    meHtml = '<div class="rooms-me"><div class="mine">👤 ' + escapeHtml(roomsMe.name || '') + ' — החדר שלך: <b>' + escapeHtml(myRoom.num) + '</b></div></div>';
+  }
+
   var hasF = d.rooms.some(function(r){ return r.gender === 'נקבה'; }), hasM = d.rooms.some(function(r){ return r.gender !== 'נקבה'; });
-  var rooms = d.rooms.filter(function(r){ return roomsG === 'all' || (roomsG === 'f' ? r.gender === 'נקבה' : r.gender !== 'נקבה'); });
+  var occ = {}; d.rooms.forEach(function(r){ occ[r.id] = []; });
+  Object.keys(roomPicks).forEach(function(id){ var pk = roomPicks[id]; if(occ[pk.room]) occ[pk.room].push(Object.assign({ id: id }, pk)); });
+  var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
   var match = function(p){ return q && [p.name, p.unit, p.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; }); };
-  var hits = [];
-  d.rooms.forEach(function(r){ (r.people || []).forEach(function(p){ if(match(p)) hits.push({ p: p, r: r }); }); });
-  if(q) rooms = rooms.filter(function(r){ return (r.people || []).some(match); });
+  var defG = roomsG === 'all' && d.open && myGender && !q ? (myGender === 'נקבה' ? 'f' : 'm') : roomsG;
+  var rooms = d.rooms.filter(function(r){ return defG === 'all' || (defG === 'f' ? r.gender === 'נקבה' : r.gender !== 'נקבה'); });
+  if(q) rooms = rooms.filter(function(r){ return occ[r.id].some(match); });
+  var hits = []; d.rooms.forEach(function(r){ occ[r.id].forEach(function(p){ if(match(p)) hits.push({ p: p, r: r }); }); });
   var found = '';
   if(q && hits.length === 1) found = '<div class="rooms-found">' + escapeHtml(((hits[0].p.rank || '') + ' ' + hits[0].p.name).trim()) + ' — חדר <b>' + escapeHtml(hits[0].r.num) + '</b></div>';
-  else if(q && !hits.length) found = '<div class="rooms-found">לא נמצא — בדקו את האיות או פנו לאחד מאנשי הקשר</div>';
-  box.innerHTML = '<input class="rooms-search" id="roomsQ" placeholder="🔍 הקלידו את השם שלכם" oninput="renderRooms()" value="' + escapeHtml(q) + '">' +
-    (hasF && hasM ? '<div class="rooms-seg"><button type="button" class="' + (roomsG === 'all' ? 'active' : '') + '" onclick="roomsSetG(\'all\')">כל החדרים</button>' +
-      '<button type="button" class="' + (roomsG === 'm' ? 'active' : '') + '" onclick="roomsSetG(\'m\')">👨 גברים</button>' +
-      '<button type="button" class="' + (roomsG === 'f' ? 'active' : '') + '" onclick="roomsSetG(\'f\')">👩 נשים</button></div>' : '') +
+  else if(q && !hits.length) found = '<div class="rooms-found">לא נמצא — ייתכן שעדיין לא נבחר חדר</div>';
+
+  box.innerHTML = meHtml +
+    '<input class="rooms-search" id="roomsQ" placeholder="🔍 חיפוש שם בחדרים" oninput="renderRooms()" value="' + escapeHtml(q) + '">' +
+    (hasF && hasM ? '<div class="rooms-seg"><button type="button" class="' + (defG === 'all' ? 'active' : '') + '" onclick="roomsSetG(\'all\')">כל החדרים</button>' +
+      '<button type="button" class="' + (defG === 'm' ? 'active' : '') + '" onclick="roomsSetG(\'m\')">👨 גברים</button>' +
+      '<button type="button" class="' + (defG === 'f' ? 'active' : '') + '" onclick="roomsSetG(\'f\')">👩 נשים</button></div>' : '') +
     found +
     '<div class="rooms-grid">' + rooms.map(function(r){
-      var ppl = r.people || [];
-      return '<div class="room-card' + (r.gender === 'נקבה' ? ' f' : '') + '"><h3><span>' + (r.gender === 'נקבה' ? '👩' : '👨') + ' חדר ' + escapeHtml(r.num) + '</span><b>' + ppl.length + ' ' + (ppl.length === 1 ? 'איש' : 'אנשים') + '</b></h3><ul>' +
-        (ppl.length ? ppl.map(function(p){ return '<li class="' + (match(p) ? 'hit' : '') + '"><span>' + escapeHtml(((p.rank || '') + ' ' + (p.name || '')).trim()) + '</span><small>' + escapeHtml(p.unit || '') + '</small></li>'; }).join('') : '<li class="room-empty">—</li>') +
-        '</ul></div>';
+      var ppl = occ[r.id].sort(function(a, b){ return heCmp(a.unit, b.unit) || heCmp(a.name, b.name); }), free = Math.max(0, r.cap - ppl.length);
+      var isMine = myRoom && myRoom.id === r.id, act = '';
+      if(d.open && roomsMe && !roomsBusy){
+        if(isMine && !myPick.locked) act = '<button class="out" onclick="roomsChoose(\'\')">יציאה מהחדר</button>';
+        else if(!isMine && !r.self) act = '<span class="full">🔒 שיבוץ ע"י המנהל בלבד</span>';
+        else if(!isMine && !(myPick && myPick.locked) && r.self){
+          if(myGender && r.gender !== myGender) act = '';
+          else act = free ? '<button onclick="roomsChoose(\'' + r.id + '\')">' + (myPick ? '🔁 מעבר לחדר הזה' : '✅ בחירת החדר הזה') + '</button>' : '<span class="full">החדר מלא</span>';
+        }
+      }
+      return '<div class="room-card' + (r.gender === 'נקבה' ? ' f' : '') + (isMine ? ' mine' : '') + '"><h3><span>' + (r.gender === 'נקבה' ? '👩' : '👨') + ' חדר ' + escapeHtml(r.num) + (isMine ? ' · שלך' : '') + '</span><b>' + ppl.length + '/' + r.cap + '</b></h3><ul>' +
+        ppl.map(function(p){ return '<li class="' + (match(p) ? 'hit' : '') + '"><span>' + escapeHtml(((p.rank || '') + ' ' + (p.name || '')).trim()) + '</span><small>' + escapeHtml(p.unit || '') + '</small></li>'; }).join('') +
+        (free ? '<li class="free">' + (free === 1 ? 'מקום פנוי אחד' : free + ' מקומות פנויים') + '</li>' : '') +
+        '</ul>' + (act ? '<div class="room-act">' + act + '</div>' : '') + '</div>';
     }).join('') + '</div>';
-  if(hadFocus){ var ni = document.getElementById('roomsQ'); ni.focus(); ni.setSelectionRange(ni.value.length, ni.value.length); }
+  var ni;
+  if(hadFocus){ ni = document.getElementById('roomsQ'); ni.focus(); ni.setSelectionRange(ni.value.length, ni.value.length); }
+  if((ni = document.getElementById('roomsPn')) && pnKeep) ni.value = pnKeep;
+  if((ni = document.getElementById('roomsWho')) && whoKeep) ni.value = whoKeep;
+}
+function roomsWatch(){
+  if(roomsUnsub || typeof window.watchRoomPicks !== 'function') return;
+  roomsUnsub = window.watchRoomPicks(function(p){ roomPicks = p; renderRooms(); }, function(e){ console.error(e); roomsUnsub = null; });
 }
 function loadRooms(){
-  try { var c = JSON.parse(localStorage.getItem(ROOMS_CACHE_KEY) || 'null'); if(c){ roomsData = c; renderRooms(); } } catch(e){}
+  try { var c = JSON.parse(localStorage.getItem(ROOMS_CACHE_KEY) || 'null'); if(c && !roomsData){ roomsData = c; renderRooms(); } } catch(e){}
   fetch(ROOMS_URL, { cache: 'no-store' })
     .then(function(r){ if(r.status === 403 || r.status === 404) return null; if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(doc){
       var d = null;
-      if(doc){ var f = doc.fields || {}; d = { published: fsVal(f.published) === true, rooms: fsVal(f.rooms) || [] }; }
+      if(doc){ var f = doc.fields || {}; d = { published: fsVal(f.published) === true, open: fsVal(f.open) === true, rooms: fsVal(f.rooms) || [] }; }
       roomsData = d; renderRooms();
+      if(d && d.published){ if(window.firebaseReady) roomsWatch(); else window.addEventListener('firebase-ready', roomsWatch, { once: true }); }
       try { if(d && d.published) localStorage.setItem(ROOMS_CACHE_KEY, JSON.stringify(d)); else localStorage.removeItem(ROOMS_CACHE_KEY); } catch(e){}
     })
     .catch(function(){});

@@ -54,22 +54,69 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'published', 'title', 'subtitle', 'days', 'uploadsOpen', 'open', 'message', 'updatedAt']);
     }
 
-    // Room setup (rooms + who is pinned to which room) — admins only.
+    // Room setup — admins only.
     match /settings/rooms {
       allow read: if isAdmin();
       allow write: if isAdmin()
-        && request.resource.data.keys().hasOnly(['rooms', 'forced', 'updatedAt'])
-        && request.resource.data.rooms is list
-        && request.resource.data.forced is map;
+        && request.resource.data.keys().hasOnly(['rooms', 'updatedAt'])
+        && request.resource.data.rooms is list;
     }
 
-    // Published room assignment page — everyone reads it only while "published" is on.
+    // Public rooms page: visible rooms, "open" = people may pick a room, "allowed" = {roomId: gender} they may pick.
     match /settings/roomsPublic {
-      allow read: if isAdmin() || resource.data.published == true;
+      allow read: if true;
       allow write: if isAdmin()
-        && request.resource.data.keys().hasOnly(['published', 'rooms', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['published', 'open', 'rooms', 'allowed', 'updatedAt'])
         && request.resource.data.published is bool
-        && request.resource.data.rooms is list;
+        && request.resource.data.open is bool
+        && request.resource.data.rooms is list
+        && request.resource.data.allowed is map;
+    }
+
+    function roomsCfg() {
+      return get(/databases/$(db)/documents/settings/roomsPublic).data;
+    }
+    function roomSignupOpen() {
+      return exists(/databases/$(db)/documents/settings/roomsPublic)
+        && roomsCfg().get('published', false) == true
+        && roomsCfg().get('open', false) == true;
+    }
+    // The personal number must be proven in the SAME write (roomKeys/{regId}.t == request.time).
+    function provedNow(regId) {
+      return getAfter(/databases/$(db)/documents/roomKeys/$(regId)).data.t == request.time;
+    }
+
+    // Write-only proof doc: only accepted when the personal number matches the registration.
+    match /roomKeys/{regId} {
+      allow read: if false;
+      allow create, update: if roomSignupOpen()
+        && request.resource.data.keys().hasOnly(['pn', 't'])
+        && request.resource.data.t == request.time
+        && exists(/databases/$(db)/documents/registrations/$(regId))
+        && get(/databases/$(db)/documents/registrations/$(regId)).data.personalNum == request.resource.data.pn;
+      allow delete: if isAdmin();
+    }
+
+    // Who is in which room — everyone can read. A person picks / changes / leaves their own room;
+    // admins can pin anyone (locked: true), and a locked pick can't be changed by the person.
+    match /roomPicks/{regId} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && (request.resource == null || request.resource.data.keys().hasOnly(['room', 'name', 'unit', 'rank', 'gender', 'locked', 'updatedAt']));
+      allow create, update: if roomSignupOpen()
+        && provedNow(regId)
+        && (resource == null || resource.data.get('locked', false) != true)
+        && request.resource.data.keys().hasOnly(['room', 'name', 'unit', 'gender', 'locked', 'updatedAt'])
+        && request.resource.data.locked == false
+        && request.resource.data.updatedAt == request.time
+        && get(/databases/$(db)/documents/registrations/$(regId)).data.overnight == 'כן'
+        && request.resource.data.name == get(/databases/$(db)/documents/registrations/$(regId)).data.name
+        && request.resource.data.unit == get(/databases/$(db)/documents/registrations/$(regId)).data.unit
+        && request.resource.data.gender == get(/databases/$(db)/documents/registrations/$(regId)).data.gender
+        && roomsCfg().allowed.get(request.resource.data.room, '') == request.resource.data.gender;
+      allow delete: if roomSignupOpen()
+        && provedNow(regId)
+        && resource.data.get('locked', false) != true;
     }
 
     // Attendance checks (bus / arrival roll calls) — admins only.

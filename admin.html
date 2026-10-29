@@ -316,6 +316,8 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .rm-pp .nm{flex:1;min-width:0;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .rm-pp .nm small{display:block;font-size:0.72rem;color:var(--text-mid);}
 .rm-pp select{flex:none;max-width:55%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;padding:7px 8px;font-family:'Rubik',sans-serif;font-size:0.82rem;color:var(--text-dark);outline:none;}
+.rm-pp .lk{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--accent-light);background:#fff6ee;cursor:pointer;font-size:0.9rem;padding:0;}
+.rm-pp .lk.off{border-color:rgba(15,76,76,0.2);background:#fff;opacity:0.6;}
 .rm-pp.forced select{border-color:var(--accent);font-weight:700;}
 </style>
 </head>
@@ -419,9 +421,13 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
       <div class="admin-pane" id="pane-rooms">
         <div class="pub-toggle" id="rmPubToggle" onclick="rmTogglePub()">
           <span class="pub-switch"><span></span></span>
-          <span class="pub-label" id="rmPubLabel">עמוד השיבוץ מוסתר מהאתר</span>
+          <span class="pub-label" id="rmPubLabel">עמוד החדרים מוסתר מהאתר</span>
         </div>
-        <p class="section-sub" style="margin:8px 0 12px">משובצים רק הנרשמים ללינה (ואנשים שהוצמדו ידנית) · השיבוץ האוטומטי מסדר לפי מגדר ויחידה · השינויים נכנסים לאתר רק אחרי "שמירה ופרסום"</p>
+        <div class="pub-toggle" id="rmOpenToggle" onclick="rmToggleOpen()" style="margin-top:8px">
+          <span class="pub-switch"><span></span></span>
+          <span class="pub-label" id="rmOpenLabel">הרשמה לחדרים סגורה</span>
+        </div>
+        <p class="section-sub" style="margin:8px 0 12px">כל נרשם ללינה בוחר חדר בעצמו באתר (מזדהה עם שם + מספר אישי) · אתם יכולים להצמיד אנשים לחדר — הצמדה ננעלת (🔒) והאדם לא יכול לשנות אותה · הגדרות החדרים והמתגים נכנסים לתוקף אחרי "שמירה"</p>
         <div class="rm-sum" id="rmSum"></div>
         <div id="rmWarn"></div>
 
@@ -430,26 +436,24 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <div class="ct-actions">
           <button class="retry-btn" onclick="rmAdd()">➕ הוספת חדר</button>
           <button class="retry-btn" onclick="rmAddMany()">➕➕ הוספת כמה חדרים</button>
+          <button class="btn-primary" id="rmSaveBtn" onclick="rmSave()">💾 שמירה</button>
         </div>
+        <div class="ct-status" id="rmStatus"></div>
 
-        <h3 class="att-h3">📌 הצמדת אנשים לחדר</h3>
-        <p class="section-sub" style="margin:-4px 0 10px">"אוטומטי" = המערכת בוחרת חדר · בחירת חדר = הצמדה קבועה (מסומן 📌)</p>
+        <h3 class="att-h3">👥 מי בחר איזה חדר</h3>
+        <p class="section-sub" style="margin:-4px 0 10px">בחירת חדר כאן = הצמדה (נשמרת מיד ונעולה 🔒) · לחיצה על 🔒 משחררת ומאפשרת לאדם לשנות בעצמו</p>
         <div class="att-seg" id="rmSeg">
           <button type="button" data-f="all" class="active" onclick="rmSetFilter('all')">כולם</button>
-          <button type="button" data-f="forced" onclick="rmSetFilter('forced')">📌 מוצמדים</button>
-          <button type="button" data-f="none" onclick="rmSetFilter('none')">⚠️ ללא חדר</button>
+          <button type="button" data-f="none" onclick="rmSetFilter('none')">⚠️ בלי חדר</button>
+          <button type="button" data-f="locked" onclick="rmSetFilter('locked')">🔒 הוצמדו</button>
         </div>
         <input class="admin-search" id="rmSearch" placeholder="חיפוש שם או יחידה" oninput="rmRenderPeople()">
         <div id="rmPeople"></div>
 
-        <div class="ct-actions" style="margin-top:16px">
-          <button class="btn-primary" id="rmSaveBtn" onclick="rmSave()">💾 שמירה ופרסום</button>
-        </div>
-        <div class="ct-actions">
-          <button class="retry-btn" onclick="rmShare()">📤 שליחת קישור לעמוד השיבוץ בוואטסאפ</button>
+        <div class="ct-actions" style="margin-top:14px">
+          <button class="retry-btn" onclick="rmShare()">📤 שליחת קישור לבחירת חדרים בוואטסאפ</button>
           <a class="retry-btn" href="./#rooms" target="_blank" style="text-decoration:none">👁️ צפייה בעמוד</a>
         </div>
-        <div class="ct-status" id="rmStatus"></div>
       </div>
 
       <div class="admin-pane" id="pane-sched">
@@ -681,6 +685,14 @@ window.attSetNote = function(id, regId, text){
 };
 window.attDeleteDoc = function(id){ return deleteDoc(doc(db, 'attendance', id)); };
 
+// Room picks — roomPicks/{regId}: { room, name, unit, rank, gender, locked, updatedAt } (public read)
+window.rmWatchPicks = function(cb, errCb){
+  return onSnapshot(collection(db, 'roomPicks'), function(s){ const o = {}; s.docs.forEach(function(d){ o[d.id] = d.data(); }); cb(o); }, errCb);
+};
+window.rmSetPick = function(regId, data){ return setDoc(doc(db, 'roomPicks', regId), Object.assign({}, data, { updatedAt: serverTimestamp() })); };
+window.rmDelPick = function(regId){ return deleteDoc(doc(db, 'roomPicks', regId)); };
+window.rmDelPicks = function(ids){ const b = writeBatch(db); ids.forEach(function(id){ b.delete(doc(db, 'roomPicks', id)); }); return b.commit(); };
+
 onAuthStateChanged(auth, function(user){
   const isAdmin = !!(user && user.emailVerified && user.email && ADMIN_EMAILS.indexOf(user.email.toLowerCase()) !== -1);
   if (typeof window.onAdminState === 'function') window.onAdminState(user, isAdmin);
@@ -791,6 +803,7 @@ window.onAdminState = function(user, isAdmin){
     out.style.display = 'block';
     adminRegs = [];
     attStop();
+    if(typeof rmUnsub === 'function'){ rmUnsub(); rmUnsub = null; }
     if(user){
       msg.textContent = 'החשבון ' + user.email + ' אינו מורשה לגשת לניהול.';
       signBtn.style.display = 'none';
@@ -1429,74 +1442,68 @@ function toggleRegOpen(){
 function saveRegMsg(){ saveRegSetting(regOpen, document.getElementById('regMsg').value.trim().slice(0, 200), '✓ ההודעה נשמרה'); }
 
 // ===================== ROOMS =====================
-// settings/rooms        (admins only): { rooms:[{id,num,cap,gender,show,manual}], forced:{regId:roomId} }
-// settings/roomsPublic  (public when published): { published, rooms:[{num,gender,people:[{rank,name,unit}]}] }
-var rmRooms = [], rmForced = {}, rmPub = false, rmLoaded = false, rmFilter = 'all', rmEditOpen = {};
+// settings/rooms        (admins only): { rooms:[{id,num,cap,gender,show,self}] }
+// settings/roomsPublic  (public read):  { published, open, rooms:[visible rooms {id,num,cap,gender,self}], allowed:{roomId:gender} }
+// roomPicks/{regId}     (public read):  { room, name, unit, rank, gender, locked } — written by the person (verified by personal number) or by an admin
+var rmRooms = [], rmPicks = {}, rmPub = false, rmOpen = false, rmLoaded = false, rmFilter = 'all', rmEditOpen = {}, rmUnsub = null;
 var RM_SITE_URL = 'https://itairosenblum-hash.github.io/Sadach2026/#rooms';
 function rmUid(){ return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function rmNumCmp(a, b){ return String(a.num || '').localeCompare(String(b.num || ''), 'he', { numeric: true }); }
 function rmDirty(){ var s = document.getElementById('rmStatus'); s.className = 'ct-status'; s.textContent = 'יש שינויים שלא נשמרו'; }
+function rmErr(err){ return err && err.code === 'permission-denied' ? 'אין הרשאה — צריך לעדכן את חוקי Firestore (חדרים)' : 'שגיאה (' + (err && err.code ? err.code : 'לא ידוע') + ')'; }
 function rmLoad(){
   Promise.all([window.fetchSettings('rooms'), window.fetchSettings('roomsPublic')]).then(function(res){
     var d = res[0] || {}, pub = res[1] || {};
-    rmRooms = (d.rooms || []).map(function(r){ return { id: r.id || rmUid(), num: r.num || '', cap: Number(r.cap) || 0, gender: r.gender === 'נקבה' ? 'נקבה' : 'זכר', show: r.show !== false, manual: r.manual === true }; });
-    rmForced = d.forced || {};
-    rmPub = pub.published === true;
-    rmLoaded = true;
-    rmRender();
-  }).catch(function(err){
-    console.error(err);
-    document.getElementById('rmRooms').innerHTML = '<div class="reg-empty">' + (err && err.code === 'permission-denied' ? 'אין הרשאה — צריך לעדכן את חוקי Firestore (חדרים)' : 'לא ניתן לטעון (' + escapeHtml(err && err.code ? err.code : 'שגיאה') + ')') + '</div>';
-  });
+    rmRooms = (d.rooms || []).map(function(r){ return { id: r.id || rmUid(), num: r.num || '', cap: Number(r.cap) || 0, gender: r.gender === 'נקבה' ? 'נקבה' : 'זכר', show: r.show !== false, self: r.self !== false }; });
+    rmPub = pub.published === true; rmOpen = pub.open === true;
+    rmLoaded = true; rmRender();
+  }).catch(function(err){ console.error(err); document.getElementById('rmRooms').innerHTML = '<div class="reg-empty">' + escapeHtml(rmErr(err)) + '</div>'; });
+  if(rmUnsub) rmUnsub();
+  rmUnsub = window.rmWatchPicks(function(p){ rmPicks = p; rmRender(); }, function(err){ console.error(err); document.getElementById('rmPeople').innerHTML = '<div class="reg-empty">' + escapeHtml(rmErr(err)) + '</div>'; });
 }
-function rmRoster(){ return adminRegs.filter(function(r){ return r.overnight === 'כן' || rmForced[r.id]; }); }
 function rmRoomById(id){ return rmRooms.filter(function(r){ return r.id === id; })[0] || null; }
-
-// Core assignment: forced people first, then everyone else by gender → unit → name into the lowest-numbered room with space
-function rmCompute(){
-  var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
-  var rooms = rmRooms.slice().sort(rmNumCmp);
-  var occ = {}; rooms.forEach(function(r){ occ[r.id] = []; });
-  var roomOf = {}, unassigned = [];
-  var roster = rmRoster().slice().sort(function(a, b){ var u = heCmp(a.unit || 'תתת', b.unit || 'תתת'); return u !== 0 ? u : heCmp(a.name, b.name); });
-  roster.forEach(function(p){
-    var fid = rmForced[p.id];
-    if(fid && occ[fid]){ occ[fid].push(p); roomOf[p.id] = fid; }
-  });
-  roster.forEach(function(p){
-    if(roomOf[p.id]) return;
-    var room = rooms.filter(function(r){ return !r.manual && r.gender === p.gender && occ[r.id].length < r.cap; })[0];
-    if(room){ occ[room.id].push(p); roomOf[p.id] = room.id; } else unassigned.push(p);
-  });
-  return { rooms: rooms, occ: occ, roomOf: roomOf, unassigned: unassigned, roster: roster };
-}
 function rmPersonLabel(p){ return ((p.rank || '') + ' ' + (p.name || '')).trim(); }
+function rmState(){
+  var rooms = rmRooms.slice().sort(rmNumCmp), occ = {};
+  rooms.forEach(function(r){ occ[r.id] = []; });
+  var regById = {}; adminRegs.forEach(function(r){ regById[r.id] = r; });
+  Object.keys(rmPicks).forEach(function(id){
+    var pk = rmPicks[id], r = regById[id];
+    if(occ[pk.room]) occ[pk.room].push({ id: id, rank: r ? r.rank : pk.rank, name: r ? r.name : pk.name, unit: r ? r.unit : pk.unit, gender: r ? r.gender : pk.gender, locked: pk.locked === true, gone: !r });
+  });
+  var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
+  rooms.forEach(function(r){ occ[r.id].sort(function(a, b){ return heCmp(a.unit, b.unit) || heCmp(a.name, b.name); }); });
+  var roster = adminRegs.filter(function(r){ return r.overnight === 'כן' || rmPicks[r.id]; })
+    .sort(function(a, b){ return heCmp(a.unit || 'תתת', b.unit || 'תתת') || heCmp(a.name, b.name); });
+  return { rooms: rooms, occ: occ, roster: roster, has: function(id){ return !!(rmPicks[id] && occ[rmPicks[id].room]); } };
+}
 
 function rmRender(){
   if(!rmLoaded || !document.getElementById('rmRooms')) return;
   document.getElementById('rmPubToggle').classList.toggle('on', rmPub);
-  document.getElementById('rmPubLabel').textContent = rmPub ? 'עמוד השיבוץ מוצג באתר' : 'עמוד השיבוץ מוסתר מהאתר';
-  var c = rmCompute();
+  document.getElementById('rmPubLabel').textContent = rmPub ? 'עמוד החדרים מוצג באתר' : 'עמוד החדרים מוסתר מהאתר';
+  document.getElementById('rmOpenToggle').classList.toggle('on', rmOpen);
+  document.getElementById('rmOpenLabel').textContent = rmOpen ? 'הרשמה לחדרים פתוחה — אנשים בוחרים חדר' : 'הרשמה לחדרים סגורה';
+  var c = rmState();
 
-  // Summary
-  var need = { 'זכר': 0, 'נקבה': 0 }, beds = { 'זכר': 0, 'נקבה': 0 };
-  c.roster.forEach(function(p){ if(need[p.gender] != null) need[p.gender]++; });
+  var need = { 'זכר': 0, 'נקבה': 0 }, got = { 'זכר': 0, 'נקבה': 0 }, beds = { 'זכר': 0, 'נקבה': 0 };
+  c.roster.forEach(function(p){ if(need[p.gender] != null){ need[p.gender]++; if(c.has(p.id)) got[p.gender]++; } });
   c.rooms.forEach(function(r){ beds[r.gender] += r.cap; });
-  var unM = c.unassigned.filter(function(p){ return p.gender === 'זכר'; }).length, unF = c.unassigned.filter(function(p){ return p.gender === 'נקבה'; }).length;
   document.getElementById('rmSum').innerHTML =
-    '<div class="' + (unM ? 'warn' : '') + '"><b>👨 ' + need['זכר'] + ' / ' + beds['זכר'] + '</b>גברים ללינה / מיטות</div>' +
-    '<div class="' + (unF ? 'warn' : '') + '"><b>👩 ' + need['נקבה'] + ' / ' + beds['נקבה'] + '</b>נשים ללינה / מיטות</div>';
+    '<div><b>👨 ' + got['זכר'] + ' / ' + need['זכר'] + '</b>גברים בחרו חדר · ' + beds['זכר'] + ' מיטות</div>' +
+    '<div><b>👩 ' + got['נקבה'] + ' / ' + need['נקבה'] + '</b>נשים בחרו חדר · ' + beds['נקבה'] + ' מיטות</div>';
 
-  // Warnings
   var w = [];
-  if(c.unassigned.length) w.push('⚠️ ' + c.unassigned.length + ' אנשים בלי חדר' + (unM ? ' · גברים: ' + unM : '') + (unF ? ' · נשים: ' + unF : '') + ' — הוסיפו חדרים / מיטות');
+  if(need['זכר'] > beds['זכר']) w.push('⚠️ חסרות ' + (need['זכר'] - beds['זכר']) + ' מיטות לגברים');
+  if(need['נקבה'] > beds['נקבה']) w.push('⚠️ חסרות ' + (need['נקבה'] - beds['נקבה']) + ' מיטות לנשים');
   c.rooms.forEach(function(r){ if(c.occ[r.id].length > r.cap) w.push('⚠️ חדר ' + escapeHtml(r.num || '?') + ' מעל הקיבולת (' + c.occ[r.id].length + '/' + r.cap + ')'); });
-  c.rooms.forEach(function(r){ var bad = c.occ[r.id].filter(function(p){ return p.gender !== r.gender; }); if(bad.length) w.push('⚠️ בחדר ' + escapeHtml(r.num || '?') + ' (' + r.gender + ') הוצמדו: ' + bad.map(function(p){ return escapeHtml(rmPersonLabel(p)); }).join(', ')); });
-  var nums = {}; rmRooms.forEach(function(r){ var k = String(r.num).trim(); if(k){ nums[k] = (nums[k] || 0) + 1; } });
+  c.rooms.forEach(function(r){ var bad = c.occ[r.id].filter(function(p){ return p.gender !== r.gender; }); if(bad.length) w.push('⚠️ בחדר ' + escapeHtml(r.num || '?') + ' (' + r.gender + '): ' + bad.map(function(p){ return escapeHtml(rmPersonLabel(p)); }).join(', ')); });
+  var gone = []; c.rooms.forEach(function(r){ c.occ[r.id].forEach(function(p){ if(p.gone) gone.push(p.name); }); });
+  if(gone.length) w.push('⚠️ בחרו חדר אבל ההרשמה שלהם נמחקה: ' + gone.map(escapeHtml).join(', '));
+  var nums = {}; rmRooms.forEach(function(r){ var k = String(r.num).trim(); if(k) nums[k] = (nums[k] || 0) + 1; });
   Object.keys(nums).forEach(function(k){ if(nums[k] > 1) w.push('⚠️ מספר החדר ' + escapeHtml(k) + ' מופיע ' + nums[k] + ' פעמים'); });
   document.getElementById('rmWarn').innerHTML = w.length ? '<div class="rm-warn">' + w.join('<br>') + '</div>' : '';
 
-  // Rooms
   var el = document.getElementById('rmRooms');
   if(!rmRooms.length){ el.innerHTML = '<div class="reg-empty">עדיין אין חדרים. לחצו "הוספת חדר".</div>'; }
   else el.innerHTML = c.rooms.map(function(r){
@@ -1505,10 +1512,11 @@ function rmRender(){
       '<div class="rm-head"><span>' + (r.gender === 'נקבה' ? '👩' : '👨') + ' חדר ' + escapeHtml(r.num || '—') + '</span>' +
         '<b class="' + (people.length > r.cap ? 'over' : '') + '">' + people.length + '/' + r.cap + '</b>' +
         '<button type="button" onclick="rmToggleEdit(\'' + r.id + '\')">' + (open ? 'סגירה' : '✏️ עריכה') + '</button></div>' +
-      '<div class="rm-tags">' + (r.show ? '<span class="rm-tag">👁️ מוצג באתר</span>' : '<span class="rm-tag off">🙈 מוסתר מהאתר</span>') + (r.manual ? '<span class="rm-tag man">📌 שיבוץ ידני בלבד</span>' : '') + '</div>' +
+      '<div class="rm-tags">' + (r.show ? '<span class="rm-tag">👁️ מוצג באתר</span>' : '<span class="rm-tag off">🙈 מוסתר מהאתר</span>') +
+        (r.show && !r.self ? '<span class="rm-tag man">🔒 רק הצמדה ע"י מנהל</span>' : '') + '</div>' +
       '<div class="rm-occ">' + (people.length ? people.map(function(p){
-        return '<div class="p"><span>' + (rmForced[p.id] ? '📌 ' : '') + escapeHtml(rmPersonLabel(p)) + '</span><small>' + escapeHtml(p.unit || '') + '</small></div>';
-      }).join('') : '<div class="empty">החדר ריק</div>') + '</div>' +
+        return '<div class="p"><span>' + (p.locked ? '🔒 ' : '') + escapeHtml(rmPersonLabel(p)) + '</span><small>' + escapeHtml(p.unit || '') + '</small></div>';
+      }).join('') : '<div class="empty">עדיין אף אחד לא בחר את החדר</div>') + '</div>' +
       (open ? '<div class="rm-edit"><div class="ct-grid">' +
         '<div><label>מספר חדר</label><input value="' + escapeHtml(r.num) + '" onchange="rmSet(\'' + r.id + '\',\'num\',this.value)" placeholder="למשל 101"></div>' +
         '<div><label>קיבולת (מיטות)</label><input type="number" inputmode="numeric" min="0" max="20" value="' + r.cap + '" onchange="rmSet(\'' + r.id + '\',\'cap\',this.value)"></div>' +
@@ -1516,13 +1524,12 @@ function rmRender(){
           '<div class="radio-btn' + (r.gender === 'זכר' ? ' selected' : '') + '" onclick="rmSet(\'' + r.id + '\',\'gender\',\'זכר\')">👨 זכר</div>' +
           '<div class="radio-btn' + (r.gender === 'נקבה' ? ' selected' : '') + '" onclick="rmSet(\'' + r.id + '\',\'gender\',\'נקבה\')">👩 נקבה</div></div></div>' +
         '</div>' +
-        '<label class="rm-chk"><input type="checkbox"' + (r.show ? ' checked' : '') + ' onchange="rmSet(\'' + r.id + '\',\'show\',this.checked)"> להציג את החדר בעמוד השיבוץ</label>' +
-        '<label class="rm-chk"><input type="checkbox"' + (r.manual ? ' checked' : '') + ' onchange="rmSet(\'' + r.id + '\',\'manual\',this.checked)"> שיבוץ ידני בלבד <small>(רק מי שהוצמד לחדר)</small></label>' +
+        '<label class="rm-chk"><input type="checkbox"' + (r.show ? ' checked' : '') + ' onchange="rmSet(\'' + r.id + '\',\'show\',this.checked)"> להציג את החדר באתר</label>' +
+        '<label class="rm-chk"><input type="checkbox"' + (r.self ? ' checked' : '') + (r.show ? '' : ' disabled') + ' onchange="rmSet(\'' + r.id + '\',\'self\',this.checked)"> אנשים יכולים לבחור את החדר בעצמם <small>(בלי סימון — רק אתם מצמידים)</small></label>' +
         '<div class="ct-tools"><button class="del" onclick="rmDel(\'' + r.id + '\')">🗑️ מחיקת החדר</button></div>' +
       '</div>' : '') +
     '</div>';
   }).join('');
-
   rmRenderPeople(c);
 }
 function rmSetFilter(f){
@@ -1532,36 +1539,39 @@ function rmSetFilter(f){
 }
 function rmRenderPeople(c){
   if(!rmLoaded) return;
-  c = c || rmCompute();
+  c = c || rmState();
   var q = (document.getElementById('rmSearch').value || '').trim();
-  var opts = function(p){
-    var sel = rmForced[p.id] || '';
-    return '<option value="">' + (c.roomOf[p.id] && !sel ? '🔄 חדר ' + escapeHtml((rmRoomById(c.roomOf[p.id]) || {}).num || '?') + ' · אוטו׳' : sel ? '🔄 אוטומטי' : '⚠️ אין מקום · אוטו׳') + '</option>' +
-      c.rooms.map(function(r){
-        var mism = r.gender !== p.gender;
-        return '<option value="' + r.id + '"' + (sel === r.id ? ' selected' : '') + '>📌 חדר ' + escapeHtml(r.num || '?') + (mism ? ' (' + r.gender + ')' : '') + ' · ' + c.occ[r.id].length + '/' + r.cap + '</option>';
-      }).join('');
-  };
+  var hit = function(p){ return [p.name, p.unit, p.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; }); };
   var shown = c.roster.filter(function(p){
-    if(rmFilter === 'forced' && !rmForced[p.id]) return false;
-    if(rmFilter === 'none' && c.roomOf[p.id]) return false;
-    if(q && ![p.name, p.unit, p.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; })) return false;
-    return true;
+    if(rmFilter === 'none' && c.has(p.id)) return false;
+    if(rmFilter === 'locked' && !(rmPicks[p.id] && rmPicks[p.id].locked)) return false;
+    return !q || hit(p);
   });
-  // Also allow forcing people who did NOT sign up for overnight (search only)
-  var extra = q ? adminRegs.filter(function(p){ return p.overnight !== 'כן' && !rmForced[p.id] && rmFilter === 'all' && [p.name, p.unit, p.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; }); }) : [];
+  var extra = q && rmFilter === 'all' ? adminRegs.filter(function(p){ return p.overnight !== 'כן' && !rmPicks[p.id] && hit(p); }) : [];
   var el = document.getElementById('rmPeople');
-  if(!shown.length && !extra.length){ el.innerHTML = '<div class="reg-empty">' + (rmFilter === 'none' && !q ? '🎉 לכולם יש חדר' : rmFilter === 'forced' && !q ? 'אין הצמדות' : c.roster.length ? 'אין אנשים להצגה' : 'אין עדיין נרשמים ללינה') + '</div>'; return; }
+  if(!shown.length && !extra.length){ el.innerHTML = '<div class="reg-empty">' + (rmFilter === 'none' && !q ? '🎉 כולם בחרו חדר' : rmFilter === 'locked' && !q ? 'אין הצמדות' : c.roster.length ? 'אין אנשים להצגה' : 'אין עדיין נרשמים ללינה') + '</div>'; return; }
   el.innerHTML = shown.concat(extra).map(function(p){
-    var isExtra = extra.indexOf(p) !== -1;
-    return '<div class="rm-pp' + (rmForced[p.id] ? ' forced' : '') + '"><div class="nm">' + (p.gender === 'נקבה' ? '👩 ' : '👨 ') + escapeHtml(rmPersonLabel(p)) +
-      '<small>' + escapeHtml(p.unit || '') + (isExtra ? ' · לא נרשם ללינה' : '') + (!c.roomOf[p.id] && !isExtra ? ' · ⚠️ ללא חדר' : '') + '</small></div>' +
-      '<select onchange="rmForce(\'' + p.id + '\',this.value)">' + opts(p) + '</select></div>';
+    var pk = c.has(p.id) ? rmPicks[p.id] : null, isExtra = extra.indexOf(p) !== -1;
+    var opts = '<option value="">— בלי חדר —</option>' + c.rooms.map(function(r){
+      return '<option value="' + r.id + '"' + (pk && pk.room === r.id ? ' selected' : '') + '>חדר ' + escapeHtml(r.num || '?') + (r.gender !== p.gender ? ' (' + r.gender + ')' : '') + ' · ' + c.occ[r.id].length + '/' + r.cap + '</option>';
+    }).join('');
+    return '<div class="rm-pp' + (pk && pk.locked ? ' forced' : '') + '"><div class="nm">' + (p.gender === 'נקבה' ? '👩 ' : '👨 ') + escapeHtml(rmPersonLabel(p)) +
+      '<small>' + escapeHtml(p.unit || '') + (isExtra ? ' · לא נרשם ללינה' : '') + (pk ? (pk.locked ? ' · 🔒 הוצמד' : ' · ✋ בחר בעצמו') : (isExtra ? '' : ' · ⚠️ בלי חדר')) + '</small></div>' +
+      (pk ? '<button type="button" class="lk' + (pk.locked ? '' : ' off') + '" onclick="rmLock(\'' + p.id + '\')" title="' + (pk.locked ? 'שחרור' : 'נעילה') + '">' + (pk.locked ? '🔒' : '🔓') + '</button>' : '') +
+      '<select onchange="rmPin(\'' + p.id + '\',this.value)">' + opts + '</select></div>';
   }).join('');
 }
-function rmForce(regId, roomId){
-  if(roomId) rmForced[regId] = roomId; else delete rmForced[regId];
-  rmDirty(); rmRender();
+function rmPin(regId, roomId){
+  var r = adminRegs.filter(function(x){ return x.id === regId; })[0]; if(!r) return;
+  var room = rmRoomById(roomId);
+  if(room && room.gender !== r.gender && !confirm('חדר ' + room.num + ' מוגדר ל' + (room.gender === 'נקבה' ? 'נשים' : 'גברים') + '. להצמיד בכל זאת?')){ rmRender(); return; }
+  var pr = roomId ? window.rmSetPick(regId, { room: roomId, name: r.name || '', unit: r.unit || '', rank: r.rank || '', gender: r.gender || '', locked: true }) : window.rmDelPick(regId);
+  pr.catch(function(err){ console.error(err); alert('השמירה נכשלה — ' + rmErr(err)); rmRender(); });
+}
+function rmLock(regId){
+  var pk = rmPicks[regId], r = adminRegs.filter(function(x){ return x.id === regId; })[0]; if(!pk || !r) return;
+  window.rmSetPick(regId, { room: pk.room, name: r.name || '', unit: r.unit || '', rank: r.rank || '', gender: r.gender || '', locked: !pk.locked })
+    .catch(function(err){ console.error(err); alert('השמירה נכשלה — ' + rmErr(err)); });
 }
 function rmToggleEdit(id){ rmEditOpen[id] = !rmEditOpen[id]; rmRender(); }
 function rmSet(id, k, v){
@@ -1573,7 +1583,7 @@ function rmSet(id, k, v){
 function rmAdd(){
   var last = rmRooms.slice().sort(rmNumCmp).slice(-1)[0];
   var n = last && /^\d+$/.test(String(last.num)) ? String(Number(last.num) + 1) : '';
-  var r = { id: rmUid(), num: n, cap: last ? last.cap : 2, gender: last ? last.gender : 'זכר', show: true, manual: false };
+  var r = { id: rmUid(), num: n, cap: last ? last.cap : 2, gender: last ? last.gender : 'זכר', show: true, self: true };
   rmRooms.push(r); rmEditOpen[r.id] = true; rmDirty(); rmRender();
 }
 function rmAddMany(){
@@ -1582,45 +1592,37 @@ function rmAddMany(){
   var cap = parseInt(prompt('כמה מיטות בכל חדר?', '2'), 10); if(!cap || cap < 1) return;
   var g = confirm('האם החדרים לגברים?\nאישור = גברים · ביטול = נשים') ? 'זכר' : 'נקבה';
   var base = parseInt(from, 10);
-  for(var i = 0; i < Math.min(count, 60); i++){
-    rmRooms.push({ id: rmUid(), num: isNaN(base) ? (from + '-' + (i + 1)) : String(base + i), cap: Math.min(cap, 20), gender: g, show: true, manual: false });
-  }
+  for(var i = 0; i < Math.min(count, 60); i++) rmRooms.push({ id: rmUid(), num: isNaN(base) ? (from + '-' + (i + 1)) : String(base + i), cap: Math.min(cap, 20), gender: g, show: true, self: true });
   rmDirty(); rmRender();
 }
 function rmDel(id){
   var r = rmRoomById(id); if(!r) return;
-  var nf = Object.keys(rmForced).filter(function(k){ return rmForced[k] === id; }).length;
-  if(!confirm('למחוק את חדר ' + (r.num || '') + '?' + (nf ? '\n' + nf + ' אנשים שהוצמדו אליו יחזרו לשיבוץ אוטומטי.' : ''))) return;
+  var n = Object.keys(rmPicks).filter(function(k){ return rmPicks[k].room === id; }).length;
+  if(!confirm('למחוק את חדר ' + (r.num || '') + '?' + (n ? '\n' + n + ' אנשים שבחרו בו יצטרכו לבחור חדר אחר (אחרי "שמירה").' : ''))) return;
   rmRooms = rmRooms.filter(function(x){ return x.id !== id; });
-  Object.keys(rmForced).forEach(function(k){ if(rmForced[k] === id) delete rmForced[k]; });
   rmDirty(); rmRender();
 }
 function rmTogglePub(){ rmPub = !rmPub; rmDirty(); rmRender(); }
+function rmToggleOpen(){ rmOpen = !rmOpen; rmDirty(); rmRender(); }
 function rmSave(){
   var st = document.getElementById('rmStatus'), btn = document.getElementById('rmSaveBtn');
   if(rmRooms.some(function(r){ return !String(r.num).trim(); })){ st.className = 'ct-status err'; st.textContent = 'לכל חדר צריך מספר'; return; }
-  // drop forced links to deleted registrations / rooms
-  var regIds = {}; adminRegs.forEach(function(r){ regIds[r.id] = 1; });
-  var forced = {}; Object.keys(rmForced).forEach(function(k){ if(regIds[k] && rmRoomById(rmForced[k])) forced[k] = rmForced[k]; });
-  rmForced = forced;
-  var c = rmCompute();
-  var cfg = { rooms: rmRooms.map(function(r){ return { id: r.id, num: String(r.num).trim(), cap: r.cap, gender: r.gender, show: r.show, manual: r.manual }; }), forced: forced };
-  var pub = { published: rmPub, rooms: c.rooms.filter(function(r){ return r.show; }).map(function(r){
-    return { num: String(r.num).trim(), gender: r.gender, people: c.occ[r.id].map(function(p){ return { rank: p.rank || '', name: p.name || '', unit: p.unit || '' }; }) };
-  }) };
+  var rooms = rmRooms.slice().sort(rmNumCmp).map(function(r){ return { id: r.id, num: String(r.num).trim(), cap: r.cap, gender: r.gender, show: r.show, self: r.show && r.self }; });
+  var allowed = {}; rooms.forEach(function(r){ if(r.show && r.self) allowed[r.id] = r.gender; });
+  var pub = { published: rmPub, open: rmOpen, allowed: allowed, rooms: rooms.filter(function(r){ return r.show; }).map(function(r){ return { id: r.id, num: r.num, cap: r.cap, gender: r.gender, self: r.self }; }) };
+  var orphan = Object.keys(rmPicks).filter(function(k){ return !rmRoomById(rmPicks[k].room); });
   btn.disabled = true; st.className = 'ct-status'; st.textContent = 'שומר...';
-  window.saveSettings('rooms', cfg).then(function(){ return window.saveSettings('roomsPublic', pub); }).then(function(){
-    st.className = 'ct-status ok';
-    st.textContent = rmPub ? '✓ נשמר — השיבוץ מוצג באתר' + (c.unassigned.length ? ' (' + c.unassigned.length + ' בלי חדר)' : '') : '✓ נשמר — עמוד השיבוץ מוסתר מהאתר';
-    rmRender();
-  }).catch(function(err){
-    console.error(err);
-    st.className = 'ct-status err';
-    st.textContent = err && err.code === 'permission-denied' ? 'אין הרשאה — צריך לעדכן את חוקי Firestore (חדרים)' : 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
-  }).then(function(){ btn.disabled = false; });
+  window.saveSettings('rooms', { rooms: rooms })
+    .then(function(){ return window.saveSettings('roomsPublic', pub); })
+    .then(function(){ return orphan.length ? window.rmDelPicks(orphan) : null; })
+    .then(function(){
+      st.className = 'ct-status ok';
+      st.textContent = '✓ נשמר' + (rmPub ? ' — העמוד מוצג באתר' : ' — העמוד מוסתר') + (rmOpen ? ', ההרשמה לחדרים פתוחה' : ', ההרשמה לחדרים סגורה');
+    }).catch(function(err){ console.error(err); st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה — ' + rmErr(err); })
+    .then(function(){ btn.disabled = false; });
 }
 function rmShare(){
-  var txt = '🛏️ שיבוץ החדרים לסדרת החינוך פורסם!\nחפשו את השם שלכם כאן:\n' + RM_SITE_URL;
+  var txt = '🛏️ ההרשמה לחדרים בסדרת החינוך נפתחה!\nבחרו חדר כאן (צריך שם + מספר אישי):\n' + RM_SITE_URL;
   window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
 }
 window.addEventListener('beforeunload', function(e){
