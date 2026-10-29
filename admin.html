@@ -1013,10 +1013,34 @@ function exportCsv(){
 }
 
 // ===================== CONTACTS =====================
+
+// Contact icon: chosen in admin.html, or picked automatically from the role text
+var CT_ICONS = [
+  ['🎖️', 'פיקוד', /מפקד|מפקדת|מ"פ|מג"ד|סמג"ד|מח"ט|ממ"ש|סגן מפקד|ראש הסדרה|אחראי הסדרה|מוביל הסדרה/],
+  ['🩺', 'רפואה', /רפוא|חובש|רופא|פראמדיק|אח |אחות|מרפא/],
+  ['🎓', 'חינוך', /חינוך|מחנכ|מש"ק ת|מורשת|הכשר/],
+  ['🧭', 'הדרכה', /מדריך|מדריכה|הדרכ|מורה דרך|מורת דרך|סיור|מסלול/],
+  ['🚌', 'תחבורה', /נהג|נהגת|הסע|אוטובוס|תחבור|רכב/],
+  ['🍽️', 'הסעדה', /הסעד|קייטרינג|מזון|אוכל|מטבח|מסעד|כלכלה/],
+  ['🏨', 'לינה', /לינה|חדרים|בית החייל|אכסון|מלון|קבלה/],
+  ['📦', 'לוגיסטיקה', /לוגיסט|אפסנא|רס"פ|ציוד|אחזקה|תחזוק/],
+  ['🛡️', 'ביטחון', /ביטחון|בטחון|קב"ט|רבש"ץ|אבטח|מאבטח|נשק|חמ"ל/],
+  ['📡', 'קשר', /קשר|תקשוב|מחשוב|מערכות/],
+  ['📸', 'תיעוד', /צלם|צילום|תיעוד|דוברות|דובר/],
+  ['💙', 'ת"ש', /ת"ש|רווחה|תנאי שירות|פרט/],
+  ['📋', 'מנהלה', /מנהל|מש"א|כוח אדם|כ"א|רמ"ד|ראש מדור|רל"ש|שלישות|תיאום|מתאם/],
+  ['✡️', 'דת', /רב |רבנות|הרב|דת/]
+];
+function ctAutoIcon(role){
+  var r = ' ' + String(role || '') + ' ';
+  for(var i = 0; i < CT_ICONS.length; i++){ if(CT_ICONS[i][2].test(r)) return CT_ICONS[i][0]; }
+  return '👤';
+}
+function ctIcon(c){ return (c && c.icon) || ctAutoIcon(c && c.role); }
 var contacts = [];
 function loadContacts(){
   document.getElementById('ctList').innerHTML = '<div class="reg-empty">טוען...</div>';
-  window.fetchContacts().then(function(items){ contacts = items.map(function(c){ return { name:c.name||'', role:c.role||'', phone:c.phone||'' }; }); renderContacts(); })
+  window.fetchContacts().then(function(items){ contacts = items.map(function(c){ return { name:c.name||'', role:c.role||'', phone:c.phone||'', icon:c.icon||'' }; }); renderContacts(); })
     .catch(function(err){ console.error(err); document.getElementById('ctList').innerHTML = '<div class="reg-empty">לא ניתן לטעון (' + escapeHtml(err && err.code ? err.code : 'שגיאה') + ')</div>'; });
 }
 function renderContacts(){
@@ -1026,7 +1050,8 @@ function renderContacts(){
     return '<div class="ct-card"><div class="ct-grid">' +
       '<div><label>שם</label><input value="' + escapeHtml(c.name) + '" oninput="setCt(' + i + ',\'name\',this.value)" placeholder="שם מלא"></div>' +
       '<div><label>תפקיד</label><input value="' + escapeHtml(c.role) + '" oninput="setCt(' + i + ',\'role\',this.value)" placeholder="למשל: מפקד הסדרה"></div>' +
-      '<div class="full"><label>טלפון</label><input type="tel" dir="ltr" value="' + escapeHtml(c.phone) + '" oninput="setCt(' + i + ',\'phone\',this.value)" placeholder="050-1234567"></div>' +
+      '<div><label>טלפון</label><input type="tel" dir="ltr" value="' + escapeHtml(c.phone) + '" oninput="setCt(' + i + ',\'phone\',this.value)" placeholder="050-1234567"></div>' +
+      '<div><label>אייקון</label><select class="att-select" id="ctIc' + i + '" onchange="setCt(' + i + ',\'icon\',this.value)">' + ctIconOpts(c) + '</select></div>' +
       '</div><div class="ct-tools">' +
       (i > 0 ? '<button onclick="moveCt(' + i + ',-1)" title="למעלה">▲</button>' : '') +
       (i < contacts.length - 1 ? '<button onclick="moveCt(' + i + ',1)" title="למטה">▼</button>' : '') +
@@ -1034,13 +1059,22 @@ function renderContacts(){
   }).join('');
 }
 function ctDirty(){ var s = document.getElementById('ctStatus'); s.className = 'ct-status'; s.textContent = 'יש שינויים שלא נשמרו'; }
-function setCt(i, k, v){ contacts[i][k] = v; ctDirty(); }
-function addContact(){ contacts.push({ name:'', role:'', phone:'' }); renderContacts(); ctDirty(); var ins = document.querySelectorAll('#ctList .ct-card:last-child input'); if(ins[0]) ins[0].focus(); }
+function ctIconOpts(c){
+  var auto = ctAutoIcon(c.role);
+  return '<option value="">' + auto + ' אוטומטי</option>' +
+    CT_ICONS.map(function(x){ return '<option value="' + x[0] + '"' + (c.icon === x[0] ? ' selected' : '') + '>' + x[0] + ' ' + x[1] + '</option>'; }).join('') +
+    '<option value="👤"' + (c.icon === '👤' ? ' selected' : '') + '>👤 כללי</option>';
+}
+function setCt(i, k, v){
+  contacts[i][k] = v; ctDirty();
+  if(k === 'role' && !contacts[i].icon){ var el = document.getElementById('ctIc' + i); if(el) el.options[0].textContent = ctAutoIcon(v) + ' אוטומטי'; }
+}
+function addContact(){ contacts.push({ name:'', role:'', phone:'', icon:'' }); renderContacts(); ctDirty(); var ins = document.querySelectorAll('#ctList .ct-card:last-child input'); if(ins[0]) ins[0].focus(); }
 function delCt(i){ if(!confirm('להסיר את ' + (contacts[i].name || 'איש הקשר') + '?')) return; contacts.splice(i, 1); renderContacts(); ctDirty(); }
 function moveCt(i, d){ var t = contacts[i]; contacts[i] = contacts[i + d]; contacts[i + d] = t; renderContacts(); ctDirty(); }
 function saveContacts(){
   var st = document.getElementById('ctStatus'), btn = document.getElementById('ctSaveBtn');
-  var items = contacts.map(function(c){ return { name:c.name.trim(), role:c.role.trim(), phone:c.phone.trim() }; })
+  var items = contacts.map(function(c){ var o = { name:c.name.trim(), role:c.role.trim(), phone:c.phone.trim() }; if(c.icon) o.icon = c.icon; return o; })
     .filter(function(c){ return c.name || c.role || c.phone; });
   var bad = items.filter(function(c){ return !c.name || !c.phone; });
   if(bad.length){ st.className = 'ct-status err'; st.textContent = 'לכל איש קשר חייבים שם וטלפון'; return; }
