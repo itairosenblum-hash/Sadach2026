@@ -280,6 +280,13 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .att-row.here .ar-name{color:var(--teal-dark);font-weight:700;}
 
 /* ROOMS */
+.rm-bulk-head,.rm-bulk-row{display:grid;grid-template-columns:1.2fr 0.8fr 1fr 34px;gap:6px;align-items:center;}
+.rm-bulk-head span{font-size:0.72rem;font-weight:700;color:var(--teal);}
+.rm-bulk-row{margin-top:6px;}
+.rm-bulk-row input,.rm-bulk-row select{width:100%;min-width:0;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;padding:9px 8px;font-family:'Rubik',sans-serif;font-size:0.9rem;outline:none;color:var(--text-dark);}
+.rm-bulk-row input:focus,.rm-bulk-row select:focus{border-color:var(--teal);}
+.rm-bulk-row button{width:34px;height:34px;border-radius:8px;border:1px solid #e3a59d;background:#fbecea;color:#a5352a;cursor:pointer;padding:0;}
+
 .rm-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
 .rm-sum div{background:rgba(255,255,255,0.8);border:1px solid rgba(15,76,76,0.12);border-radius:12px;padding:10px;text-align:center;font-size:0.8rem;color:var(--text-mid);}
 .rm-sum b{display:block;font-size:1.05rem;color:var(--teal-dark);font-weight:900;margin-bottom:2px;}
@@ -437,6 +444,17 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <button class="retry-btn" onclick="rmAdd()">➕ הוספת חדר</button>
           <button class="retry-btn" onclick="rmAddMany()">➕➕ הוספת כמה חדרים</button>
           <button class="btn-primary" id="rmSaveBtn" onclick="rmSave()">💾 שמירה</button>
+        </div>
+        <div class="ct-card" id="rmBulk" style="display:none;margin-top:10px">
+          <label style="font-size:0.85rem;margin-bottom:8px">➕➕ הוספת כמה חדרים — שורה לכל חדר</label>
+          <div class="rm-bulk-head"><span>מספר חדר</span><span>קיבולת</span><span>מגדר</span><span></span></div>
+          <div id="rmBulkRows"></div>
+          <div class="ct-actions" style="margin-top:8px">
+            <button class="retry-btn" onclick="rmBulkRow()">➕ שורה</button>
+            <button class="retry-btn" onclick="rmBulkClose()">ביטול</button>
+            <button class="btn-primary" onclick="rmBulkAdd()">✓ הוספת החדרים</button>
+          </div>
+          <div class="ct-status err" id="rmBulkErr"></div>
         </div>
         <div class="ct-status" id="rmStatus"></div>
 
@@ -1587,13 +1605,45 @@ function rmAdd(){
   rmRooms.push(r); rmEditOpen[r.id] = true; rmDirty(); rmRender();
 }
 function rmAddMany(){
-  var from = prompt('מספר החדר הראשון (למשל 101):'); if(from === null) return;
-  var count = parseInt(prompt('כמה חדרים להוסיף?', '5'), 10); if(!count || count < 1) return;
-  var cap = parseInt(prompt('כמה מיטות בכל חדר?', '2'), 10); if(!cap || cap < 1) return;
-  var g = confirm('האם החדרים לגברים?\nאישור = גברים · ביטול = נשים') ? 'זכר' : 'נקבה';
-  var base = parseInt(from, 10);
-  for(var i = 0; i < Math.min(count, 60); i++) rmRooms.push({ id: rmUid(), num: isNaN(base) ? (from + '-' + (i + 1)) : String(base + i), cap: Math.min(cap, 20), gender: g, show: true, self: true });
-  rmDirty(); rmRender();
+  var box = document.getElementById('rmBulk');
+  if(box.style.display !== 'none'){ rmBulkClose(); return; }
+  document.getElementById('rmBulkRows').innerHTML = ''; document.getElementById('rmBulkErr').textContent = '';
+  box.style.display = 'block';
+  for(var i = 0; i < 3; i++) rmBulkRow();
+  var f = document.querySelector('#rmBulkRows input'); if(f) f.focus();
+}
+function rmBulkClose(){ document.getElementById('rmBulk').style.display = 'none'; document.getElementById('rmBulkRows').innerHTML = ''; }
+function rmBulkRow(){
+  var rows = document.querySelectorAll('#rmBulkRows .rm-bulk-row'), prev = rows[rows.length - 1];
+  var num = '', cap = '2', g = 'זכר';
+  if(prev){
+    var pn = prev.querySelector('.bn').value.trim();
+    num = /^\d+$/.test(pn) ? String(Number(pn) + 1) : '';
+    cap = prev.querySelector('.bc').value || '2'; g = prev.querySelector('.bg').value;
+  } else {
+    var last = rmRooms.slice().sort(rmNumCmp).slice(-1)[0];
+    if(last){ num = /^\d+$/.test(String(last.num)) ? String(Number(last.num) + 1) : ''; cap = String(last.cap || 2); g = last.gender; }
+  }
+  var div = document.createElement('div'); div.className = 'rm-bulk-row';
+  div.innerHTML = '<input class="bn" placeholder="101" value="' + escapeHtml(num) + '">' +
+    '<input class="bc" type="number" inputmode="numeric" min="1" max="20" value="' + escapeHtml(cap) + '">' +
+    '<select class="bg"><option value="זכר"' + (g === 'זכר' ? ' selected' : '') + '>👨 זכר</option><option value="נקבה"' + (g === 'נקבה' ? ' selected' : '') + '>👩 נקבה</option></select>' +
+    '<button type="button" aria-label="הסרה" onclick="this.parentNode.remove()">✕</button>';
+  document.getElementById('rmBulkRows').appendChild(div);
+}
+function rmBulkAdd(){
+  var err = document.getElementById('rmBulkErr'), add = [], bad = false;
+  document.querySelectorAll('#rmBulkRows .rm-bulk-row').forEach(function(row){
+    var num = row.querySelector('.bn').value.trim().slice(0, 20), cap = parseInt(row.querySelector('.bc').value, 10);
+    if(!num) return;   // empty rows are skipped
+    if(!cap || cap < 1){ bad = true; return; }
+    add.push({ id: rmUid(), num: num, cap: Math.min(cap, 20), gender: row.querySelector('.bg').value, show: true, self: true });
+  });
+  if(bad){ err.textContent = 'לכל חדר צריך קיבולת של מיטה אחת לפחות'; return; }
+  if(!add.length){ err.textContent = 'מלאו מספר חדר לפחות בשורה אחת'; return; }
+  rmRooms = rmRooms.concat(add);
+  rmBulkClose(); rmDirty(); rmRender();
+  var st = document.getElementById('rmStatus'); st.textContent = 'נוספו ' + add.length + ' חדרים — לחצו "שמירה"';
 }
 function rmDel(id){
   var r = rmRoomById(id); if(!r) return;
