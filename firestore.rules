@@ -52,14 +52,16 @@ service cloud.firestore {
     match /attendance/{id} {
       allow read, delete: if isAdmin();
       allow create: if isAdmin()
-        && request.resource.data.keys().hasOnly(['title', 'scope', 'present', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['title', 'scope', 'present', 'notes', 'createdAt'])
         && shortStr(request.resource.data.title, 80)
         && request.resource.data.scope in ['all', 'overnight']
         && request.resource.data.present is map
+        && (!('notes' in request.resource.data) || request.resource.data.notes is map)
         && request.resource.data.createdAt == request.time;
       allow update: if isAdmin()
-        && request.resource.data.keys().hasOnly(['title', 'scope', 'present', 'createdAt'])
-        && request.resource.data.present is map;
+        && request.resource.data.keys().hasOnly(['title', 'scope', 'present', 'notes', 'createdAt'])
+        && request.resource.data.present is map
+        && (!('notes' in request.resource.data) || request.resource.data.notes is map);
     }
 
     // Public list shown on the site — unit, name, gender only.

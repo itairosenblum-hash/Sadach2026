@@ -262,6 +262,19 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .att-row .ar-name{flex:1;min-width:0;font-size:0.95rem;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .att-row .ar-name small{display:block;font-size:0.72rem;color:var(--text-mid);}
 .att-row .ar-tel{flex:none;width:36px;height:36px;margin-left:6px;border-radius:50%;background:var(--teal-soft);border:1px solid var(--teal);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1rem;}
+.att-row .ar-note{display:block;font-size:0.76rem;color:var(--accent);font-weight:700;white-space:normal;}
+.att-row .ar-nbtn{flex:none;width:36px;height:36px;border-radius:50%;background:#fff6ee;border:1px solid var(--accent-light);font-size:0.95rem;cursor:pointer;padding:0;}
+.att-row .ar-nbtn.has{background:var(--accent);border-color:var(--accent);}
+.att-row.noted{background:#fff6ee;border-color:#f0c49c;}
+.att-row.noted .ar-chk{border-color:var(--accent-light);}
+.att-note-ed{background:#fff;border:1.5px solid var(--accent-light);border-radius:12px;padding:10px;margin:-2px 0 8px;}
+.att-note-ed .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.att-note-ed .chips button{border:1px solid var(--accent-light);background:#fff6ee;color:#a2531f;border-radius:999px;padding:6px 11px;font-size:0.8rem;font-weight:700;cursor:pointer;}
+.att-note-ed input{width:100%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;padding:10px 12px;font-family:'Rubik',sans-serif;font-size:0.92rem;outline:none;}
+.att-note-ed input:focus{border-color:var(--accent);}
+.att-note-ed .nb{display:flex;gap:8px;margin-top:8px;}
+.att-note-ed .nb button{flex:1;padding:9px;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;border:1px solid var(--teal);background:var(--teal-dark);color:#fff;}
+.att-note-ed .nb button.sec{background:#fff;color:var(--text-mid);border-color:rgba(15,76,76,0.2);}
 .att-row.here{background:#e3f4ec;border-color:#7cc7a7;}
 .att-row.here .ar-chk{background:var(--teal);border-color:var(--teal);}
 .att-row.here .ar-name{color:var(--teal-dark);font-weight:700;}
@@ -329,6 +342,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <div class="att-seg" id="attSeg">
             <button type="button" data-f="missing" onclick="attSetFilter('missing')">❌ חסרים</button>
             <button type="button" data-f="all" class="active" onclick="attSetFilter('all')">כולם</button>
+            <button type="button" data-f="noted" onclick="attSetFilter('noted')">📝 עם הערה</button>
             <button type="button" data-f="here" onclick="attSetFilter('here')">✅ הגיעו</button>
           </div>
           <input class="admin-search" id="attSearch" placeholder="חיפוש שם או יחידה" oninput="renderAttCheck()">
@@ -560,7 +574,7 @@ window.saveContactsDoc = async function(items){
 // Attendance checks — admin only. Each check: { title, scope, present: { regId: true }, createdAt }
 function attData(s){ return Object.assign({ id: s.id }, s.data({ serverTimestamps: 'estimate' })); }
 window.attCreate = async function(title, scope){
-  const r = await addDoc(collection(db, 'attendance'), { title: title, scope: scope, present: {}, createdAt: serverTimestamp() });
+  const r = await addDoc(collection(db, 'attendance'), { title: title, scope: scope, present: {}, notes: {}, createdAt: serverTimestamp() });
   return r.id;
 };
 window.attWatchList = function(cb, errCb){
@@ -574,7 +588,11 @@ window.attMarkMany = function(id, regIds, on){
   regIds.forEach(function(r){ upd['present.' + r] = on ? true : deleteField(); });
   return updateDoc(doc(db, 'attendance', id), upd);
 };
-window.attResetDoc = function(id){ return updateDoc(doc(db, 'attendance', id), { present: {} }); };
+window.attResetDoc = function(id){ return updateDoc(doc(db, 'attendance', id), { present: {}, notes: {} }); };
+window.attSetNote = function(id, regId, text){
+  const upd = {}; upd['notes.' + regId] = text ? text : deleteField();
+  return updateDoc(doc(db, 'attendance', id), upd);
+};
 window.attDeleteDoc = function(id){ return deleteDoc(doc(db, 'attendance', id)); };
 
 onAuthStateChanged(auth, function(user){
@@ -1053,7 +1071,8 @@ function renderAttList(){
   if(!el || !attUnsubList) return;
   if(!attChecks.length){ el.innerHTML = '<div class="reg-empty">עדיין לא נפתחו בדיקות</div>'; return; }
   el.innerHTML = attChecks.map(function(c){
-    var roster = attRoster(c.scope), here = attHereCount(c, roster), full = roster.length && here === roster.length;
+    var roster = attRoster(c.scope), here = attHereCount(c, roster), cn = c.notes || {}, p = c.present || {};
+    var full = roster.length && roster.every(function(r){ return p[r.id] || cn[r.id]; });
     return '<div class="att-item">' +
       '<button type="button" class="ai-main" onclick="attOpen(\'' + c.id + '\')">' +
         '<span class="ai-title">' + escapeHtml(c.title || 'בדיקה') + '</span>' +
@@ -1083,7 +1102,8 @@ function attNew(){
 function attOpen(id){
   if(attUnsubCur){ attUnsubCur(); attUnsubCur = null; }
   attCurId = id; attCur = attChecks.filter(function(c){ return c.id === id; })[0] || null;
-  attFilter = 'all'; document.getElementById('attSearch').value = '';
+  attFilter = 'all'; attNoteOpen = null; document.getElementById('attSearch').value = '';
+  document.querySelectorAll('#attSeg button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-f') === 'all'); });
   document.getElementById('attHome').style.display = 'none';
   document.getElementById('attCheck').style.display = 'block';
   renderAttCheck();
@@ -1107,16 +1127,21 @@ function attSetFilter(f){
 }
 function renderAttCheck(){
   if(!attCurId || !attCur) return;
-  var present = attCur.present || {};
+  var present = attCur.present || {}, notes = attCur.notes || {};
   var roster = attRoster(attCur.scope);
   var here = attHereCount(attCur, roster), total = roster.length, miss = total - here;
+  var explained = roster.filter(function(r){ return !present[r.id] && notes[r.id]; }).length;
+  var unknown = miss - explained;
   document.getElementById('attCheckTitle').textContent = attCur.title || 'בדיקה';
   document.getElementById('attHere').textContent = here;
   document.getElementById('attTotal').textContent = total;
   document.getElementById('attBarFill').style.width = (total ? Math.round(here * 100 / total) : 0) + '%';
   var mt = document.getElementById('attMissTxt');
-  mt.className = 'att-miss' + (total && !miss ? ' ok' : '');
-  mt.textContent = !total ? 'אין נרשמים ברשימה' : (miss ? 'חסרים: ' + miss : '✓ כולם כאן!');
+  mt.className = 'att-miss' + (total && !unknown ? ' ok' : '');
+  mt.textContent = !total ? 'אין נרשמים ברשימה'
+    : !miss ? '✓ כולם כאן!'
+    : !unknown ? '✓ כל החסרים (' + miss + ') עם הערה'
+    : 'חסרים: ' + miss + (explained ? ' · מתוכם ' + explained + ' עם הערה, ' + unknown + ' לא ידוע' : '');
 
   var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
   var q = (document.getElementById('attSearch').value || '').trim();
@@ -1124,13 +1149,15 @@ function renderAttCheck(){
     var isHere = !!present[r.id];
     if(attFilter === 'missing' && isHere) return false;
     if(attFilter === 'here' && !isHere) return false;
+    if(attFilter === 'noted' && !notes[r.id]) return false;
     if(q && ![r.name, r.unit, r.rank, r.role].some(function(v){ return v && String(v).indexOf(q) !== -1; })) return false;
     return true;
   }).sort(function(a, b){ var u = heCmp(a.unit || 'תתת', b.unit || 'תתת'); return u !== 0 ? u : heCmp(a.name, b.name); });
 
   var el = document.getElementById('attRows');
+  var openIn = document.getElementById('attNoteIn'), keepVal = openIn ? openIn.value : null, keepFocus = openIn && document.activeElement === openIn;
   if(!shown.length){
-    el.innerHTML = '<div class="reg-empty">' + (attFilter === 'missing' && !q ? '🎉 אין חסרים' : 'אין אנשים להצגה') + '</div>';
+    el.innerHTML = '<div class="reg-empty">' + (attFilter === 'missing' && !q ? '🎉 אין חסרים' : attFilter === 'noted' && !q ? 'אין הערות בבדיקה הזו' : 'אין אנשים להצגה') + '</div>';
     return;
   }
   var unitStats = {};
@@ -1144,15 +1171,28 @@ function renderAttCheck(){
       head = '<div class="att-unit-head"><span>' + escapeHtml(uk) + '</span><b>' + us.h + '/' + us.t + '</b>' +
         '<button type="button" onclick="attMarkUnit(\'' + escapeHtml(uk).replace(/'/g, '&#39;') + '\',' + (!allHere) + ')">' + (allHere ? 'ביטול היחידה' : '✓ כל היחידה') + '</button></div>';
     }
-    var isHere = !!present[r.id];
-    return head + '<div class="att-row' + (isHere ? ' here' : '') + '">' +
+    var isHere = !!present[r.id], note = notes[r.id] || '';
+    var row = head + '<div class="att-row' + (isHere ? ' here' : (note ? ' noted' : '')) + '">' +
       '<button type="button" class="ar-btn" onclick="attToggle(\'' + r.id + '\')">' +
         '<span class="ar-chk">' + (isHere ? '✓' : '') + '</span>' +
-        '<span class="ar-name">' + escapeHtml(r.rank || '') + ' ' + escapeHtml(r.name || '') + (r.role ? '<small>' + escapeHtml(r.role) + '</small>' : '') + '</span>' +
+        '<span class="ar-name">' + escapeHtml(r.rank || '') + ' ' + escapeHtml(r.name || '') + (r.role ? '<small>' + escapeHtml(r.role) + '</small>' : '') +
+          (note ? '<span class="ar-note">📝 ' + escapeHtml(note) + '</span>' : '') + '</span>' +
       '</button>' +
+      '<button type="button" class="ar-nbtn' + (note ? ' has' : '') + '" onclick="attNoteToggle(\'' + r.id + '\')" aria-label="הערה">📝</button>' +
       (r.phone ? '<a class="ar-tel" href="tel:' + escapeHtml(r.phone) + '" aria-label="התקשרות">📞</a>' : '') +
     '</div>';
+    if(attNoteOpen === r.id){
+      row += '<div class="att-note-ed"><div class="chips">' +
+        ATT_NOTE_CHIPS.map(function(t, ci){ return '<button type="button" onclick="attNoteChip(' + ci + ')">' + escapeHtml(t) + '</button>'; }).join('') +
+        '</div><input id="attNoteIn" maxlength="100" placeholder="או כתבו הערה חופשית" value="' + escapeHtml(note) + '" onkeydown="if(event.key===\'Enter\')attNoteSave()">' +
+        '<div class="nb"><button type="button" onclick="attNoteSave()">💾 שמירה</button>' +
+        (note ? '<button type="button" class="sec" onclick="attNoteClear()">🗑️ מחיקת הערה</button>' : '') +
+        '<button type="button" class="sec" onclick="attNoteToggle(null)">ביטול</button></div></div>';
+    }
+    return row;
   }).join('');
+  var ni = document.getElementById('attNoteIn');
+  if(ni && keepVal !== null){ ni.value = keepVal; if(keepFocus) ni.focus(); }
 }
 function attApply(regIds, on){
   if(!attCur) return;
@@ -1171,9 +1211,27 @@ function attMarkUnit(unit, on){
   var ids = attRoster(attCur.scope).filter(function(r){ return (r.unit || 'ללא יחידה') === unit; }).map(function(r){ return r.id; });
   if(ids.length) attApply(ids, on);
 }
+var attNoteOpen = null;
+var ATT_NOTE_CHIPS = ['🚗 נסע ברכב פרטי', '🏠 הלך הביתה', '⏰ מגיע באיחור', '📍 יצטרף בהמשך', '🤒 לא חש בטוב', '❌ לא הגיע'];
+function attNoteToggle(regId){
+  attNoteOpen = (regId && attNoteOpen !== regId) ? regId : null;
+  renderAttCheck();
+  var ni = document.getElementById('attNoteIn'); if(ni) ni.focus();
+}
+function attNoteChip(i){ var ni = document.getElementById('attNoteIn'); if(ni){ ni.value = ATT_NOTE_CHIPS[i]; } attNoteSave(); }
+function attNoteClear(){ var ni = document.getElementById('attNoteIn'); if(ni) ni.value = ''; attNoteSave(); }
+function attNoteSave(){
+  if(!attCur || !attNoteOpen) return;
+  var regId = attNoteOpen, ni = document.getElementById('attNoteIn');
+  var text = (ni ? ni.value : '').trim().slice(0, 100);
+  attCur.notes = Object.assign({}, attCur.notes || {});
+  if(text) attCur.notes[regId] = text; else delete attCur.notes[regId];
+  attNoteOpen = null; renderAttCheck();
+  window.attSetNote(attCurId, regId, text).catch(function(err){ console.error(err); alert('שמירת ההערה נכשלה — ' + attErrText(err)); });
+}
 function attReset(){
-  if(!attCur || !confirm('לאפס את כל הסימונים בבדיקה "' + (attCur.title || '') + '"?')) return;
-  attCur.present = {}; renderAttCheck();
+  if(!attCur || !confirm('לאפס את כל הסימונים וההערות בבדיקה "' + (attCur.title || '') + '"?')) return;
+  attCur.present = {}; attCur.notes = {}; attNoteOpen = null; renderAttCheck();
   window.attResetDoc(attCurId).catch(function(err){ console.error(err); alert('האיפוס נכשל — ' + attErrText(err)); });
 }
 function attDelete(id){
@@ -1183,12 +1241,12 @@ function attDelete(id){
 }
 function attShareMissing(){
   if(!attCur) return;
-  var present = attCur.present || {};
+  var present = attCur.present || {}, notes = attCur.notes || {};
   var missing = attRoster(attCur.scope).filter(function(r){ return !present[r.id]; })
     .sort(function(a, b){ return String(a.unit || '').localeCompare(String(b.unit || ''), 'he') || String(a.name || '').localeCompare(String(b.name || ''), 'he'); });
   var txt = '🚌 ' + (attCur.title || 'בדיקת נוכחות') + '\n';
   txt += missing.length ? 'חסרים (' + missing.length + '):\n' + missing.map(function(r){
-    return '• ' + [((r.rank || '') + ' ' + (r.name || '')).trim(), r.unit, r.phone].filter(Boolean).join(' – ');
+    return '• ' + [((r.rank || '') + ' ' + (r.name || '')).trim(), r.unit, r.phone].filter(Boolean).join(' – ') + (notes[r.id] ? ' 📝 ' + notes[r.id] : '');
   }).join('\n') : '✓ כולם כאן!';
   window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
 }
