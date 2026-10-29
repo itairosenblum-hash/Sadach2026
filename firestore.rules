@@ -15,6 +15,11 @@ service cloud.firestore {
     function validGender(g) {
       return g in ['זכר','נקבה'];
     }
+    // Registration lock — set from admin.html (settings/registration.open)
+    function regIsOpen() {
+      return !exists(/databases/$(db)/documents/settings/registration)
+        || get(/databases/$(db)/documents/settings/registration).data.get('open', true) != false;
+    }
     function shortStr(v, max) {
       return v is string && v.size() > 0 && v.size() <= max;
     }
@@ -24,6 +29,7 @@ service cloud.firestore {
       allow create: if request.resource.data.keys().hasOnly(
             ['unit','role','rank','personalNum','name','phone','gender',
              'overnight','weapon','diet','notes','createdAt'])
+        && regIsOpen()
         && validUnit(request.resource.data.unit)
         && validGender(request.resource.data.gender)
         && shortStr(request.resource.data.role, 80)
@@ -42,10 +48,10 @@ service cloud.firestore {
 
     // Site settings edited from admin.html (contacts, instructions + gear) — everyone reads, only admins write.
     match /settings/{docId} {
-      allow read: if docId in ['contacts', 'instructions', 'gallery']
+      allow read: if docId in ['contacts', 'instructions', 'gallery', 'registration']
         || (docId == 'schedule' && (isAdmin() || resource.data.published == true));
-      allow write: if isAdmin() && docId in ['contacts', 'instructions', 'schedule', 'gallery']
-        && request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'published', 'title', 'subtitle', 'days', 'uploadsOpen', 'updatedAt']);
+      allow write: if isAdmin() && docId in ['contacts', 'instructions', 'schedule', 'gallery', 'registration']
+        && request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'published', 'title', 'subtitle', 'days', 'uploadsOpen', 'open', 'message', 'updatedAt']);
     }
 
     // Room setup (rooms + who is pinned to which room) — admins only.

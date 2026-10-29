@@ -345,6 +345,15 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
       </div>
 
       <div class="admin-pane active" id="pane-regs">
+        <div class="pub-toggle" id="regToggle" onclick="toggleRegOpen()">
+          <span class="pub-switch"><span></span></span>
+          <span class="pub-label" id="regLabel">טוען...</span>
+        </div>
+        <div class="ct-card" id="regMsgBox" style="margin-top:8px;display:none">
+          <label>הודעה שתוצג באתר כשההרשמה נעולה (לא חובה)</label>
+          <input id="regMsg" maxlength="200" placeholder="למשל: ההרשמה נסגרה. לשאלות פנו לאיתי" onchange="saveRegMsg()">
+        </div>
+        <div class="ct-status" id="regLockStatus" style="margin:6px 0 10px"></div>
         <div class="admin-stats" id="adminStats"></div>
         <div class="admin-filter-label" id="adminFilterLabel"></div>
         <div class="admin-actions">
@@ -773,6 +782,7 @@ window.onAdminState = function(user, isAdmin){
     loadInstr();
     loadSched();
     loadGalSetting();
+    loadRegSetting();
     loadAdmGallery(1);
     attStart();
     rmLoad();
@@ -1384,6 +1394,39 @@ function admDeletePhoto(i){
     else alert('המחיקה נכשלה (' + ((r && r.error) || 'שגיאה') + ')');
   }).catch(function(err){ alert('המחיקה נכשלה (' + (err && err.message ? err.message : 'שגיאה') + ')'); });
 }
+
+
+// ===================== REGISTRATION LOCK =====================
+// settings/registration: { open: bool, message: string } — Firestore rules block new sign-ups while open == false
+var regOpen = true, regMsgText = '';
+function renderRegToggle(){
+  document.getElementById('regToggle').classList.toggle('on', regOpen);
+  document.getElementById('regLabel').textContent = regOpen ? '🔓 ההרשמה פתוחה' : '🔒 ההרשמה נעולה';
+  document.getElementById('regMsgBox').style.display = regOpen ? 'none' : 'block';
+  document.getElementById('regMsg').value = regMsgText;
+}
+function loadRegSetting(){
+  window.fetchSettings('registration').then(function(d){ regOpen = !d || d.open !== false; regMsgText = (d && d.message) || ''; renderRegToggle(); })
+    .catch(function(err){ console.error(err); document.getElementById('regLabel').textContent = 'לא ניתן לטעון (' + (err && err.code ? err.code : 'שגיאה') + ')'; });
+}
+function saveRegSetting(open, message, okText){
+  var st = document.getElementById('regLockStatus');
+  st.className = 'ct-status'; st.textContent = 'שומר...';
+  return window.saveSettings('registration', { open: open, message: message }).then(function(){
+    regOpen = open; regMsgText = message; renderRegToggle();
+    st.className = 'ct-status ok'; st.textContent = okText;
+  }).catch(function(err){
+    console.error(err);
+    st.className = 'ct-status err';
+    st.textContent = err && err.code === 'permission-denied' ? 'אין הרשאה — צריך לעדכן את חוקי Firestore (נעילת הרשמה)' : 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
+  });
+}
+function toggleRegOpen(){
+  var next = !regOpen;
+  if(!next && !confirm('לנעול את ההרשמה?\nאי אפשר יהיה להירשם באתר עד שתפתחו אותה שוב.')) return;
+  saveRegSetting(next, regMsgText, next ? '✓ ההרשמה נפתחה' : '✓ ההרשמה ננעלה — אי אפשר להירשם באתר');
+}
+function saveRegMsg(){ saveRegSetting(regOpen, document.getElementById('regMsg').value.trim().slice(0, 200), '✓ ההודעה נשמרה'); }
 
 // ===================== ROOMS =====================
 // settings/rooms        (admins only): { rooms:[{id,num,cap,gender,show,manual}], forced:{regId:roomId} }

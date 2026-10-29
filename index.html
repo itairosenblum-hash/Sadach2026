@@ -450,9 +450,14 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
   <div class="page" id="page-register">
     <div class="section">
       <h2 class="section-title">✅ הרשמה</h2>
-      <div class="reg-box">
+      <div class="reg-box" id="regOpenBox">
         <p>מלאו את פרטיכם כדי להירשם לסדרת החינוך</p>
         <button class="btn-primary" onclick="openModal()">✅ למילוי טופס ההרשמה</button>
+      </div>
+      <div class="reg-box" id="regClosedBox" style="display:none">
+        <span style="font-size:2.2rem;display:block;margin-bottom:6px">🔒</span>
+        <p style="margin-bottom:4px;font-weight:700;color:var(--teal-dark)">ההרשמה נסגרה</p>
+        <p id="regClosedMsg" style="margin-bottom:0"></p>
       </div>
       <div class="registered-box">
         <h3>נרשמו עד כה (<span id="regCount">–</span>)</h3>
@@ -731,7 +736,8 @@ function showPage(id){
   window.scrollTo({top:0});
   if(id === 'gallery') loadGallery(galLoaded ? galPage : 1);   // always fresh when the tab is opened
   if(id === 'schedule') setTimeout(refreshSchedMaps, 50);
-  if(id === 'rooms') loadRooms();   // maps built while hidden need a resize
+  if(id === 'rooms') loadRooms();
+  if(id === 'register') loadRegSetting();   // maps built while hidden need a resize
 }
 
 // Open a page from the URL hash (used by links from admin.html, e.g. ./#schedule)
@@ -747,8 +753,31 @@ function adjustHeaderSpace(){
 window.addEventListener('load', adjustHeaderSpace);
 window.addEventListener('resize', adjustHeaderSpace);
 
+// REGISTRATION LOCK — set from admin.html (Firestore settings/registration); the rules also block sign-ups while locked
+var REG_SETTING_URL = 'https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/settings/registration'
+  + '?key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI';
+var regOpen = true;
+function applyRegOpen(msg){
+  document.getElementById('regOpenBox').style.display = regOpen ? '' : 'none';
+  document.getElementById('regClosedBox').style.display = regOpen ? 'none' : 'block';
+  document.getElementById('regClosedMsg').textContent = msg || 'לשאלות פנו לאחד מאנשי הקשר';
+  if(!regOpen && document.getElementById('formWrap').style.display !== 'none') closeModal();
+}
+function loadRegSetting(){
+  return fetch(REG_SETTING_URL, { cache: 'no-store' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      var f = (d && d.fields) || {};
+      regOpen = !(f.open && f.open.booleanValue === false);
+      applyRegOpen(f.message && f.message.stringValue);
+    })
+    .catch(function(){});
+}
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadRegSetting); } else { loadRegSetting(); }
+
 // MODAL
 function openModal(){
+  if(!regOpen){ showPage('register'); return; }
   document.getElementById('modalTitle').textContent = '✅ הרשמה לסדרת החינוך';
   document.getElementById('modalOverlay').classList.add('open');
   document.getElementById('formWrap').style.display='block';
@@ -818,7 +847,8 @@ function submitForm(){
     console.error(err);
     btn.disabled = false;
     btn.textContent = 'שלח הרשמה';
-    errEl.textContent = 'שליחת הטופס נכשלה. בדקו חיבור לאינטרנט ונסו שוב.';
+    if(err && err.code === 'permission-denied'){ loadRegSetting(); }
+    errEl.textContent = (err && err.code === 'permission-denied') ? 'ההרשמה נסגרה ולא ניתן להירשם כעת.' : 'שליחת הטופס נכשלה. בדקו חיבור לאינטרנט ונסו שוב.';
     errEl.classList.add('visible');
   });
 }
