@@ -278,6 +278,45 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .att-row.here{background:#e3f4ec;border-color:#7cc7a7;}
 .att-row.here .ar-chk{background:var(--teal);border-color:var(--teal);}
 .att-row.here .ar-name{color:var(--teal-dark);font-weight:700;}
+
+/* ROOMS */
+.rm-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.rm-sum div{background:rgba(255,255,255,0.8);border:1px solid rgba(15,76,76,0.12);border-radius:12px;padding:10px;text-align:center;font-size:0.8rem;color:var(--text-mid);}
+.rm-sum b{display:block;font-size:1.05rem;color:var(--teal-dark);font-weight:900;margin-bottom:2px;}
+.rm-sum .warn b{color:#a5352a;}
+.rm-warn{background:#fbecea;border:1px solid #e3a59d;color:#a5352a;border-radius:12px;padding:10px 12px;font-size:0.82rem;font-weight:700;margin-bottom:10px;line-height:1.6;}
+.rm-card{background:rgba(255,255,255,0.85);border:1px solid rgba(15,76,76,0.12);border-radius:14px;margin-bottom:10px;overflow:hidden;}
+.rm-card.f .rm-head{background:#b0476e;}
+.rm-card.hid{opacity:0.82;}
+.rm-head{display:flex;align-items:center;gap:8px;background:var(--teal-dark);color:#fff;padding:8px 12px;font-weight:800;font-size:0.92rem;}
+.rm-head span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rm-head b{background:rgba(255,255,255,0.22);border-radius:999px;padding:1px 10px;font-size:0.8rem;}
+.rm-head b.over{background:#fff;color:#a5352a;}
+.rm-head button{border:1px solid rgba(255,255,255,0.5);background:none;color:#fff;border-radius:999px;padding:3px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;}
+.rm-tags{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px 0;}
+.rm-tag{font-size:0.7rem;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--teal-soft);color:var(--teal-dark);}
+.rm-tag.off{background:#eee;color:#777;}
+.rm-tag.man{background:#fff6ee;color:#a2531f;}
+.rm-occ{padding:8px 12px 10px;font-size:0.86rem;color:var(--text-dark);line-height:1.8;}
+.rm-occ .p{display:flex;align-items:center;gap:6px;border-bottom:1px dashed rgba(15,76,76,0.1);}
+.rm-occ .p:last-child{border-bottom:none;}
+.rm-occ .p span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rm-occ .p small{color:var(--accent);font-weight:700;font-size:0.74rem;}
+.rm-occ .empty{color:var(--text-mid);font-size:0.8rem;}
+.rm-edit{padding:10px 12px 12px;border-top:1px solid rgba(15,76,76,0.08);background:rgba(234,246,246,0.6);}
+.rm-edit .ct-grid input{width:100%;background:#fff;border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;padding:9px 11px;font-family:'Rubik',sans-serif;font-size:0.92rem;outline:none;}
+.rm-edit label{display:block;font-size:0.72rem;font-weight:700;color:var(--teal);margin-bottom:3px;}
+.rm-edit .radio-group{margin-top:2px;}
+.rm-edit .radio-btn{padding:8px 4px;font-size:0.85rem;background:#fff;}
+.rm-chk{display:flex;align-items:center;gap:8px;font-size:0.86rem;color:var(--text-dark);margin-top:9px;cursor:pointer;user-select:none;}
+.rm-chk input{width:18px;height:18px;accent-color:var(--teal);flex-shrink:0;}
+.rm-chk small{color:var(--text-mid);font-size:0.74rem;}
+.rm-pp{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.85);border:1px solid rgba(15,76,76,0.12);border-radius:12px;padding:7px 10px;margin-bottom:6px;}
+.rm-pp.forced{border-color:var(--accent-light);background:#fff6ee;}
+.rm-pp .nm{flex:1;min-width:0;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rm-pp .nm small{display:block;font-size:0.72rem;color:var(--text-mid);}
+.rm-pp select{flex:none;max-width:55%;background:var(--bg1);border:1.5px solid rgba(15,76,76,0.15);border-radius:10px;padding:7px 8px;font-family:'Rubik',sans-serif;font-size:0.82rem;color:var(--text-dark);outline:none;}
+.rm-pp.forced select{border-color:var(--accent);font-weight:700;}
 </style>
 </head>
 <body>
@@ -302,6 +341,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <button type="button" data-pane="instr" onclick="showPane('instr')">📢 הנחיות וציוד</button>
         <button type="button" data-pane="sched" onclick="showPane('sched')">🗓️ לו"ז</button>
         <button type="button" data-pane="gal" onclick="showPane('gal')">🖼️ גלריה</button>
+        <button type="button" data-pane="rooms" onclick="showPane('rooms')">🛏️ חדרים</button>
       </div>
 
       <div class="admin-pane active" id="pane-regs">
@@ -364,6 +404,43 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <h3 style="color:var(--teal-dark);font-size:1rem;margin:18px 0 8px;text-align:center">🗑️ מחיקת תמונות</h3>
         <div id="admGalGrid" class="adm-gal-grid"><div class="reg-empty">טוען...</div></div>
         <div id="admGalPager" class="adm-gal-pager"></div>
+      </div>
+
+
+      <div class="admin-pane" id="pane-rooms">
+        <div class="pub-toggle" id="rmPubToggle" onclick="rmTogglePub()">
+          <span class="pub-switch"><span></span></span>
+          <span class="pub-label" id="rmPubLabel">עמוד השיבוץ מוסתר מהאתר</span>
+        </div>
+        <p class="section-sub" style="margin:8px 0 12px">משובצים רק הנרשמים ללינה (ואנשים שהוצמדו ידנית) · השיבוץ האוטומטי מסדר לפי מגדר ויחידה · השינויים נכנסים לאתר רק אחרי "שמירה ופרסום"</p>
+        <div class="rm-sum" id="rmSum"></div>
+        <div id="rmWarn"></div>
+
+        <h3 class="att-h3">🛏️ החדרים</h3>
+        <div id="rmRooms"><div class="reg-empty">טוען...</div></div>
+        <div class="ct-actions">
+          <button class="retry-btn" onclick="rmAdd()">➕ הוספת חדר</button>
+          <button class="retry-btn" onclick="rmAddMany()">➕➕ הוספת כמה חדרים</button>
+        </div>
+
+        <h3 class="att-h3">📌 הצמדת אנשים לחדר</h3>
+        <p class="section-sub" style="margin:-4px 0 10px">"אוטומטי" = המערכת בוחרת חדר · בחירת חדר = הצמדה קבועה (מסומן 📌)</p>
+        <div class="att-seg" id="rmSeg">
+          <button type="button" data-f="all" class="active" onclick="rmSetFilter('all')">כולם</button>
+          <button type="button" data-f="forced" onclick="rmSetFilter('forced')">📌 מוצמדים</button>
+          <button type="button" data-f="none" onclick="rmSetFilter('none')">⚠️ ללא חדר</button>
+        </div>
+        <input class="admin-search" id="rmSearch" placeholder="חיפוש שם או יחידה" oninput="rmRenderPeople()">
+        <div id="rmPeople"></div>
+
+        <div class="ct-actions" style="margin-top:16px">
+          <button class="btn-primary" id="rmSaveBtn" onclick="rmSave()">💾 שמירה ופרסום</button>
+        </div>
+        <div class="ct-actions">
+          <button class="retry-btn" onclick="rmShare()">📤 שליחת קישור לעמוד השיבוץ בוואטסאפ</button>
+          <a class="retry-btn" href="./#rooms" target="_blank" style="text-decoration:none">👁️ צפייה בעמוד</a>
+        </div>
+        <div class="ct-status" id="rmStatus"></div>
       </div>
 
       <div class="admin-pane" id="pane-sched">
@@ -698,6 +775,7 @@ window.onAdminState = function(user, isAdmin){
     loadGalSetting();
     loadAdmGallery(1);
     attStart();
+    rmLoad();
   } else {
     inn.style.display = 'none';
     out.style.display = 'block';
@@ -731,6 +809,7 @@ function loadAdmin(){
     adminRegs = regs;
     renderAdmin();
     renderAttList(); renderAttCheck();
+    rmRender();
   }).catch(function(err){
     console.error(err);
     listEl.innerHTML = '<div class="reg-empty">לא ניתן לטעון (' + escapeHtml(err && err.code ? err.code : 'שגיאה') + ')</div>';
@@ -1305,8 +1384,204 @@ function admDeletePhoto(i){
     else alert('המחיקה נכשלה (' + ((r && r.error) || 'שגיאה') + ')');
   }).catch(function(err){ alert('המחיקה נכשלה (' + (err && err.message ? err.message : 'שגיאה') + ')'); });
 }
+
+// ===================== ROOMS =====================
+// settings/rooms        (admins only): { rooms:[{id,num,cap,gender,show,manual}], forced:{regId:roomId} }
+// settings/roomsPublic  (public when published): { published, rooms:[{num,gender,people:[{rank,name,unit}]}] }
+var rmRooms = [], rmForced = {}, rmPub = false, rmLoaded = false, rmFilter = 'all', rmEditOpen = {};
+var RM_SITE_URL = 'https://itairosenblum-hash.github.io/Sadach2026/#rooms';
+function rmUid(){ return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function rmNumCmp(a, b){ return String(a.num || '').localeCompare(String(b.num || ''), 'he', { numeric: true }); }
+function rmDirty(){ var s = document.getElementById('rmStatus'); s.className = 'ct-status'; s.textContent = 'יש שינויים שלא נשמרו'; }
+function rmLoad(){
+  Promise.all([window.fetchSettings('rooms'), window.fetchSettings('roomsPublic')]).then(function(res){
+    var d = res[0] || {}, pub = res[1] || {};
+    rmRooms = (d.rooms || []).map(function(r){ return { id: r.id || rmUid(), num: r.num || '', cap: Number(r.cap) || 0, gender: r.gender === 'נקבה' ? 'נקבה' : 'זכר', show: r.show !== false, manual: r.manual === true }; });
+    rmForced = d.forced || {};
+    rmPub = pub.published === true;
+    rmLoaded = true;
+    rmRender();
+  }).catch(function(err){
+    console.error(err);
+    document.getElementById('rmRooms').innerHTML = '<div class="reg-empty">' + (err && err.code === 'permission-denied' ? 'אין הרשאה — צריך לעדכן את חוקי Firestore (חדרים)' : 'לא ניתן לטעון (' + escapeHtml(err && err.code ? err.code : 'שגיאה') + ')') + '</div>';
+  });
+}
+function rmRoster(){ return adminRegs.filter(function(r){ return r.overnight === 'כן' || rmForced[r.id]; }); }
+function rmRoomById(id){ return rmRooms.filter(function(r){ return r.id === id; })[0] || null; }
+
+// Core assignment: forced people first, then everyone else by gender → unit → name into the lowest-numbered room with space
+function rmCompute(){
+  var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
+  var rooms = rmRooms.slice().sort(rmNumCmp);
+  var occ = {}; rooms.forEach(function(r){ occ[r.id] = []; });
+  var roomOf = {}, unassigned = [];
+  var roster = rmRoster().slice().sort(function(a, b){ var u = heCmp(a.unit || 'תתת', b.unit || 'תתת'); return u !== 0 ? u : heCmp(a.name, b.name); });
+  roster.forEach(function(p){
+    var fid = rmForced[p.id];
+    if(fid && occ[fid]){ occ[fid].push(p); roomOf[p.id] = fid; }
+  });
+  roster.forEach(function(p){
+    if(roomOf[p.id]) return;
+    var room = rooms.filter(function(r){ return !r.manual && r.gender === p.gender && occ[r.id].length < r.cap; })[0];
+    if(room){ occ[room.id].push(p); roomOf[p.id] = room.id; } else unassigned.push(p);
+  });
+  return { rooms: rooms, occ: occ, roomOf: roomOf, unassigned: unassigned, roster: roster };
+}
+function rmPersonLabel(p){ return ((p.rank || '') + ' ' + (p.name || '')).trim(); }
+
+function rmRender(){
+  if(!rmLoaded || !document.getElementById('rmRooms')) return;
+  document.getElementById('rmPubToggle').classList.toggle('on', rmPub);
+  document.getElementById('rmPubLabel').textContent = rmPub ? 'עמוד השיבוץ מוצג באתר' : 'עמוד השיבוץ מוסתר מהאתר';
+  var c = rmCompute();
+
+  // Summary
+  var need = { 'זכר': 0, 'נקבה': 0 }, beds = { 'זכר': 0, 'נקבה': 0 };
+  c.roster.forEach(function(p){ if(need[p.gender] != null) need[p.gender]++; });
+  c.rooms.forEach(function(r){ beds[r.gender] += r.cap; });
+  var unM = c.unassigned.filter(function(p){ return p.gender === 'זכר'; }).length, unF = c.unassigned.filter(function(p){ return p.gender === 'נקבה'; }).length;
+  document.getElementById('rmSum').innerHTML =
+    '<div class="' + (unM ? 'warn' : '') + '"><b>👨 ' + need['זכר'] + ' / ' + beds['זכר'] + '</b>גברים ללינה / מיטות</div>' +
+    '<div class="' + (unF ? 'warn' : '') + '"><b>👩 ' + need['נקבה'] + ' / ' + beds['נקבה'] + '</b>נשים ללינה / מיטות</div>';
+
+  // Warnings
+  var w = [];
+  if(c.unassigned.length) w.push('⚠️ ' + c.unassigned.length + ' אנשים בלי חדר' + (unM ? ' · גברים: ' + unM : '') + (unF ? ' · נשים: ' + unF : '') + ' — הוסיפו חדרים / מיטות');
+  c.rooms.forEach(function(r){ if(c.occ[r.id].length > r.cap) w.push('⚠️ חדר ' + escapeHtml(r.num || '?') + ' מעל הקיבולת (' + c.occ[r.id].length + '/' + r.cap + ')'); });
+  c.rooms.forEach(function(r){ var bad = c.occ[r.id].filter(function(p){ return p.gender !== r.gender; }); if(bad.length) w.push('⚠️ בחדר ' + escapeHtml(r.num || '?') + ' (' + r.gender + ') הוצמדו: ' + bad.map(function(p){ return escapeHtml(rmPersonLabel(p)); }).join(', ')); });
+  var nums = {}; rmRooms.forEach(function(r){ var k = String(r.num).trim(); if(k){ nums[k] = (nums[k] || 0) + 1; } });
+  Object.keys(nums).forEach(function(k){ if(nums[k] > 1) w.push('⚠️ מספר החדר ' + escapeHtml(k) + ' מופיע ' + nums[k] + ' פעמים'); });
+  document.getElementById('rmWarn').innerHTML = w.length ? '<div class="rm-warn">' + w.join('<br>') + '</div>' : '';
+
+  // Rooms
+  var el = document.getElementById('rmRooms');
+  if(!rmRooms.length){ el.innerHTML = '<div class="reg-empty">עדיין אין חדרים. לחצו "הוספת חדר".</div>'; }
+  else el.innerHTML = c.rooms.map(function(r){
+    var people = c.occ[r.id], open = !!rmEditOpen[r.id];
+    return '<div class="rm-card' + (r.gender === 'נקבה' ? ' f' : '') + (r.show ? '' : ' hid') + '">' +
+      '<div class="rm-head"><span>' + (r.gender === 'נקבה' ? '👩' : '👨') + ' חדר ' + escapeHtml(r.num || '—') + '</span>' +
+        '<b class="' + (people.length > r.cap ? 'over' : '') + '">' + people.length + '/' + r.cap + '</b>' +
+        '<button type="button" onclick="rmToggleEdit(\'' + r.id + '\')">' + (open ? 'סגירה' : '✏️ עריכה') + '</button></div>' +
+      '<div class="rm-tags">' + (r.show ? '<span class="rm-tag">👁️ מוצג באתר</span>' : '<span class="rm-tag off">🙈 מוסתר מהאתר</span>') + (r.manual ? '<span class="rm-tag man">📌 שיבוץ ידני בלבד</span>' : '') + '</div>' +
+      '<div class="rm-occ">' + (people.length ? people.map(function(p){
+        return '<div class="p"><span>' + (rmForced[p.id] ? '📌 ' : '') + escapeHtml(rmPersonLabel(p)) + '</span><small>' + escapeHtml(p.unit || '') + '</small></div>';
+      }).join('') : '<div class="empty">החדר ריק</div>') + '</div>' +
+      (open ? '<div class="rm-edit"><div class="ct-grid">' +
+        '<div><label>מספר חדר</label><input value="' + escapeHtml(r.num) + '" onchange="rmSet(\'' + r.id + '\',\'num\',this.value)" placeholder="למשל 101"></div>' +
+        '<div><label>קיבולת (מיטות)</label><input type="number" inputmode="numeric" min="0" max="20" value="' + r.cap + '" onchange="rmSet(\'' + r.id + '\',\'cap\',this.value)"></div>' +
+        '<div class="full"><label>מגדר</label><div class="radio-group">' +
+          '<div class="radio-btn' + (r.gender === 'זכר' ? ' selected' : '') + '" onclick="rmSet(\'' + r.id + '\',\'gender\',\'זכר\')">👨 זכר</div>' +
+          '<div class="radio-btn' + (r.gender === 'נקבה' ? ' selected' : '') + '" onclick="rmSet(\'' + r.id + '\',\'gender\',\'נקבה\')">👩 נקבה</div></div></div>' +
+        '</div>' +
+        '<label class="rm-chk"><input type="checkbox"' + (r.show ? ' checked' : '') + ' onchange="rmSet(\'' + r.id + '\',\'show\',this.checked)"> להציג את החדר בעמוד השיבוץ</label>' +
+        '<label class="rm-chk"><input type="checkbox"' + (r.manual ? ' checked' : '') + ' onchange="rmSet(\'' + r.id + '\',\'manual\',this.checked)"> שיבוץ ידני בלבד <small>(רק מי שהוצמד לחדר)</small></label>' +
+        '<div class="ct-tools"><button class="del" onclick="rmDel(\'' + r.id + '\')">🗑️ מחיקת החדר</button></div>' +
+      '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  rmRenderPeople(c);
+}
+function rmSetFilter(f){
+  rmFilter = f;
+  document.querySelectorAll('#rmSeg button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-f') === f); });
+  rmRenderPeople();
+}
+function rmRenderPeople(c){
+  if(!rmLoaded) return;
+  c = c || rmCompute();
+  var q = (document.getElementById('rmSearch').value || '').trim();
+  var opts = function(p){
+    var sel = rmForced[p.id] || '';
+    return '<option value="">' + (c.roomOf[p.id] && !sel ? '🔄 חדר ' + escapeHtml((rmRoomById(c.roomOf[p.id]) || {}).num || '?') + ' · אוטו׳' : sel ? '🔄 אוטומטי' : '⚠️ אין מקום · אוטו׳') + '</option>' +
+      c.rooms.map(function(r){
+        var mism = r.gender !== p.gender;
+        return '<option value="' + r.id + '"' + (sel === r.id ? ' selected' : '') + '>📌 חדר ' + escapeHtml(r.num || '?') + (mism ? ' (' + r.gender + ')' : '') + ' · ' + c.occ[r.id].length + '/' + r.cap + '</option>';
+      }).join('');
+  };
+  var shown = c.roster.filter(function(p){
+    if(rmFilter === 'forced' && !rmForced[p.id]) return false;
+    if(rmFilter === 'none' && c.roomOf[p.id]) return false;
+    if(q && ![p.name, p.unit, p.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; })) return false;
+    return true;
+  });
+  // Also allow forcing people who did NOT sign up for overnight (search only)
+  var extra = q ? adminRegs.filter(function(p){ return p.overnight !== 'כן' && !rmForced[p.id] && rmFilter === 'all' && [p.name, p.unit, p.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; }); }) : [];
+  var el = document.getElementById('rmPeople');
+  if(!shown.length && !extra.length){ el.innerHTML = '<div class="reg-empty">' + (rmFilter === 'none' && !q ? '🎉 לכולם יש חדר' : rmFilter === 'forced' && !q ? 'אין הצמדות' : c.roster.length ? 'אין אנשים להצגה' : 'אין עדיין נרשמים ללינה') + '</div>'; return; }
+  el.innerHTML = shown.concat(extra).map(function(p){
+    var isExtra = extra.indexOf(p) !== -1;
+    return '<div class="rm-pp' + (rmForced[p.id] ? ' forced' : '') + '"><div class="nm">' + (p.gender === 'נקבה' ? '👩 ' : '👨 ') + escapeHtml(rmPersonLabel(p)) +
+      '<small>' + escapeHtml(p.unit || '') + (isExtra ? ' · לא נרשם ללינה' : '') + (!c.roomOf[p.id] && !isExtra ? ' · ⚠️ ללא חדר' : '') + '</small></div>' +
+      '<select onchange="rmForce(\'' + p.id + '\',this.value)">' + opts(p) + '</select></div>';
+  }).join('');
+}
+function rmForce(regId, roomId){
+  if(roomId) rmForced[regId] = roomId; else delete rmForced[regId];
+  rmDirty(); rmRender();
+}
+function rmToggleEdit(id){ rmEditOpen[id] = !rmEditOpen[id]; rmRender(); }
+function rmSet(id, k, v){
+  var r = rmRoomById(id); if(!r) return;
+  if(k === 'cap') v = Math.max(0, Math.min(20, parseInt(v, 10) || 0));
+  if(k === 'num') v = String(v).trim().slice(0, 20);
+  r[k] = v; rmDirty(); rmRender();
+}
+function rmAdd(){
+  var last = rmRooms.slice().sort(rmNumCmp).slice(-1)[0];
+  var n = last && /^\d+$/.test(String(last.num)) ? String(Number(last.num) + 1) : '';
+  var r = { id: rmUid(), num: n, cap: last ? last.cap : 2, gender: last ? last.gender : 'זכר', show: true, manual: false };
+  rmRooms.push(r); rmEditOpen[r.id] = true; rmDirty(); rmRender();
+}
+function rmAddMany(){
+  var from = prompt('מספר החדר הראשון (למשל 101):'); if(from === null) return;
+  var count = parseInt(prompt('כמה חדרים להוסיף?', '5'), 10); if(!count || count < 1) return;
+  var cap = parseInt(prompt('כמה מיטות בכל חדר?', '2'), 10); if(!cap || cap < 1) return;
+  var g = confirm('האם החדרים לגברים?\nאישור = גברים · ביטול = נשים') ? 'זכר' : 'נקבה';
+  var base = parseInt(from, 10);
+  for(var i = 0; i < Math.min(count, 60); i++){
+    rmRooms.push({ id: rmUid(), num: isNaN(base) ? (from + '-' + (i + 1)) : String(base + i), cap: Math.min(cap, 20), gender: g, show: true, manual: false });
+  }
+  rmDirty(); rmRender();
+}
+function rmDel(id){
+  var r = rmRoomById(id); if(!r) return;
+  var nf = Object.keys(rmForced).filter(function(k){ return rmForced[k] === id; }).length;
+  if(!confirm('למחוק את חדר ' + (r.num || '') + '?' + (nf ? '\n' + nf + ' אנשים שהוצמדו אליו יחזרו לשיבוץ אוטומטי.' : ''))) return;
+  rmRooms = rmRooms.filter(function(x){ return x.id !== id; });
+  Object.keys(rmForced).forEach(function(k){ if(rmForced[k] === id) delete rmForced[k]; });
+  rmDirty(); rmRender();
+}
+function rmTogglePub(){ rmPub = !rmPub; rmDirty(); rmRender(); }
+function rmSave(){
+  var st = document.getElementById('rmStatus'), btn = document.getElementById('rmSaveBtn');
+  if(rmRooms.some(function(r){ return !String(r.num).trim(); })){ st.className = 'ct-status err'; st.textContent = 'לכל חדר צריך מספר'; return; }
+  // drop forced links to deleted registrations / rooms
+  var regIds = {}; adminRegs.forEach(function(r){ regIds[r.id] = 1; });
+  var forced = {}; Object.keys(rmForced).forEach(function(k){ if(regIds[k] && rmRoomById(rmForced[k])) forced[k] = rmForced[k]; });
+  rmForced = forced;
+  var c = rmCompute();
+  var cfg = { rooms: rmRooms.map(function(r){ return { id: r.id, num: String(r.num).trim(), cap: r.cap, gender: r.gender, show: r.show, manual: r.manual }; }), forced: forced };
+  var pub = { published: rmPub, rooms: c.rooms.filter(function(r){ return r.show; }).map(function(r){
+    return { num: String(r.num).trim(), gender: r.gender, people: c.occ[r.id].map(function(p){ return { rank: p.rank || '', name: p.name || '', unit: p.unit || '' }; }) };
+  }) };
+  btn.disabled = true; st.className = 'ct-status'; st.textContent = 'שומר...';
+  window.saveSettings('rooms', cfg).then(function(){ return window.saveSettings('roomsPublic', pub); }).then(function(){
+    st.className = 'ct-status ok';
+    st.textContent = rmPub ? '✓ נשמר — השיבוץ מוצג באתר' + (c.unassigned.length ? ' (' + c.unassigned.length + ' בלי חדר)' : '') : '✓ נשמר — עמוד השיבוץ מוסתר מהאתר';
+    rmRender();
+  }).catch(function(err){
+    console.error(err);
+    st.className = 'ct-status err';
+    st.textContent = err && err.code === 'permission-denied' ? 'אין הרשאה — צריך לעדכן את חוקי Firestore (חדרים)' : 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
+  }).then(function(){ btn.disabled = false; });
+}
+function rmShare(){
+  var txt = '🛏️ שיבוץ החדרים לסדרת החינוך פורסם!\nחפשו את השם שלכם כאן:\n' + RM_SITE_URL;
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+}
 window.addEventListener('beforeunload', function(e){
-  if(document.getElementById('ctStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('inStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('scStatus').textContent === 'יש שינויים שלא נשמרו'){ e.preventDefault(); e.returnValue = ''; }
+  if(document.getElementById('ctStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('inStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('scStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('rmStatus').textContent === 'יש שינויים שלא נשמרו'){ e.preventDefault(); e.returnValue = ''; }
 });
 </script>
 </body>

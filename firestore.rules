@@ -48,6 +48,24 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'published', 'title', 'subtitle', 'days', 'uploadsOpen', 'updatedAt']);
     }
 
+    // Room setup (rooms + who is pinned to which room) — admins only.
+    match /settings/rooms {
+      allow read: if isAdmin();
+      allow write: if isAdmin()
+        && request.resource.data.keys().hasOnly(['rooms', 'forced', 'updatedAt'])
+        && request.resource.data.rooms is list
+        && request.resource.data.forced is map;
+    }
+
+    // Published room assignment page — everyone reads it only while "published" is on.
+    match /settings/roomsPublic {
+      allow read: if isAdmin() || resource.data.published == true;
+      allow write: if isAdmin()
+        && request.resource.data.keys().hasOnly(['published', 'rooms', 'updatedAt'])
+        && request.resource.data.published is bool
+        && request.resource.data.rooms is list;
+    }
+
     // Attendance checks (bus / arrival roll calls) — admins only.
     match /attendance/{id} {
       allow read, delete: if isAdmin();

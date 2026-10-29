@@ -305,6 +305,35 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
   .header{left:80px;}
 }
 
+
+/* ROOMS (public) */
+.rooms-cta{display:none;align-items:center;gap:12px;width:100%;margin:0 0 18px;padding:14px 16px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--teal-dark),var(--teal));color:#fff;font-family:'Rubik',sans-serif;text-align:right;cursor:pointer;box-shadow:0 8px 22px rgba(15,76,76,0.25);}
+.rooms-cta.on{display:flex;}
+.rooms-cta .ic{font-size:1.8rem;}
+.rooms-cta b{display:block;font-size:1rem;}
+.rooms-cta small{display:block;font-size:0.8rem;opacity:0.85;}
+.rooms-cta i{margin-right:auto;font-style:normal;font-size:1.3rem;}
+.rooms-search{width:100%;background:#fff;border:1.5px solid rgba(15,76,76,0.15);border-radius:12px;padding:12px 14px;font-family:'Rubik',sans-serif;font-size:0.95rem;outline:none;margin-bottom:10px;}
+.rooms-search:focus{border-color:var(--teal);}
+.rooms-seg{display:flex;gap:6px;margin-bottom:12px;}
+.rooms-seg button{flex:1;border:1.5px solid rgba(15,76,76,0.15);background:#fff;border-radius:10px;padding:8px 4px;font-family:'Rubik',sans-serif;font-weight:700;font-size:0.85rem;color:var(--text-mid);cursor:pointer;}
+.rooms-seg button.active{background:var(--teal-dark);border-color:var(--teal-dark);color:#fff;}
+.rooms-found{background:#fff6ee;border:1.5px solid var(--accent-light);border-radius:14px;padding:12px 14px;margin-bottom:12px;text-align:center;font-size:0.95rem;color:var(--text-dark);}
+.rooms-found b{color:var(--accent);font-size:1.15rem;}
+.rooms-grid{display:grid;grid-template-columns:1fr;gap:10px;}
+@media(min-width:560px){.rooms-grid{grid-template-columns:1fr 1fr;}}
+.room-card{background:rgba(255,255,255,0.85);border:1px solid rgba(15,76,76,0.12);border-radius:16px;overflow:hidden;}
+.room-card h3{display:flex;align-items:center;gap:8px;background:var(--teal-dark);color:#fff;font-size:0.98rem;padding:9px 14px;}
+.room-card.f h3{background:#b0476e;}
+.room-card h3 span{flex:1;}
+.room-card h3 b{background:rgba(255,255,255,0.22);border-radius:999px;padding:1px 10px;font-size:0.78rem;font-weight:700;}
+.room-card ul{list-style:none;padding:6px 14px 10px;}
+.room-card li{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px dashed rgba(15,76,76,0.1);font-size:0.92rem;}
+.room-card li:last-child{border-bottom:none;}
+.room-card li span{flex:1;min-width:0;}
+.room-card li small{color:var(--accent);font-weight:700;font-size:0.76rem;white-space:nowrap;}
+.room-card li.hit{background:#fff6ee;margin:0 -14px;padding:6px 14px;font-weight:700;}
+.room-card .room-empty{color:var(--text-mid);font-size:0.82rem;padding:6px 0;}
 </style>
 </head>
 <body>
@@ -340,6 +369,7 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
   <div class="page active" id="page-details">
     <div class="section">
       <div class="sub-block">
+        <button type="button" class="rooms-cta" id="roomsCta" onclick="showPage('rooms')"><span class="ic">🛏️</span><span><b>שיבוץ החדרים פורסם!</b><small>לחצו כדי למצוא את החדר שלכם</small></span><i>‹</i></button>
         <h2 class="section-title">📋 פרטים על האירוע</h2>
         <p class="section-sub">מידע נוסף יעודכן בהמשך</p>
         <div class="info-grid">
@@ -406,6 +436,14 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
       <div id="galGrid" class="gal-grid"></div>
       <div id="galPager" class="gal-pager"></div>
       <div style="text-align:center;margin-top:10px"><button class="retry-btn" onclick="loadGallery(galPage)">🔄 רענון הגלריה</button></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-rooms">
+    <div class="section">
+      <h2 class="section-title">🛏️ שיבוץ חדרים</h2>
+      <p class="section-sub">לינה בבית החייל, טבריה · חפשו את השם שלכם</p>
+      <div id="roomsBox"><div class="coming-soon"><span class="ic">🛏️</span>שיבוץ החדרים יפורסם בהמשך</div></div>
     </div>
   </div>
 
@@ -692,7 +730,8 @@ function showPage(id){
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-target') === id); });
   window.scrollTo({top:0});
   if(id === 'gallery') loadGallery(galLoaded ? galPage : 1);   // always fresh when the tab is opened
-  if(id === 'schedule') setTimeout(refreshSchedMaps, 50);   // maps built while hidden need a resize
+  if(id === 'schedule') setTimeout(refreshSchedMaps, 50);
+  if(id === 'rooms') loadRooms();   // maps built while hidden need a resize
 }
 
 // Open a page from the URL hash (used by links from admin.html, e.g. ./#schedule)
@@ -1080,6 +1119,55 @@ function loadSchedule(){
     .catch(function(){});
 }
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadSchedule); } else { loadSchedule(); }
+
+
+// ROOMS — edited from admin.html; Firestore only lets the public read it once "published" is on
+var ROOMS_URL = 'https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/settings/roomsPublic'
+  + '?key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI';
+var ROOMS_CACHE_KEY = 'chinuchRoomsV1';
+var roomsData = null, roomsG = 'all';
+function roomsSetG(g){ roomsG = g; renderRooms(); }
+function renderRooms(){
+  var d = roomsData, box = document.getElementById('roomsBox');
+  var on = !!(d && d.published && (d.rooms || []).length);
+  document.getElementById('roomsCta').classList.toggle('on', on);
+  if(!on){ box.innerHTML = '<div class="coming-soon"><span class="ic">🛏️</span>שיבוץ החדרים יפורסם בהמשך</div>'; return; }
+  var inp = document.getElementById('roomsQ'), q = inp ? inp.value.trim() : '', hadFocus = inp && document.activeElement === inp;
+  var hasF = d.rooms.some(function(r){ return r.gender === 'נקבה'; }), hasM = d.rooms.some(function(r){ return r.gender !== 'נקבה'; });
+  var rooms = d.rooms.filter(function(r){ return roomsG === 'all' || (roomsG === 'f' ? r.gender === 'נקבה' : r.gender !== 'נקבה'); });
+  var match = function(p){ return q && [p.name, p.unit, p.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; }); };
+  var hits = [];
+  d.rooms.forEach(function(r){ (r.people || []).forEach(function(p){ if(match(p)) hits.push({ p: p, r: r }); }); });
+  if(q) rooms = rooms.filter(function(r){ return (r.people || []).some(match); });
+  var found = '';
+  if(q && hits.length === 1) found = '<div class="rooms-found">' + escapeHtml(((hits[0].p.rank || '') + ' ' + hits[0].p.name).trim()) + ' — חדר <b>' + escapeHtml(hits[0].r.num) + '</b></div>';
+  else if(q && !hits.length) found = '<div class="rooms-found">לא נמצא — בדקו את האיות או פנו לאחד מאנשי הקשר</div>';
+  box.innerHTML = '<input class="rooms-search" id="roomsQ" placeholder="🔍 הקלידו את השם שלכם" oninput="renderRooms()" value="' + escapeHtml(q) + '">' +
+    (hasF && hasM ? '<div class="rooms-seg"><button type="button" class="' + (roomsG === 'all' ? 'active' : '') + '" onclick="roomsSetG(\'all\')">כל החדרים</button>' +
+      '<button type="button" class="' + (roomsG === 'm' ? 'active' : '') + '" onclick="roomsSetG(\'m\')">👨 גברים</button>' +
+      '<button type="button" class="' + (roomsG === 'f' ? 'active' : '') + '" onclick="roomsSetG(\'f\')">👩 נשים</button></div>' : '') +
+    found +
+    '<div class="rooms-grid">' + rooms.map(function(r){
+      var ppl = r.people || [];
+      return '<div class="room-card' + (r.gender === 'נקבה' ? ' f' : '') + '"><h3><span>' + (r.gender === 'נקבה' ? '👩' : '👨') + ' חדר ' + escapeHtml(r.num) + '</span><b>' + ppl.length + ' ' + (ppl.length === 1 ? 'איש' : 'אנשים') + '</b></h3><ul>' +
+        (ppl.length ? ppl.map(function(p){ return '<li class="' + (match(p) ? 'hit' : '') + '"><span>' + escapeHtml(((p.rank || '') + ' ' + (p.name || '')).trim()) + '</span><small>' + escapeHtml(p.unit || '') + '</small></li>'; }).join('') : '<li class="room-empty">—</li>') +
+        '</ul></div>';
+    }).join('') + '</div>';
+  if(hadFocus){ var ni = document.getElementById('roomsQ'); ni.focus(); ni.setSelectionRange(ni.value.length, ni.value.length); }
+}
+function loadRooms(){
+  try { var c = JSON.parse(localStorage.getItem(ROOMS_CACHE_KEY) || 'null'); if(c){ roomsData = c; renderRooms(); } } catch(e){}
+  fetch(ROOMS_URL, { cache: 'no-store' })
+    .then(function(r){ if(r.status === 403 || r.status === 404) return null; if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(doc){
+      var d = null;
+      if(doc){ var f = doc.fields || {}; d = { published: fsVal(f.published) === true, rooms: fsVal(f.rooms) || [] }; }
+      roomsData = d; renderRooms();
+      try { if(d && d.published) localStorage.setItem(ROOMS_CACHE_KEY, JSON.stringify(d)); else localStorage.removeItem(ROOMS_CACHE_KEY); } catch(e){}
+    })
+    .catch(function(){});
+}
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadRooms); } else { loadRooms(); }
 
 // ===================== GALLERY =====================
 // Photos are shrunk in the browser, then saved by a Google Apps Script into a shared Drive folder.
