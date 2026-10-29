@@ -1293,7 +1293,7 @@ function renderRooms(){
         if(isMine && !myPick.locked) act = '<button class="out" onclick="roomsChoose(\'\')">יציאה מהחדר</button>';
         else if(!isMine && !r.self) act = '<span class="full">🔒 שיבוץ ע"י המנהל בלבד</span>';
         else if(!isMine && !(myPick && myPick.locked) && r.self){
-          if(myGender && r.gender !== myGender) act = '';
+          if(myGender && r.gender !== myGender) act = '<span class="full">🚫 ' + (r.gender === 'נקבה' ? 'חדר נשים' : 'חדר גברים') + '</span>';
           else act = free ? '<button onclick="roomsChoose(\'' + r.id + '\')">' + (myPick ? '🔁 מעבר לחדר הזה' : '✅ בחירת החדר הזה') + '</button>' : '<span class="full">החדר מלא</span>';
         }
       }
