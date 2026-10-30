@@ -1546,6 +1546,10 @@ function rmRender(){
     '<div><b>👩 ' + got['נקבה'] + ' / ' + need['נקבה'] + '</b>נשים בחרו חדר · ' + beds['נקבה'] + ' מיטות</div>';
 
   var w = [];
+  var shownRooms = rmRooms.filter(function(r){ return r.show; }).length;
+  if(rmPub && !rmRooms.length) w.push('⚠️ העמוד מוצג באתר אבל עדיין אין חדרים — הוסיפו חדרים ולחצו "שמירה"');
+  else if(rmPub && !shownRooms) w.push('⚠️ כל החדרים מוסתרים מהאתר — סמנו "להציג את החדר באתר"');
+  if(rmPub && !rmOpen && shownRooms) w.push('ℹ️ ההרשמה לחדרים סגורה — אנשים רואים את החדרים אבל לא יכולים לבחור. הדליקו "הרשמה לחדרים פתוחה" ולחצו "שמירה"');
   if(need['זכר'] > beds['זכר']) w.push('⚠️ חסרות ' + (need['זכר'] - beds['זכר']) + ' מיטות לגברים');
   if(need['נקבה'] > beds['נקבה']) w.push('⚠️ חסרות ' + (need['נקבה'] - beds['נקבה']) + ' מיטות לנשים');
   c.rooms.forEach(function(r){ if(c.occ[r.id].length > r.cap) w.push('⚠️ חדר ' + escapeHtml(r.num || '?') + ' מעל הקיבולת (' + c.occ[r.id].length + '/' + r.cap + ')'); });

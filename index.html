@@ -1266,7 +1266,7 @@ function roomsChoose(roomId){
 function renderRooms(){
   var d = roomsData, box = document.getElementById('roomsBox');
   var on = !!(d && d.published && (d.rooms || []).length);
-  document.getElementById('roomsTab').style.display = on ? '' : 'none';
+  document.getElementById('roomsTab').style.display = (d && d.published) ? '' : 'none';
   if(!on){ box.innerHTML = '<div class="coming-soon"><span class="ic">🛏️</span>החדרים יפורסמו בהמשך</div>'; return; }
   var inp = document.getElementById('roomsQ'), q = inp ? inp.value.trim() : '', hadFocus = inp && document.activeElement === inp;
   var pnEl = document.getElementById('roomsPn'), pnKeep = pnEl ? pnEl.value : '', whoEl = document.getElementById('roomsWho'), whoKeep = whoEl ? whoEl.value : '';
