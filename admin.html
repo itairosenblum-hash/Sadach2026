@@ -1643,12 +1643,13 @@ function rmRecommend(c){
   ['זכר', 'נקבה'].forEach(function(g){
     var rooms = c.rooms.filter(function(r){ return r.gender === g; });
     var closed = rooms.filter(function(r){ return r.closed; }), open = rooms.filter(function(r){ return !r.closed; });
-    var inClosed = {}; c.rooms.forEach(function(r){ if(r.closed) c.occ[r.id].forEach(function(p){ inClosed[p.id] = 1; }); });
+    // people already settled elsewhere: anyone in a closed room, or pinned (🔒) to a room of the other gender
+    var inClosed = {}; c.rooms.forEach(function(r){ c.occ[r.id].forEach(function(p){ if(r.closed || (p.locked && r.gender !== p.gender)) inClosed[p.id] = 1; }); });
     var total = c.roster.filter(function(p){ return p.gender === g; }).length;
     var pool = c.roster.filter(function(p){ return p.gender === g && !inClosed[p.id]; }).length;
     var closedCount = 0; closed.forEach(function(r){ closedCount += c.occ[r.id].length; out.target[r.id] = c.occ[r.id].length; });
     var t = {}, sum = 0;
-    open.forEach(function(r){ var m = c.occ[r.id].filter(function(p){ return p.locked; }).length; t[r.id] = m; sum += m; });
+    open.forEach(function(r){ var m = c.occ[r.id].filter(function(p){ return p.locked && p.gender === g; }).length; t[r.id] = m; sum += m; });
     var left = pool - sum;
     while(left > 0 && open.length){
       var best = open.slice().sort(function(a, b){ return (t[a.id] - t[b.id]) || (b.cap - a.cap) || rmNumCmp(a, b); })[0];
