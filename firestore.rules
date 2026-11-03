@@ -29,7 +29,7 @@ service cloud.firestore {
       allow create: if request.resource.data.keys().hasOnly(
             ['unit','role','rank','personalNum','name','phone','gender',
              'overnight','weapon','diet','notes','createdAt'])
-        && regIsOpen()
+        && (regIsOpen() || isAdmin())
         && validUnit(request.resource.data.unit)
         && validGender(request.resource.data.gender)
         && shortStr(request.resource.data.role, 80)

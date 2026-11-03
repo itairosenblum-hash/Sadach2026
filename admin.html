@@ -401,6 +401,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <div id="adminArrDel"></div>
         <div class="admin-filter-label" id="adminFilterLabel"></div>
         <div class="admin-actions">
+          <button class="retry-btn" onclick="adminAdd()">➕ הוספת נרשם</button>
           <button class="retry-btn" onclick="loadAdmin()">🔄 רענון</button>
           <button class="retry-btn" onclick="exportCsv()">⬇️ ייצוא לאקסל</button>
           <button class="retry-btn" onclick="regsShareWa()">📤 שליחת פרטי הנרשמים בוואטסאפ</button>
@@ -710,6 +711,14 @@ window.updateRegistration = async function(id, record){
   await batch.commit();
 };
 // "Not coming" also hides the person from the public list on the site (public_list.hidden)
+// Admin adds a person — same shape as a registration from the site
+window.adminAddRegistration = async function(record){
+  const ref = doc(collection(db, 'registrations'));
+  const batch = writeBatch(db);
+  batch.set(ref, Object.assign({}, record, { createdAt: serverTimestamp() }));
+  batch.set(doc(db, 'public_list', ref.id), { unit: record.unit, name: record.name, gender: record.gender, createdAt: serverTimestamp() });
+  await batch.commit();
+};
 window.setPublicHidden = function(id, hide){
   return updateDoc(doc(db, 'public_list', id), { hidden: hide ? true : deleteField() }).catch(function(err){ console.warn('public_list', id, err); });
 };
@@ -798,7 +807,7 @@ onAuthStateChanged(auth, function(user){
 
 <script>
 function loadRegistrations(){}  // public list lives on the main site
-var editingId = null;
+var editingId = null, addingNew = false;
 function openModal(){
   document.getElementById('modalOverlay').classList.add('open');
   document.getElementById('formWrap').style.display='block';
@@ -806,7 +815,13 @@ function openModal(){
   var btn = document.getElementById('submitBtn'); btn.disabled = false;
   document.getElementById('formError').classList.remove('visible');
 }
-function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); editingId = null; }
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); editingId = null; addingNew = false; }
+function adminAdd(){
+  clearForm(); openModal();
+  editingId = null; addingNew = true;
+  document.getElementById('modalTitle').textContent = '➕ הוספת נרשם';
+  document.getElementById('submitBtn').textContent = 'הוספה';
+}
 function closeModalOnBg(e){ if(e.target.id==='modalOverlay') closeModal(); }
 // RADIO GROUPS
 function selectRadio(groupId, el){
@@ -823,7 +838,7 @@ function escapeHtml(s){
 
 // SAVE EDITED REGISTRATION
 function submitForm(){
-  if(!editingId) return;
+  if(!editingId && !addingNew) return;
   var unit = document.getElementById('f-unit').value;
   var role = document.getElementById('f-role').value.trim();
   var rank = document.getElementById('f-rank').value.trim();
@@ -843,13 +858,17 @@ function submitForm(){
   }
   errEl.classList.remove('visible');
   var record = { unit:unit, role:role, rank:rank, personalNum:personalNum, name:name, phone:phone, gender:gender, overnight:overnight, weapon:weapon, diet:diet, notes:notes };
+  if(addingNew){
+    var dup = adminRegs.filter(function(r){ return String(r.personalNum || '').trim() === personalNum; })[0];
+    if(dup && !confirm('כבר יש נרשם עם המספר האישי הזה: ' + ((dup.rank || '') + ' ' + (dup.name || '')).trim() + '.\nלהוסיף בכל זאת?')) return;
+  }
   btn.disabled = true; btn.textContent = 'שומר...';
-  window.updateRegistration(editingId, record).then(function(){
+  (addingNew ? window.adminAddRegistration(record) : window.updateRegistration(editingId, record)).then(function(){
     clearForm(); closeModal(); loadAdmin();
   }).catch(function(err){
     console.error(err);
-    btn.disabled = false; btn.textContent = 'שמור שינויים';
-    errEl.textContent = 'השמירה נכשלה: ' + (err && err.code ? err.code : 'שגיאה'); errEl.classList.add('visible');
+    btn.disabled = false; btn.textContent = addingNew ? 'הוספה' : 'שמור שינויים';
+    errEl.textContent = (addingNew && err && err.code === 'permission-denied') ? 'אין הרשאה — צריך לעדכן את חוקי Firestore (הוספת נרשם כשההרשמה נעולה)' : 'השמירה נכשלה: ' + (err && err.code ? err.code : 'שגיאה'); errEl.classList.add('visible');
   });
 }
 
