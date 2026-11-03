@@ -641,7 +641,7 @@ window.saveRegistration = async function(record){
 
 window.fetchPublicList = async function(){
   const snap = await getDocs(query(collection(db, 'public_list'), orderBy('createdAt', 'asc')));
-  return snap.docs.map(d => d.data());
+  return snap.docs.map(d => d.data()).filter(r => r.hidden !== true);
 };
 
 // ---- rooms: people pick their own room ----
@@ -909,7 +909,10 @@ function fetchPublicListFast(){
   return fetch(PUBLIC_LIST_URL, { cache: 'no-store' })
     .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(data){
-      return (data.documents || []).map(function(d){
+      return (data.documents || []).filter(function(d){
+        // marked "not coming" in admin → hidden from the site
+        return !(d.fields && d.fields.hidden && d.fields.hidden.booleanValue === true);
+      }).map(function(d){
         var f = d.fields || {};
         function sv(k){ return f[k] && f[k].stringValue ? f[k].stringValue : ''; }
         return { id: String(d.name || '').split('/').pop(), unit: sv('unit'), name: sv('name'), gender: sv('gender') };

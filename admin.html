@@ -396,7 +396,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         </div>
         <div class="ct-status" id="regLockStatus" style="margin:6px 0 10px"></div>
         <div class="admin-stats" id="adminStats"></div>
-        <div class="arr-title">סימון הגעה <small style="font-weight:400;color:var(--text-mid)">· לוחצים על העיגול ליד השם</small></div>
+        <div class="arr-title">סימון הגעה <small style="font-weight:400;color:var(--text-mid)">· לוחצים על העיגול ליד השם · ❌ לא מגיע = מוסתר מהרשימה באתר</small></div>
         <div class="admin-stats arr-stats" id="adminArrStats"></div>
         <div id="adminArrDel"></div>
         <div class="admin-filter-label" id="adminFilterLabel"></div>
@@ -709,7 +709,14 @@ window.updateRegistration = async function(id, record){
   batch.set(doc(db, 'public_list', id), { unit: record.unit, name: record.name, gender: record.gender }, { merge: true });
   await batch.commit();
 };
-window.setArrival = function(id, val){ return updateDoc(doc(db, 'registrations', id), { arrival: val ? val : deleteField() }); };
+// "Not coming" also hides the person from the public list on the site (public_list.hidden)
+window.setPublicHidden = function(id, hide){
+  return updateDoc(doc(db, 'public_list', id), { hidden: hide ? true : deleteField() }).catch(function(err){ console.warn('public_list', id, err); });
+};
+window.setArrival = async function(id, val){
+  await updateDoc(doc(db, 'registrations', id), { arrival: val ? val : deleteField() });
+  await window.setPublicHidden(id, val === 'no');
+};
 // Bulk delete: registration + public list entry + room pick
 window.deleteRegistrations = async function(ids){
   const batch = writeBatch(db);
@@ -920,6 +927,8 @@ function loadAdmin(){
   listEl.innerHTML = '<div class="reg-empty">טוען...</div>';
   window.fetchAllRegistrations().then(function(regs){
     adminRegs = regs;
+    // make sure everyone marked "not coming" is hidden on the site (covers marks made before this feature)
+    if(!window._pubHideSynced){ window._pubHideSynced = true; regs.forEach(function(r){ if(r.arrival === 'no') window.setPublicHidden(r.id, true); }); }
     renderAdmin();
     renderAttList(); renderAttCheck();
     rmRender();
