@@ -1146,6 +1146,8 @@ function waSend(txt){
 function regsShareWa(){
   var activeF = ADMIN_FILTERS.filter(function(f){ return f[0] === adminFilter; })[0] || ADMIN_FILTERS[0];
   var shown = adminRegs.filter(activeF[2]);
+  // people marked ❌ are left out (unless the "not coming" filter itself is selected)
+  if(adminFilter !== 'arrNo') shown = shown.filter(function(r){ return r.arrival !== 'no'; });
   var q = (document.getElementById('adminSearch').value || '').trim();
   if(q) shown = shown.filter(function(r){ return [r.name, r.unit, r.personalNum, r.phone, r.role, r.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; }); });
   if(!shown.length){ alert('אין נרשמים לשליחה'); return; }
@@ -1161,7 +1163,6 @@ function regsShareWa(){
     if(uk !== lastUnit){ lastUnit = uk; n = 0; txt += '\n*' + uk + '* (' + shown.filter(function(x){ return (x.unit || 'ללא יחידה') === uk; }).length + ')\n'; }
     n++;
     var tags = [];
-    if(r.arrival === 'no') tags.push('❌ לא מגיע');
     if(r.overnight === 'כן') tags.push('🛏️');
     if(r.weapon === 'כן') tags.push('🔫');
     if(r.diet && r.diet !== 'רגיל') tags.push('🥗 ' + r.diet);
@@ -1994,7 +1995,7 @@ function rmShareStats(){
   if(!rmLoaded){ alert('החדרים עדיין נטענים'); return; }
   var c = rmState();
   var need = { 'זכר': 0, 'נקבה': 0 }, got = { 'זכר': 0, 'נקבה': 0 }, beds = { 'זכר': 0, 'נקבה': 0 }, rc = { 'זכר': 0, 'נקבה': 0 };
-  var lodgers = adminRegs.filter(function(r){ return r.overnight === 'כן'; });
+  var lodgers = adminRegs.filter(function(r){ return r.overnight === 'כן' && r.arrival !== 'no'; });
   lodgers.forEach(function(p){ if(need[p.gender] != null){ need[p.gender]++; if(c.has(p.id)) got[p.gender]++; } });
   c.rooms.forEach(function(r){ beds[r.gender] += r.cap; rc[r.gender]++; });
   var tot = lodgers.length, noRoom = lodgers.filter(function(p){ return !c.has(p.id); }).length;
