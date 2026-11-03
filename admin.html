@@ -540,6 +540,9 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <button class="retry-btn" onclick="addDay()">➕ הוספת יום</button>
           <button class="btn-primary" id="scSaveBtn" onclick="saveSched()">💾 שמירה</button>
         </div>
+        <div class="ct-actions" style="margin-top:10px">
+          <button class="retry-btn" onclick="schedShareWa()">📤 שליחת הלו"ז בוואטסאפ</button>
+        </div>
         <div class="ct-status" id="scStatus"></div>
       </div>
 
@@ -1344,6 +1347,24 @@ function saveSched(){
     console.error(err);
     st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
   }).then(function(){ btn.disabled = false; });
+}
+
+// Sends the schedule as it appears in the editor (including unsaved changes)
+function schedShareWa(){
+  var title = document.getElementById('scTitle').value.trim(), sub = document.getElementById('scSub').value.trim();
+  var days = schedDays.map(function(g){ return { title: g.title.trim(), items: lines(g.items) }; }).filter(function(g){ return g.title || g.items.length; });
+  if(!days.length){ alert('אין לו"ז לשליחה'); return; }
+  var txt = '🗓️ *' + (title || 'לו"ז') + '*\n' + (sub ? sub + '\n' : '');
+  days.forEach(function(g){
+    txt += '\n*' + (g.title || '') + '*\n';
+    g.items.forEach(function(it){
+      var m = it.match(/https?:\/\/\S+/), url = m ? m[0] : '';
+      var t = url ? it.replace(url, '').replace(/\s*📍\s*$/, '').trim() : it.trim();
+      txt += '▫️ ' + t + '\n' + (url ? '    📍 ניווט: ' + url + '\n' : '');
+    });
+  });
+  if(schedPub) txt += '\nהלו"ז המעודכן באתר:\nhttps://itairosenblum-hash.github.io/Sadach2026/#schedule';
+  waSend(txt.trim());
 }
 
 // ===================== ATTENDANCE =====================
