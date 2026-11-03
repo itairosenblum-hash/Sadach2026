@@ -1403,7 +1403,8 @@ function attErrText(err){
   return 'שגיאה (' + (err && err.code ? err.code : 'לא ידוע') + ')';
 }
 function attRoster(scope){
-  return adminRegs.filter(function(r){ return scope === 'overnight' ? r.overnight === 'כן' : true; });
+  // people marked ❌ "not coming" are left out of every attendance check
+  return adminRegs.filter(function(r){ return r.arrival !== 'no' && (scope === 'overnight' ? r.overnight === 'כן' : true); });
 }
 function attHereCount(c, roster){ var p = (c && c.present) || {}; return roster.filter(function(r){ return p[r.id]; }).length; }
 function attStart(){
