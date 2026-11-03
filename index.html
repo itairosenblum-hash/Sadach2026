@@ -682,7 +682,7 @@ function shareWhatsApp(){
     "💡 הקוד נשמר במכשיר – בפעם הבאה תיכנסו ישר.",
     "📲 אפשר גם להוסיף את האתר למסך הבית כמו אפליקציה."
   ].join("\n");
-  window.open("https://wa.me/?text=" + encodeURIComponent(msg), "_blank", "noopener");
+  window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg), "_blank", "noopener");
 }
 function checkGateCode(){
   var val = document.getElementById('gateCode').value.trim();

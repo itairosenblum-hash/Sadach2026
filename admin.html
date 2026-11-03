@@ -1059,7 +1059,7 @@ function exportCsv(){
 // Copies the text to the clipboard as well (backup for very long lists) and opens WhatsApp
 function waSend(txt){
   try{ if(navigator.clipboard) navigator.clipboard.writeText(txt).catch(function(){}); }catch(e){}
-  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank');
 }
 // Sends the registrants currently shown (respects the active filter + search), grouped by unit
 function regsShareWa(){
@@ -1480,7 +1480,7 @@ function attShareMissing(){
   txt += missing.length ? 'חסרים (' + missing.length + '):\n' + missing.map(function(r){
     return '• ' + [((r.rank || '') + ' ' + (r.name || '')).trim(), r.unit, r.phone].filter(Boolean).join(' – ') + (notes[r.id] ? ' 📝 ' + notes[r.id] : '');
   }).join('\n') : '✓ כולם כאן!';
-  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank');
 }
 
 // ===================== GALLERY UPLOAD PERMISSION =====================
@@ -1918,7 +1918,7 @@ function rmShareStats(){
 }
 function rmShare(){
   var txt = '🛏️ ההרשמה לחדרים בסדרת החינוך נפתחה!\nבחרו חדר כאן (צריך שם + מספר אישי):\n' + RM_SITE_URL;
-  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank');
 }
 window.addEventListener('beforeunload', function(e){
   if(document.getElementById('ctStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('inStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('scStatus').textContent === 'יש שינויים שלא נשמרו' || document.getElementById('rmStatus').textContent === 'יש שינויים שלא נשמרו'){ e.preventDefault(); e.returnValue = ''; }
