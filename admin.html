@@ -1358,9 +1358,8 @@ function schedShareWa(){
   days.forEach(function(g){
     txt += '\n*' + (g.title || '') + '*\n';
     g.items.forEach(function(it){
-      var m = it.match(/https?:\/\/\S+/), url = m ? m[0] : '';
-      var t = url ? it.replace(url, '').replace(/\s*📍\s*$/, '').trim() : it.trim();
-      txt += '▫️ ' + t + '\n' + (url ? '    📍 ניווט: ' + url + '\n' : '');
+      var t = it.replace(/\s*https?:\/\/\S+/g, '').replace(/\s*📍\s*$/, '').trim();
+      if(t) txt += '▫️ ' + t + '\n';
     });
   });
   if(schedPub) txt += '\nהלו"ז המעודכן באתר:\nhttps://itairosenblum-hash.github.io/Sadach2026/#schedule';
