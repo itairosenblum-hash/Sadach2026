@@ -388,6 +388,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <div class="admin-actions">
           <button class="retry-btn" onclick="loadAdmin()">🔄 רענון</button>
           <button class="retry-btn" onclick="exportCsv()">⬇️ ייצוא לאקסל</button>
+          <button class="retry-btn" onclick="regsShareWa()">📤 שליחת פרטי הנרשמים בוואטסאפ</button>
         </div>
         <input class="admin-search" id="adminSearch" placeholder="חיפוש לפי שם, יחידה, מספר אישי או טלפון" oninput="renderAdmin()">
         <div id="adminList"><div class="reg-empty">טוען...</div></div>
@@ -503,6 +504,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <div id="rmPeople"></div>
 
         <div class="ct-actions" style="margin-top:14px">
+          <button class="retry-btn" onclick="rmShareStats()">📤 שליחת כמויות הלנים והתפלגות מגדר בוואטסאפ</button>
           <button class="retry-btn" onclick="rmShare()">📤 שליחת קישור לבחירת חדרים בוואטסאפ</button>
           <a class="retry-btn" href="./#rooms" target="_blank" style="text-decoration:none">👁️ צפייה בעמוד</a>
         </div>
@@ -1051,6 +1053,41 @@ function exportCsv(){
   a.download = 'registrations-' + new Date().toISOString().slice(0,10) + '.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+}
+
+// ===================== WHATSAPP SHARE =====================
+// Copies the text to the clipboard as well (backup for very long lists) and opens WhatsApp
+function waSend(txt){
+  try{ if(navigator.clipboard) navigator.clipboard.writeText(txt).catch(function(){}); }catch(e){}
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+}
+// Sends the registrants currently shown (respects the active filter + search), grouped by unit
+function regsShareWa(){
+  var activeF = ADMIN_FILTERS.filter(function(f){ return f[0] === adminFilter; })[0] || ADMIN_FILTERS[0];
+  var shown = adminRegs.filter(activeF[2]);
+  var q = (document.getElementById('adminSearch').value || '').trim();
+  if(q) shown = shown.filter(function(r){ return [r.name, r.unit, r.personalNum, r.phone, r.role, r.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; }); });
+  if(!shown.length){ alert('אין נרשמים לשליחה'); return; }
+  var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
+  shown = shown.slice().sort(function(a, b){ return heCmp(a.unit || 'תתת', b.unit || 'תתת') || heCmp(a.name, b.name); });
+  var m = shown.filter(function(r){ return r.gender === 'זכר'; }).length, f = shown.filter(function(r){ return r.gender === 'נקבה'; }).length;
+  var ov = shown.filter(function(r){ return r.overnight === 'כן'; }).length;
+  var txt = '📋 נרשמים – סדרת חינוך' + (adminFilter !== 'all' ? ' (' + activeF[1] + ')' : '') + (q ? ' · חיפוש: ' + q : '') + '\n';
+  txt += 'סה"כ ' + shown.length + ' · 👨 ' + m + ' · 👩 ' + f + ' · 🛏️ לינה ' + ov + '\n';
+  var lastUnit = null, n = 0;
+  shown.forEach(function(r){
+    var uk = r.unit || 'ללא יחידה';
+    if(uk !== lastUnit){ lastUnit = uk; n = 0; txt += '\n*' + uk + '* (' + shown.filter(function(x){ return (x.unit || 'ללא יחידה') === uk; }).length + ')\n'; }
+    n++;
+    var tags = [];
+    if(r.overnight === 'כן') tags.push('🛏️');
+    if(r.weapon === 'כן') tags.push('🔫');
+    if(r.diet && r.diet !== 'רגיל') tags.push('🥗 ' + r.diet);
+    txt += n + '. ' + [((r.rank || '') + ' ' + (r.name || '')).trim(), r.role, r.phone].filter(Boolean).join(' – ') +
+      (tags.length ? ' ' + tags.join(' ') : '') + (r.notes && r.notes.trim() ? ' 📝 ' + r.notes.trim() : '') + '\n';
+  });
+  txt += '\n🛏️ לינה · 🔫 נשק · 🥗 תזונה מיוחדת';
+  waSend(txt);
 }
 
 // ===================== CONTACTS =====================
@@ -1853,6 +1890,31 @@ function rmSave(){
       st.textContent = '✓ נשמר' + (rmPub ? ' — העמוד מוצג באתר' : ' — העמוד מוסתר') + (rmOpen ? ', ההרשמה לחדרים פתוחה' : ', ההרשמה לחדרים סגורה');
     }).catch(function(err){ console.error(err); st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה — ' + rmErr(err); })
     .then(function(){ btn.disabled = false; });
+}
+function rmShareStats(){
+  if(!rmLoaded){ alert('החדרים עדיין נטענים'); return; }
+  var c = rmState();
+  var need = { 'זכר': 0, 'נקבה': 0 }, got = { 'זכר': 0, 'נקבה': 0 }, beds = { 'זכר': 0, 'נקבה': 0 }, rc = { 'זכר': 0, 'נקבה': 0 };
+  var lodgers = adminRegs.filter(function(r){ return r.overnight === 'כן'; });
+  lodgers.forEach(function(p){ if(need[p.gender] != null){ need[p.gender]++; if(c.has(p.id)) got[p.gender]++; } });
+  c.rooms.forEach(function(r){ beds[r.gender] += r.cap; rc[r.gender]++; });
+  var tot = lodgers.length, noRoom = lodgers.filter(function(p){ return !c.has(p.id); }).length;
+  var pct = function(x){ return tot ? ' (' + Math.round(x * 100 / tot) + '%)' : ''; };
+  var txt = '🛏️ לינה – סדרת חינוך\n';
+  txt += 'סה"כ לנים: *' + tot + '*\n';
+  txt += '👨 גברים: ' + need['זכר'] + pct(need['זכר']) + '\n';
+  txt += '👩 נשים: ' + need['נקבה'] + pct(need['נקבה']) + '\n';
+  if(c.rooms.length){
+    txt += '\n*חדרים*\n';
+    txt += '👨 ' + rc['זכר'] + ' חדרי גברים · ' + beds['זכר'] + ' מיטות · ' + got['זכר'] + '/' + need['זכר'] + ' בחרו חדר\n';
+    txt += '👩 ' + rc['נקבה'] + ' חדרי נשים · ' + beds['נקבה'] + ' מיטות · ' + got['נקבה'] + '/' + need['נקבה'] + ' בחרו חדר\n';
+    if(noRoom) txt += '⚠️ ' + noRoom + ' עדיין בלי חדר\n';
+    txt += '\n*תפוסה לפי חדר*\n';
+    c.rooms.forEach(function(r){
+      txt += (r.gender === 'נקבה' ? '👩' : '👨') + ' חדר ' + (r.num || '?') + ': ' + c.occ[r.id].length + '/' + r.cap + (r.closed ? ' 🚪' : '') + '\n';
+    });
+  }
+  waSend(txt.trim());
 }
 function rmShare(){
   var txt = '🛏️ ההרשמה לחדרים בסדרת החינוך נפתחה!\nבחרו חדר כאן (צריך שם + מספר אישי):\n' + RM_SITE_URL;
