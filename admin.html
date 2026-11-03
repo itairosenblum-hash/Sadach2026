@@ -1083,8 +1083,8 @@ function regsShareWa(){
     if(r.overnight === 'כן') tags.push('🛏️');
     if(r.weapon === 'כן') tags.push('🔫');
     if(r.diet && r.diet !== 'רגיל') tags.push('🥗 ' + r.diet);
-    txt += n + '. ' + [((r.rank || '') + ' ' + (r.name || '')).trim(), r.role, r.phone].filter(Boolean).join(' – ') +
-      (tags.length ? ' ' + tags.join(' ') : '') + (r.notes && r.notes.trim() ? ' 📝 ' + r.notes.trim() : '') + '\n';
+    txt += n + '. ' + [((r.rank || '') + ' ' + (r.name || '')).trim(), r.phone].filter(Boolean).join(' – ') +
+      (tags.length ? ' ' + tags.join(' ') : '') + '\n';
   });
   txt += '\n🛏️ לינה · 🔫 נשק · 🥗 תזונה מיוחדת';
   waSend(txt);
