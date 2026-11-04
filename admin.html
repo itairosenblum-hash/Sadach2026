@@ -1745,8 +1745,22 @@ function rmState(){
   return { rooms: rooms, occ: occ, roster: roster, noShow: noShow, has: function(id){ return !!(rmPicks[id] && occ[rmPicks[id].room] && !isNoShow(regById[id])); } };
 }
 
+// Live updates (people picking rooms on the site) must not rebuild the list while a dropdown / field
+// in the rooms tab is open — on phones that closes the picker and the choice is lost. Redraw after.
+var rmDeferred = false;
+function rmBusy(){
+  var a = document.activeElement;
+  if(!a || !a.closest || !a.closest('#pane-rooms')) return false;
+  return a.tagName === 'SELECT' || (a.tagName === 'INPUT' && a.closest('#rmRooms') && a.type !== 'checkbox');
+}
+document.addEventListener('focusout', function(e){
+  if(!rmDeferred || !e.target.closest || !e.target.closest('#pane-rooms')) return;
+  setTimeout(function(){ if(rmDeferred && !rmBusy()){ rmDeferred = false; rmRender(); } }, 60);
+});
 function rmRender(){
   if(!rmLoaded || !document.getElementById('rmRooms')) return;
+  if(rmBusy()){ rmDeferred = true; return; }
+  rmDeferred = false;
   document.getElementById('rmPubToggle').classList.toggle('on', rmPub);
   document.getElementById('rmPubLabel').textContent = rmPub ? 'עמוד החדרים מוצג באתר' : 'עמוד החדרים מוסתר מהאתר';
   document.getElementById('rmOpenToggle').classList.toggle('on', rmOpen);
@@ -1944,15 +1958,26 @@ function rmRenderPeople(c){
     return '<div class="rm-pp' + (pk && pk.locked ? ' forced' : '') + '"><div class="nm">' + (p.gender === 'נקבה' ? '👩 ' : '👨 ') + escapeHtml(rmPersonLabel(p)) +
       '<small>' + escapeHtml(p.unit || '') + (isExtra ? ' · לא נרשם ללינה' : '') + (pk ? (pk.locked ? ' · 🔒 הוצמד' : ' · ✋ בחר בעצמו') : (isExtra ? '' : ' · ⚠️ בלי חדר')) + '</small></div>' +
       (pk ? '<button type="button" class="lk' + (pk.locked ? '' : ' off') + '" onclick="rmLock(\'' + p.id + '\')" title="' + (pk.locked ? 'שחרור' : 'נעילה') + '">' + (pk.locked ? '🔒' : '🔓') + '</button>' : '') +
-      '<select onchange="rmPin(\'' + p.id + '\',this.value)">' + opts + '</select></div>';
+      '<select onchange="rmPin(\'' + p.id + '\',this.value,this)">' + opts + '</select></div>';
   }).join('');
 }
-function rmPin(regId, roomId){
+function rmPin(regId, roomId, sel){
+  if(sel && sel.blur) sel.blur();
   var r = adminRegs.filter(function(x){ return x.id === regId; })[0]; if(!r) return;
   var room = rmRoomById(roomId);
   if(room && room.gender !== r.gender && !confirm('חדר ' + room.num + ' מוגדר ל' + (room.gender === 'נקבה' ? 'נשים' : 'גברים') + '. להצמיד בכל זאת?')){ rmRender(); return; }
-  var pr = roomId ? window.rmSetPick(regId, { room: roomId, name: r.name || '', unit: r.unit || '', rank: r.rank || '', gender: r.gender || '', locked: true }) : window.rmDelPick(regId);
-  pr.catch(function(err){ console.error(err); alert('השמירה נכשלה — ' + rmErr(err)); rmRender(); });
+  var data = { room: roomId, name: r.name || '', unit: r.unit || '', rank: r.rank || '', gender: r.gender || '', locked: true };
+  var prev = rmPicks[regId];
+  // show the change right away; the live listener confirms it a moment later
+  if(roomId) rmPicks[regId] = data; else delete rmPicks[regId];
+  rmRender();
+  var pr = roomId ? window.rmSetPick(regId, data) : window.rmDelPick(regId);
+  pr.catch(function(err){
+    console.error(err);
+    if(prev) rmPicks[regId] = prev; else delete rmPicks[regId];
+    rmRender();
+    alert('השמירה נכשלה — ' + rmErr(err));
+  });
 }
 function rmLock(regId){
   var pk = rmPicks[regId], r = adminRegs.filter(function(x){ return x.id === regId; })[0]; if(!pk || !r) return;
