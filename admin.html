@@ -456,6 +456,9 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         </div>
         <p class="section-sub" style="margin:10px 0 0">השינוי נשמר מיד. כשההעלאה חסומה, כולם עדיין יכולים לצפות בגלריה.</p>
         <div class="ct-status" id="galAdmStatus"></div>
+        <div class="ct-actions" style="margin-top:12px;justify-content:center">
+          <button class="retry-btn" onclick="galShare()">📤 שיתוף בוואטסאפ שהגלריה פתוחה להעלאת תמונות</button>
+        </div>
         <h3 style="color:var(--teal-dark);font-size:1rem;margin:18px 0 8px;text-align:center">🗑️ מחיקת תמונות</h3>
         <div id="admGalGrid" class="adm-gal-grid"><div class="reg-empty">טוען...</div></div>
         <div id="admGalPager" class="adm-gal-pager"></div>
@@ -1619,10 +1622,20 @@ function toggleGalUploads(){
   window.saveSettings('gallery', { uploadsOpen: next }).then(function(){
     galUploadsOpen = next; renderGalToggle();
     st.className = 'ct-status ok'; st.textContent = next ? '✓ ההעלאה נפתחה' : '✓ ההעלאה נחסמה';
+    if(next) st.innerHTML = '✓ ההעלאה נפתחה — <button class="retry-btn" onclick="galShare()">📤 לשתף עכשיו בוואטסאפ</button>';
   }).catch(function(err){
     console.error(err);
     st.className = 'ct-status err'; st.textContent = 'השמירה נכשלה (' + (err && err.code ? err.code : 'שגיאה') + ')';
   });
+}
+
+function galShare(){
+  if(!galUploadsOpen && !confirm('ההעלאה כרגע חסומה — לשתף בכל זאת?')) return;
+  var txt = '📸 הגלריה של סדרת החינוך פתוחה להעלאת תמונות!\n' +
+    'העלו את התמונות שצילמתם כדי שכולם יוכלו ליהנות מהן:\n' +
+    'https://itairosenblum-hash.github.io/Sadach2026/#gallery\n' +
+    '(קוד כניסה לאתר: 2026)';
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(txt), '_blank');
 }
 
 // ===================== GALLERY: ADMIN DELETE =====================
