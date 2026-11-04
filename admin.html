@@ -497,6 +497,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <div class="ct-actions">
           <button class="retry-btn" onclick="rmAdd()">➕ הוספת חדר</button>
           <button class="retry-btn" onclick="rmAddMany()">➕➕ הוספת כמה חדרים</button>
+          <button class="retry-btn" onclick="rmPasteToggle()">📋 הדבקת רשימת חדרים</button>
           <button class="btn-primary" id="rmSaveBtn" onclick="rmSave()">💾 שמירה</button>
         </div>
         <div class="ct-card" id="rmBulk" style="display:none;margin-top:10px">
@@ -509,6 +510,15 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
             <button class="btn-primary" onclick="rmBulkAdd()">✓ הוספת החדרים</button>
           </div>
           <div class="ct-status err" id="rmBulkErr"></div>
+        </div>
+        <div class="ct-card" id="rmPaste" style="display:none;margin-top:10px">
+          <label style="font-size:0.85rem;margin-bottom:6px">📋 הדביקו רשימה — שורה לכל חדר: מספר חדר, כמות, בנים/בנות</label>
+          <textarea id="rmPasteTxt" rows="7" dir="rtl" placeholder="303- 3 בנות&#10;310- 3 בנים" style="width:100%;box-sizing:border-box;border-radius:10px;border:1.5px solid rgba(15,76,76,0.15);padding:8px;font-family:'Rubik',sans-serif;font-size:0.9rem"></textarea>
+          <div class="ct-actions" style="margin-top:8px">
+            <button class="retry-btn" onclick="rmPasteToggle()">ביטול</button>
+            <button class="btn-primary" onclick="rmPasteAdd()">✓ הוספת החדרים</button>
+          </div>
+          <div class="ct-status err" id="rmPasteErr"></div>
         </div>
         <div class="ct-status" id="rmStatus"></div>
 
@@ -2037,6 +2047,42 @@ function rmBulkAdd(){
   rmRooms = rmRooms.concat(add);
   rmBulkClose(); rmDirty(); rmRender();
   var st = document.getElementById('rmStatus'); st.textContent = 'נוספו ' + add.length + ' חדרים — לחצו "שמירה"';
+}
+// Paste a list like "303- 3 בנות" (one room per line) → rooms
+function rmPasteToggle(){
+  var box = document.getElementById('rmPaste'), show = box.style.display === 'none';
+  box.style.display = show ? 'block' : 'none';
+  document.getElementById('rmPasteErr').textContent = '';
+  if(show) document.getElementById('rmPasteTxt').focus();
+}
+function rmParseList(txt){
+  var out = [], bad = [];
+  String(txt || '').split(/\n+/).forEach(function(line){
+    var l = line.trim(); if(!l) return;
+    var nums = l.match(/\d+/g) || [];
+    var g = /בנות|נשים|נקבה|בת\b|👩/.test(l) ? 'נקבה' : /בנים|גברים|זכר|בן\b|👨/.test(l) ? 'זכר' : '';
+    if(nums.length < 2 || !g){ if(/\d/.test(l)) bad.push(l); return; }
+    out.push({ num: nums[0], cap: Math.max(1, Math.min(20, parseInt(nums[1], 10) || 0)), gender: g });
+  });
+  return { rooms: out, bad: bad };
+}
+function rmPasteAdd(){
+  var err = document.getElementById('rmPasteErr');
+  var res = rmParseList(document.getElementById('rmPasteTxt').value);
+  if(!res.rooms.length){ err.textContent = 'לא זוהו חדרים — כתבו בכל שורה: מספר חדר, כמות, בנים/בנות'; return; }
+  var have = {}; rmRooms.forEach(function(r){ have[String(r.num).trim()] = r; });
+  var added = 0, updated = 0;
+  res.rooms.forEach(function(x){
+    var ex = have[x.num];
+    if(ex){ ex.cap = x.cap; ex.gender = x.gender; updated++; }
+    else { rmRooms.push({ id: rmUid(), num: x.num, cap: x.cap, gender: x.gender, show: true, self: true }); have[x.num] = true; added++; }
+  });
+  document.getElementById('rmPasteTxt').value = '';
+  document.getElementById('rmPaste').style.display = 'none';
+  rmDirty(); rmRender();
+  var st = document.getElementById('rmStatus');
+  st.textContent = (added ? 'נוספו ' + added + ' חדרים' : '') + (added && updated ? ' · ' : '') + (updated ? 'עודכנו ' + updated + ' חדרים קיימים' : '') +
+    (res.bad.length ? ' · לא זוהו: ' + res.bad.join(' / ') : '') + ' — לחצו "💾 שמירה"';
 }
 function rmDel(id){
   var r = rmRoomById(id); if(!r) return;
