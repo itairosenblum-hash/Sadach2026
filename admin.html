@@ -968,13 +968,16 @@ function fmtDate(ts){
 }
 
 var adminFilter = 'all';
+// Lodging always leaves out people marked ❌ "not coming"
+function isNoShow(r){ return !!r && r.arrival === 'no'; }
+function isLodger(r){ return !!r && r.overnight === 'כן' && !isNoShow(r); }
 var ADMIN_FILTERS = [
   ['all',       'נרשמים',          function(r){ return true; }],
   ['male',      'גברים',           function(r){ return r.gender === 'זכר'; }],
   ['female',    'נשים',            function(r){ return r.gender === 'נקבה'; }],
   ['notes',     'עם הערות',        function(r){ return !!(r.notes && r.notes.trim()); }],
-  ['overnight', 'לינה',            function(r){ return r.overnight === 'כן'; }],
-  ['noovernight','ללא לינה',       function(r){ return r.overnight !== 'כן'; }],
+  ['overnight', 'לינה',            function(r){ return isLodger(r); }],
+  ['noovernight','ללא לינה',       function(r){ return !isLodger(r); }],
   ['weapon',    'נושאי נשק',       function(r){ return r.weapon === 'כן'; }],
   ['veg',       'צמחוני/טבעוני',   function(r){ return !!r.diet && r.diet !== 'רגיל'; }],
   ['arrYes',    '✅ מגיעים',       function(r){ return r.arrival === 'yes'; }, true],
@@ -991,11 +994,11 @@ function markArrival(id, val){
   var r = adminRegs.filter(function(x){ return x.id === id; })[0]; if(!r) return;
   var prev = r.arrival;
   if(val) r.arrival = val; else delete r.arrival;
-  renderAdmin();
+  renderAdmin(); rmRender();
   window.setArrival(id, val).catch(function(err){
     console.error(err);
     if(prev) r.arrival = prev; else delete r.arrival;
-    renderAdmin();
+    renderAdmin(); rmRender();
     alert('הסימון לא נשמר (' + (err && err.code ? err.code : 'שגיאה') + ')');
   });
 }
@@ -1176,7 +1179,7 @@ function regsShareWa(){
   var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
   shown = shown.slice().sort(function(a, b){ return heCmp(a.unit || 'תתת', b.unit || 'תתת') || heCmp(a.name, b.name); });
   var m = shown.filter(function(r){ return r.gender === 'זכר'; }).length, f = shown.filter(function(r){ return r.gender === 'נקבה'; }).length;
-  var ov = shown.filter(function(r){ return r.overnight === 'כן'; }).length;
+  var ov = shown.filter(isLodger).length;
   var txt = '📋 נרשמים – סדרת חינוך' + (adminFilter !== 'all' ? ' (' + activeF[1] + ')' : '') + (q ? ' · חיפוש: ' + q : '') + '\n';
   txt += 'סה"כ ' + shown.length + ' · 👨 ' + m + ' · 👩 ' + f + ' · 🛏️ לינה ' + ov + '\n';
   var lastUnit = null, n = 0;
@@ -1185,7 +1188,7 @@ function regsShareWa(){
     if(uk !== lastUnit){ lastUnit = uk; n = 0; txt += '\n*' + uk + '* (' + shown.filter(function(x){ return (x.unit || 'ללא יחידה') === uk; }).length + ')\n'; }
     n++;
     var tags = [];
-    if(r.overnight === 'כן') tags.push('🛏️');
+    if(isLodger(r)) tags.push('🛏️');
     if(r.weapon === 'כן') tags.push('🔫');
     txt += n + '. ' + [((r.rank || '') + ' ' + (r.name || '')).trim(), r.phone].filter(Boolean).join(' – ') +
       (tags.length ? ' ' + tags.join(' ') : '') + '\n';
@@ -1729,15 +1732,17 @@ function rmState(){
   var rooms = rmRooms.slice().sort(rmNumCmp), occ = {};
   rooms.forEach(function(r){ occ[r.id] = []; });
   var regById = {}; adminRegs.forEach(function(r){ regById[r.id] = r; });
+  var noShow = [];   // marked "not coming" but still holding a room pick — not counted in the rooms
   Object.keys(rmPicks).forEach(function(id){
     var pk = rmPicks[id], r = regById[id];
+    if(isNoShow(r)){ if(occ[pk.room]) noShow.push({ id: id, name: r.name, room: pk.room }); return; }
     if(occ[pk.room]) occ[pk.room].push({ id: id, rank: r ? r.rank : pk.rank, name: r ? r.name : pk.name, unit: r ? r.unit : pk.unit, gender: r ? r.gender : pk.gender, locked: pk.locked === true, gone: !r });
   });
   var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
   rooms.forEach(function(r){ occ[r.id].sort(function(a, b){ return heCmp(a.unit, b.unit) || heCmp(a.name, b.name); }); });
-  var roster = adminRegs.filter(function(r){ return r.overnight === 'כן' || rmPicks[r.id]; })
+  var roster = adminRegs.filter(function(r){ return !isNoShow(r) && (r.overnight === 'כן' || rmPicks[r.id]); })
     .sort(function(a, b){ return heCmp(a.unit || 'תתת', b.unit || 'תתת') || heCmp(a.name, b.name); });
-  return { rooms: rooms, occ: occ, roster: roster, has: function(id){ return !!(rmPicks[id] && occ[rmPicks[id].room]); } };
+  return { rooms: rooms, occ: occ, roster: roster, noShow: noShow, has: function(id){ return !!(rmPicks[id] && occ[rmPicks[id].room] && !isNoShow(regById[id])); } };
 }
 
 function rmRender(){
@@ -1766,6 +1771,9 @@ function rmRender(){
   c.rooms.forEach(function(r){ var bad = c.occ[r.id].filter(function(p){ return p.gender !== r.gender; }); if(bad.length) w.push('⚠️ בחדר ' + escapeHtml(r.num || '?') + ' (' + r.gender + '): ' + bad.map(function(p){ return escapeHtml(rmPersonLabel(p)); }).join(', ')); });
   var gone = []; c.rooms.forEach(function(r){ c.occ[r.id].forEach(function(p){ if(p.gone) gone.push(p.name); }); });
   if(gone.length) w.push('⚠️ בחרו חדר אבל ההרשמה שלהם נמחקה: ' + gone.map(escapeHtml).join(', '));
+  if(c.noShow.length) w.push('❌ סומנו "לא מגיע" ועדיין תופסים מיטה באתר (לא נספרים כאן): ' +
+    c.noShow.map(function(p){ var rm = rmRoomById(p.room); return escapeHtml(p.name || '') + (rm ? ' (חדר ' + escapeHtml(rm.num || '?') + ')' : ''); }).join(', ') +
+    ' <button type="button" class="retry-btn" onclick="rmFreeNoShow()">🛏️ לפנות את המיטות שלהם</button>');
   var nums = {}; rmRooms.forEach(function(r){ var k = String(r.num).trim(); if(k) nums[k] = (nums[k] || 0) + 1; });
   Object.keys(nums).forEach(function(k){ if(nums[k] > 1) w.push('⚠️ מספר החדר ' + escapeHtml(k) + ' מופיע ' + nums[k] + ' פעמים'); });
   document.getElementById('rmWarn').innerHTML = w.length ? '<div class="rm-warn">' + w.join('<br>') + '</div>' : '';
@@ -1864,17 +1872,25 @@ function rmApplyRec(){
   var st = document.getElementById('rmStatus'); st.textContent = (n ? 'עודכנה קיבולת ב-' + n + ' חדרים' : 'הקיבולת כבר תואמת להמלצה') + ' — לחצו "שמירה"';
 }
 
+function rmFreeNoShow(){
+  var ids = rmState().noShow.map(function(p){ return p.id; });
+  if(!ids.length) return;
+  if(!confirm('להוציא מהחדרים ' + ids.length + ' אנשים שסומנו "לא מגיע"?\nהמיטות שלהם יתפנו באתר.')) return;
+  window.rmDelPicks(ids).catch(function(err){ console.error(err); alert('הפעולה נכשלה — ' + rmErr(err)); });
+}
+
 // ---------- who sleeps over ----------
 var rmOnFilter = 'all', rmOnOpen = false;
 function rmToggleOn(){ rmOnOpen = !rmOnOpen; document.getElementById('rmOnBox').style.display = rmOnOpen ? 'block' : 'none'; document.getElementById('rmOnArrow').textContent = rmOnOpen ? '▾' : '▸'; rmRenderOn(); }
 function rmOnSetFilter(f){ rmOnFilter = f; document.querySelectorAll('#rmOnSeg button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-f') === f); }); rmRenderOn(); }
 function rmRenderOn(){
-  var yes = adminRegs.filter(function(r){ return r.overnight === 'כן'; }).length;
-  var cnt = document.getElementById('rmOnCount'); if(cnt) cnt.textContent = '(' + yes + ' ישנים · ' + (adminRegs.length - yes) + ' לא)';
+  var coming = adminRegs.filter(function(r){ return !isNoShow(r); });
+  var yes = coming.filter(isLodger).length;
+  var cnt = document.getElementById('rmOnCount'); if(cnt) cnt.textContent = '(' + yes + ' ישנים · ' + (coming.length - yes) + ' לא)';
   if(!rmOnOpen) return;
   var heCmp = function(a, b){ return String(a || '').localeCompare(String(b || ''), 'he'); };
   var q = (document.getElementById('rmOnSearch').value || '').trim();
-  var list = adminRegs.filter(function(r){
+  var list = coming.filter(function(r){
     if(rmOnFilter === 'yes' && r.overnight !== 'כן') return false;
     if(rmOnFilter === 'no' && r.overnight === 'כן') return false;
     return !q || [r.name, r.unit, r.rank].some(function(v){ return v && String(v).indexOf(q) !== -1; });
@@ -1917,7 +1933,7 @@ function rmRenderPeople(c){
     if(rmFilter === 'locked' && !(rmPicks[p.id] && rmPicks[p.id].locked)) return false;
     return !q || hit(p);
   });
-  var extra = q && rmFilter === 'all' ? adminRegs.filter(function(p){ return p.overnight !== 'כן' && !rmPicks[p.id] && hit(p); }) : [];
+  var extra = q && rmFilter === 'all' ? adminRegs.filter(function(p){ return !isNoShow(p) && p.overnight !== 'כן' && !rmPicks[p.id] && hit(p); }) : [];
   var el = document.getElementById('rmPeople');
   if(!shown.length && !extra.length){ el.innerHTML = '<div class="reg-empty">' + (rmFilter === 'none' && !q ? '🎉 כולם בחרו חדר' : rmFilter === 'locked' && !q ? 'אין הצמדות' : c.roster.length ? 'אין אנשים להצגה' : 'אין עדיין נרשמים ללינה') + '</div>'; return; }
   el.innerHTML = shown.concat(extra).map(function(p){
@@ -2027,7 +2043,7 @@ function rmShareStats(){
   if(!rmLoaded){ alert('החדרים עדיין נטענים'); return; }
   var c = rmState();
   var need = { 'זכר': 0, 'נקבה': 0 }, got = { 'זכר': 0, 'נקבה': 0 }, beds = { 'זכר': 0, 'נקבה': 0 }, rc = { 'זכר': 0, 'נקבה': 0 };
-  var lodgers = adminRegs.filter(function(r){ return r.overnight === 'כן' && r.arrival !== 'no'; });
+  var lodgers = adminRegs.filter(isLodger);
   lodgers.forEach(function(p){ if(need[p.gender] != null){ need[p.gender]++; if(c.has(p.id)) got[p.gender]++; } });
   c.rooms.forEach(function(r){ beds[r.gender] += r.cap; rc[r.gender]++; });
   var tot = lodgers.length, noRoom = lodgers.filter(function(p){ return !c.has(p.id); }).length;
