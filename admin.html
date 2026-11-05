@@ -363,7 +363,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 </head>
 <body>
 <div class="bg-waves" aria-hidden="true"><div class="bg-wave-layer"></div></div>
-<div class="header"><span class="h-eyebrow">🔐 ניהול · סדרת חינוך טבריה</span><span class="h-main">עמוד מנהל</span></div>
+<div class="header"><span class="h-eyebrow">🔐 ניהול · המערך הלוגיסטי</span><span class="h-main" id="admHead">ניהול טיולים</span></div>
 
 <div class="app">
 <div class="pages" id="pages">
@@ -376,6 +376,29 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 
     <div id="adminLoggedIn" style="display:none">
       <div class="admin-bar"><span id="adminWho"></span><button class="retry-btn" onclick="adminSignOut()">התנתקות</button></div>
+      <div id="hubView">
+        <div class="ct-card" style="text-align:center">
+          <button class="btn-primary" onclick="hbOpenNew()">➕ טיול חדש</button>
+          <div id="hbNewBox" style="display:none;text-align:right;margin-top:12px">
+            <p class="section-sub" style="text-align:right;margin:0 0 8px" id="hbNewInfo"></p>
+            <div style="font-weight:700;font-size:.85rem;margin-bottom:4px">להעביר לטיול החדש מהטיול הקודם:</div>
+            <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="hbKeepContacts" style="width:auto"> אנשי קשר</label>
+            <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="hbKeepInstr" style="width:auto"> הנחיות ורשימת ציוד</label>
+            <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="hbKeepRooms" style="width:auto"> רשימת החדרים</label>
+            <div class="ct-actions"><button class="retry-btn" onclick="document.getElementById('hbNewBox').style.display='none'">ביטול</button><button class="btn-primary" id="tpNewBtn" onclick="tpNewTrip()">יצירת הטיול</button></div>
+          </div>
+          <div class="ct-status" id="hbStatus"></div>
+        </div>
+        <h3 style="color:var(--teal-dark);font-size:1rem;margin:18px 0 8px;text-align:center">🧭 טיול נוכחי</h3>
+        <div id="hbCurrent"><div class="reg-empty">טוען...</div></div>
+        <h3 style="color:var(--teal-dark);font-size:1rem;margin:18px 0 8px;text-align:center">🗂️ טיולים קודמים</h3>
+        <div id="arList"><div class="reg-empty">טוען...</div></div>
+      </div>
+
+      <div id="arDetail" style="display:none"></div>
+
+      <div id="tripView" style="display:none">
+      <div class="admin-bar"><button class="retry-btn" onclick="hbShow()">→ כל הטיולים</button><b id="tvTitle"></b></div>
       <div class="admin-tabs">
         <button type="button" data-pane="trip" onclick="showPane('trip')">🧭 טיול</button>
         <button type="button" class="active" data-pane="regs" onclick="showPane('regs')">📋 נרשמים</button>
@@ -385,7 +408,6 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <button type="button" data-pane="sched" onclick="showPane('sched')">🗓️ לו"ז</button>
         <button type="button" data-pane="gal" onclick="showPane('gal')">🖼️ גלריה</button>
         <button type="button" data-pane="rooms" onclick="showPane('rooms')">🛏️ חדרים</button>
-        <button type="button" data-pane="arch" onclick="showPane('arch');archLoadList()">🗂️ ארכיון</button>
       </div>
 
       <div class="admin-pane" id="pane-trip">
@@ -416,14 +438,12 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <div class="ct-actions"><button class="btn-primary" id="tpSaveBtn" onclick="tpSave()">💾 שמירה</button></div>
           <div class="ct-status" id="tpStatus"></div>
         </div>
-        <h3 style="color:var(--teal-dark);font-size:1rem;margin:20px 0 8px;text-align:center">➕ טיול חדש</h3>
+        <h3 style="color:var(--teal-dark);font-size:1rem;margin:20px 0 8px;text-align:center">🧹 ניקוי</h3>
         <div class="ct-card">
-          <p class="section-sub" style="text-align:right;margin:0 0 8px">הטיול הנוכחי (אם יש) נשמר במלואו בארכיון, ואז מתאפסים: הנרשמים, בדיקות הנוכחות, שיבוץ החדרים, הלו"ז והגלריה. ההרשמה ננעלת והאתר מציג "אין כרגע אירוע פעיל" עד שתפעילו את הטיול החדש.</p>
-          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstInstr" checked style="width:auto"> לאפס גם הנחיות ורשימת ציוד</label>
-          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstRooms" checked style="width:auto"> לאפס גם את רשימת החדרים</label>
-          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstContacts" checked style="width:auto"> לאפס גם אנשי קשר</label>
-          <div class="ct-actions"><button class="btn-primary" id="tpNewBtn" onclick="tpNewTrip()">➕ פתיחת טיול חדש</button></div>
-          <div class="ct-actions"><button class="retry-btn" id="tpCleanBtn" onclick="tpCleanOnly()">🧹 לאפס עכשיו רק את המסומנים (בלי טיול חדש)</button></div>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstContacts" checked style="width:auto"> אנשי קשר</label>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstInstr" checked style="width:auto"> הנחיות ורשימת ציוד</label>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstRooms" checked style="width:auto"> רשימת החדרים</label>
+          <div class="ct-actions"><button class="retry-btn" id="tpCleanBtn" onclick="tpCleanOnly()">🧹 לאפס את המסומנים</button></div>
           <div class="ct-status" id="tpNewStatus"></div>
         </div>
       </div>
@@ -618,13 +638,6 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <div class="ct-status" id="inStatus"></div>
       </div>
 
-      <div class="admin-pane" id="pane-arch">
-        <p class="section-sub" style="margin-bottom:12px">כל אירוע שהסתיים נשמר כאן במלואו · פתיחת טיול חדש נעשית בלשונית "🧭 טיול"</p>
-        <h3 style="color:var(--teal-dark);font-size:1rem;margin:16px 0 8px;text-align:center">🗂️ אירועים בארכיון</h3>
-        <div id="arList"><div class="reg-empty">טוען...</div></div>
-        <div id="arView" style="display:none;margin-top:12px"></div>
-      </div>
-
       <div class="admin-pane" id="pane-contacts">
         <p class="section-sub" style="margin-bottom:12px">אנשי הקשר מוצגים לכולם בלשונית "אנשי קשר" באתר</p>
         <div id="ctList"><div class="reg-empty">טוען...</div></div>
@@ -633,6 +646,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <button class="btn-primary" id="ctSaveBtn" onclick="saveContacts()">💾 שמירה</button>
         </div>
         <div class="ct-status" id="ctStatus"></div>
+      </div>
       </div>
     </div>
     <a class="back-link" href="./">← חזרה לאתר</a>
@@ -655,7 +669,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">✕</button>
     <h2 id="modalTitle">✅ הרשמה לסדרת החינוך</h2>
-    <div class="modal-sub">טבריה</div>
+    <div class="modal-sub" id="admModalSub"></div>
     <div id="formWrap">
       <div class="form-group">
         <label>יחידה *</label>
@@ -721,7 +735,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
     <div class="form-success" id="formSuccess">
       <span class="success-icon">🎉</span>
       <h3 style="color:var(--teal-dark);margin-bottom:6px;">ההרשמה התקבלה!</h3>
-      <p style="color:var(--text-mid);">תודה! נתראה בטבריה</p>
+      <p style="color:var(--text-mid);">הנרשם נוסף בהצלחה</p>
       <div class="success-details" id="successDetails"></div>
       <button class="close-btn" onclick="closeModal()">סגירה</button>
     </div>
@@ -1083,19 +1097,14 @@ function arStatus(id, msg, err){ var el = document.getElementById(id); el.textCo
 function archLoadList(){
   var box = document.getElementById('arList');
   window.archList().then(function(list){
-    if(!list.length){ box.innerHTML = '<div class="reg-empty">עדיין אין אירועים בארכיון</div>'; return; }
-    box.innerHTML = list.map(function(a){
+    var done = list.filter(function(a){ return a.status === 'done'; });
+    window._arList = done;
+    if(!done.length){ box.innerHTML = '<div class="reg-empty">עדיין אין טיולים קודמים</div>'; return; }
+    box.innerHTML = done.map(function(a){
       var c = a.counts || {};
-      var page = ARCH_PAGES[a.id] || ('./?archive=' + encodeURIComponent(a.id));
-      var st = a.status !== 'done' ? ' · ⚠️ השמירה לא הושלמה' : '';
-      return '<div class="ct-card" style="margin-bottom:8px">'
-        + '<b>' + arEsc(a.title || a.id) + '</b> <small style="color:var(--text-mid)">' + arEsc(a.date || '') + '</small>'
-        + '<div style="font-size:.8rem;color:var(--text-mid);margin:4px 0">' + (c.registrations || 0) + ' נרשמים · ' + (c.attendance || 0) + ' בדיקות נוכחות · נשמר ' + arFmtDate(a.createdAt) + st + '</div>'
-        + '<div class="ct-actions" style="justify-content:flex-start">'
-        + '<button class="retry-btn" onclick="archView(\'' + arEsc(a.id) + '\')">👀 נרשמים</button>'
-        + '<button class="retry-btn" onclick="archCsv(\'' + arEsc(a.id) + '\')">⬇️ אקסל</button>'
-        + (page ? '<a class="retry-btn" style="text-decoration:none" href="' + page + '" target="_blank">🌐 דף האירוע</a>' : '')
-        + '</div></div>';
+      return '<div class="ct-card" style="margin-bottom:8px;cursor:pointer" onclick="arOpen(\'' + arEsc(a.id) + '\')">'
+        + '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:1.5rem">🏞️</span><div style="flex:1"><b>' + arEsc(a.title || a.id) + '</b>'
+        + '<div style="font-size:.8rem;color:var(--text-mid)">' + arEsc(a.date || '') + ' · ' + (c.registrations || 0) + ' נרשמים</div></div><span style="color:var(--accent);font-weight:900">←</span></div></div>';
     }).join('');
   }).catch(function(e){
     box.innerHTML = '<div class="reg-empty">שגיאה בטעינת הארכיון' + (e && e.code === 'permission-denied' ? ' — צריך לעדכן את חוקי Firestore (firestore.rules)' : '') + '</div>';
@@ -1108,12 +1117,11 @@ function archView(id){
   box.innerHTML = '<div class="reg-empty">טוען...</div>';
   window.archFetch(id, 'registrations').then(function(rows){
     rows.sort(function(a, b){ return ((a.createdAt && a.createdAt.seconds) || 0) - ((b.createdAt && b.createdAt.seconds) || 0); });
-    box.innerHTML = '<div class="admin-bar"><b>' + rows.length + ' נרשמים · ' + arEsc(id) + '</b><button class="retry-btn" onclick="document.getElementById(\'arView\').style.display=\'none\'">סגירה</button></div>'
+    box.innerHTML = '<div class="admin-bar"><b>' + rows.length + ' נרשמים · ' + arEsc(id) + '</b></div>'
       + '<div class="reg-table-wrap" style="max-height:420px"><table class="reg-table"><thead><tr><th>#</th>'
       + AR_COLS.map(function(c){ return '<th>' + c[1] + '</th>'; }).join('') + '</tr></thead><tbody>'
       + rows.map(function(r, i){ return '<tr><td>' + (i + 1) + '</td>' + AR_COLS.map(function(c){ return '<td>' + arEsc(c[0] === 'arrival' ? arArrival(r[c[0]]) : r[c[0]]) + '</td>'; }).join('') + '</tr>'; }).join('')
       + '</tbody></table></div>';
-    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }).catch(function(e){ box.innerHTML = '<div class="reg-empty">שגיאה: ' + arEsc(e && (e.message || e.code)) + '</div>'; });
 }
 function archCsv(id){
@@ -1132,6 +1140,80 @@ function archCsv(id){
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = id + '-registrations.csv';
     document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }).catch(function(e){ alert('שגיאה בהורדה: ' + (e && (e.message || e.code))); });
+}
+
+// ===================== HUB: all trips =====================
+function hbShow(){
+  document.getElementById('hubView').style.display = '';
+  document.getElementById('tripView').style.display = 'none';
+  document.getElementById('arDetail').style.display = 'none';
+  document.getElementById('admHead').textContent = 'ניהול טיולים';
+  hbRenderCurrent(); archLoadList(); window.scrollTo(0, 0);
+}
+function tvOpen(){
+  document.getElementById('hubView').style.display = 'none';
+  document.getElementById('arDetail').style.display = 'none';
+  document.getElementById('tripView').style.display = '';
+  document.getElementById('admHead').textContent = (tpCur && tpCur.title) || 'טיול חדש';
+  showPane('trip'); window.scrollTo(0, 0);
+}
+function hbRenderCurrent(){
+  var box = document.getElementById('hbCurrent'); if(!box) return;
+  var e = tpCur || {};
+  if(!e.title && !e.id){
+    box.innerHTML = '<div class="reg-empty">אין טיול נוכחי · לחצו "➕ טיול חדש"</div>'; return;
+  }
+  box.innerHTML = '<div class="ct-card" style="cursor:pointer" onclick="tvOpen()"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:1.5rem">🧭</span><div style="flex:1"><b>'
+    + arEsc(e.title || 'טיול חדש (בהכנה)') + '</b><div style="font-size:.8rem;color:var(--text-mid)">' + arEsc(e.dateText || '') + (e.dateText ? ' · ' : '')
+    + (e.active ? '🟢 מוצג באתר' : '⚪ לא מוצג באתר') + '</div></div><span style="color:var(--accent);font-weight:900">←</span></div></div>';
+}
+function hbOpenNew(){
+  var e = tpCur || {};
+  document.getElementById('hbNewInfo').textContent = e.title
+    ? '"' + e.title + '" יעבור לטיולים הקודמים (עם הנרשמים, הנוכחות, הלו"ז והגלריה), והטיול החדש יתחיל נקי.'
+    : 'הטיול החדש יתחיל נקי.';
+  document.getElementById('hbNewBox').style.display = 'block';
+}
+// One past trip — read-only: details, registrations, contacts, schedule
+function arOpen(id){
+  var a = (window._arList || []).filter(function(x){ return x.id === id; })[0] || { id: id };
+  var box = document.getElementById('arDetail');
+  document.getElementById('hubView').style.display = 'none';
+  box.style.display = '';
+  document.getElementById('admHead').textContent = a.title || id;
+  window.scrollTo(0, 0);
+  var page = ARCH_PAGES[id] || ('./?archive=' + encodeURIComponent(id));
+  box.innerHTML = '<div class="admin-bar"><button class="retry-btn" onclick="hbShow()">→ כל הטיולים</button><b>' + arEsc(a.title || id) + '</b></div>'
+    + '<div class="ct-card" style="text-align:center"><div style="color:var(--text-mid);font-size:.85rem">' + arEsc(a.date || '') + ' · טיול שהסתיים · לצפייה בלבד</div>'
+    + '<div class="ct-actions" style="justify-content:center"><a class="retry-btn" style="text-decoration:none" href="' + page + '" target="_blank">🌐 דף הטיול</a>'
+    + '<button class="retry-btn" onclick="archCsv(\'' + arEsc(id) + '\')">⬇️ נרשמים לאקסל</button></div></div>'
+    + '<div id="arSettings"><div class="reg-empty">טוען...</div></div><div id="arView" style="margin-top:12px"></div>';
+  archView(id);
+  window.archFetch(id, 'settings').then(function(docs){
+    var S = {}; docs.forEach(function(d){ S[d.id] = d; });
+    var h = '';
+    var ev = S.event;
+    if(ev && ev.title){
+      h += '<div class="ct-card" style="margin-top:10px"><b>✏️ פרטי הטיול</b><div style="font-size:.85rem;line-height:1.8;margin-top:4px">'
+        + [['מיקום', ev.location], ['מועד', ev.dateText], ['מסגרת', ev.framing], ['לינה', ev.lodging]].filter(function(x){ return x[1]; }).map(function(x){ return x[0] + ': ' + arEsc(x[1]); }).join('<br>')
+        + ((ev.goals || []).length ? '<br>מטרות: ' + ev.goals.map(arEsc).join(' · ') : '') + '</div></div>';
+    }
+    var ct = (S.contacts && S.contacts.items) || [];
+    if(ct.length){
+      h += '<div class="ct-card" style="margin-top:10px"><b>📞 אנשי קשר</b><div style="font-size:.85rem;line-height:1.8;margin-top:4px">'
+        + ct.map(function(c){ return arEsc([c.role, c.name, c.phone].filter(Boolean).join(' · ')); }).join('<br>') + '</div></div>';
+    }
+    var sc = S.schedule;
+    if(sc && (sc.days || []).length){
+      h += '<div class="ct-card" style="margin-top:10px"><b>🗓️ לו"ז' + (sc.title ? ' · ' + arEsc(sc.title) : '') + '</b>'
+        + sc.days.map(function(d){ return '<div style="margin-top:6px;font-weight:700;font-size:.85rem">' + arEsc(d.title || '') + '</div><div style="font-size:.8rem;line-height:1.7;color:var(--text-mid)">' + (d.items || []).map(arEsc).join('<br>') + '</div>'; }).join('') + '</div>';
+    }
+    var ins = S.instructions;
+    if(ins && (ins.rules || []).length){
+      h += '<div class="ct-card" style="margin-top:10px"><b>📢 הנחיות</b><div style="font-size:.8rem;line-height:1.7;margin-top:4px">' + ins.rules.map(arEsc).join('<br>') + '</div></div>';
+    }
+    document.getElementById('arSettings').innerHTML = h;
+  }).catch(function(){ document.getElementById('arSettings').innerHTML = ''; });
 }
 
 // ===================== TRIP (settings/event) =====================
@@ -1157,6 +1239,8 @@ function tpRenderState(){
   document.getElementById('tpToggleLbl').textContent = on ? '🟢 הטיול מוצג באתר' : '⚪ האתר מציג "אין כרגע אירוע פעיל"';
   document.getElementById('tpState').textContent = e.title ? ('🧭 ' + e.title + (e.dateText ? ' · ' + e.dateText : '')) : 'אין טיול פעיל · מלאו את הפרטים למטה';
   window.EVA_ID = e.id || '';
+  var ms = document.getElementById('admModalSub'); if(ms) ms.textContent = e.location || '';
+  var tt = document.getElementById('tvTitle'); if(tt) tt.textContent = e.title || 'טיול חדש';
 }
 function tpFill(){
   var e = tpCur || {};
@@ -1166,7 +1250,7 @@ function tpFill(){
   tpRenderState(); arStatus('tpStatus', '');
 }
 function loadTrip(){
-  window.fetchSettings('event').then(function(d){ tpCur = d; tpFill(); })
+  window.fetchSettings('event').then(function(d){ tpCur = d; tpFill(); hbRenderCurrent(); })
     .catch(function(e){ document.getElementById('tpState').textContent = e && e.code === 'permission-denied' ? 'צריך לעדכן את חוקי Firestore' : 'שגיאה בטעינה'; });
 }
 function tpNewId(){ var d = new Date(); function z(n){ return (n < 10 ? '0' : '') + n; } return 'ev-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()); }
@@ -1215,16 +1299,16 @@ function tpCleanOnly(){
 function tpNewTrip(){
   var cur = tpCur || {};
   var btn = document.getElementById('tpNewBtn');
-  var opts = tpOpts();
-  btn.disabled = true; arStatus('tpNewStatus', 'בודק...');
+  var opts = { contacts: !document.getElementById('hbKeepContacts').checked, instructions: !document.getElementById('hbKeepInstr').checked, rooms: !document.getElementById('hbKeepRooms').checked };
+  btn.disabled = true; arStatus('hbStatus', 'בודק...');
   window.liveCounts().then(function(c){
     var hasData = c.regs > 0 || c.att > 0 || !!cur.title;
     var msg = hasData
       ? 'לפתוח טיול חדש?\n\n"' + (cur.title || 'הטיול הנוכחי') + '" יישמר בארכיון (' + c.regs + ' נרשמים, ' + c.att + ' בדיקות נוכחות), ואז האתר יתאפס.'
       : 'לפתוח טיול חדש?\nאין כרגע נתונים לשמור — האתר פשוט יתאפס.';
-    if(!confirm(msg)){ arStatus('tpNewStatus', ''); btn.disabled = false; return; }
+    if(!confirm(msg)){ arStatus('hbStatus', ''); btn.disabled = false; return; }
     var archId = null;
-    var step = function(m){ arStatus('tpNewStatus', m); };
+    var step = function(m){ arStatus('hbStatus', m); };
     var p = Promise.resolve();
     if(hasData){
       archId = cur.id || tpNewId();
@@ -1239,12 +1323,15 @@ function tpNewTrip(){
     opts.event = fresh;
     return p.then(function(){ return window.archResetLive(archId, step, opts); }).then(function(r){
       tpCur = fresh; tpFill();
-      arStatus('tpNewStatus', '✅ ' + (archId ? '"' + (cur.title || 'האירוע') + '" נשמר בארכיון והאתר אופס. ' : 'האתר אופס. ') + 'מלאו את פרטי הטיול החדש, שמרו והפעילו את המתג למעלה כשהכל מוכן. ההרשמה נפתחת בלשונית "נרשמים".');
-      try { loadAdmin(); } catch(e){}
+      arStatus('hbStatus', '');
+      document.getElementById('hbNewBox').style.display = 'none';
+      try { loadAdmin(); loadContacts(); loadInstr(); } catch(e){}
+      tvOpen();
+      arStatus('tpStatus', (archId ? '✅ "' + (cur.title || 'הטיול הקודם') + '" נשמר בטיולים הקודמים. ' : '✅ ') + 'מלאו את פרטי הטיול, שמרו, והפעילו את המתג כשהכל מוכן.');
       document.getElementById('tp-title').focus();
     });
   }).catch(function(e){
-    arStatus('tpNewStatus', (e && e.code === 'permission-denied') ? 'אין הרשאה — צריך לעדכן את חוקי Firestore' : 'שגיאה: ' + (e && (e.message || e.code)) + ' · שום דבר לא נמחק לפני שהארכיון נשמר', true);
+    arStatus('hbStatus', (e && e.code === 'permission-denied') ? 'אין הרשאה — צריך לעדכן את חוקי Firestore' : 'שגיאה: ' + (e && (e.message || e.code)) + ' · שום דבר לא נמחק לפני שהארכיון נשמר', true);
   }).then(function(){ btn.disabled = false; });
 }
 
@@ -1271,6 +1358,7 @@ window.onAdminState = function(user, isAdmin){
     document.getElementById('adminWho').textContent = 'מחובר: ' + user.email;
     loadAdmin();
     loadTrip();
+    hbShow();
     loadContacts();
     loadInstr();
     loadSched();
@@ -1688,7 +1776,7 @@ function saveInstr(){
 }
 
 // ===================== SCHEDULE =====================
-var SCHED_DEFAULT = {"published": false, "title": "סדרת חינוך – \"בדרכו של אלי כהן\" 🇮🇱", "subtitle": "אהבת מולדת | לכידות | ציונות", "days": [{"title": "יום א' | רביעי 4.11", "items": ["09:30–10:00 – התכנסות במצפור סוסיתא וסקירה 📍 https://waze.com/ul?q=%D7%9E%D7%A6%D7%A4%D7%95%D7%A8%20%D7%A1%D7%95%D7%A1%D7%99%D7%AA%D7%90&navigate=yes", "10:00 – עלייה לאוטובוסים ונסיעה לנחל אל-על 🚌", "10:45–13:30 – מסלול בנחל אל-על 🥾", "13:30 – נסיעה לעגלת הקפה \"דורא\" בנוב", "13:40–14:30 – ארוחת צהריים (הסעדה, או עגלת הקפה למעוניינים) 🍽️", "14:30 – נסיעה למרפסת הר נבו", "14:45–15:30 – מרפסת הר נבו: הדרכה על אלי כהן 🇮🇱", "15:30 – נסיעה למצפה אופיר", "15:45–16:45 – דיון במצפה אופיר: \"שליחות מול הגשמה עצמית\" 💬", "16:45 – נסיעה חזרה לרכבים", "17:30 – הגעה לבית החייל בטבריה והתמקמות 🏨", "19:00 – ארוחת ערב בבית החייל (קייטרינג) 🍽️", "20:00 – ערב גיבוש 🎉"]}, {"title": "יום ב' | חמישי 5.11 (ברכבים פרטיים 🚗)", "items": ["07:00–08:00 – ארוחת בוקר בבית החייל ופינוי חדרים ☕", "08:00 – יציאה ברכבים למצפה דדו, מטולה 🚗 https://waze.com/ul?q=%D7%9E%D7%A6%D7%A4%D7%94%20%D7%93%D7%93%D7%95%20%D7%9E%D7%98%D7%95%D7%9C%D7%94&navigate=yes", "09:45–10:45 – מצפה דדו: סקירה על יחסי ישראל–לבנון 📍", "10:45 – נסיעה למטולה.", "11:00-12:00 - לשיחה עם רבש\"ץ מטולה.", "12:00–13:00 – פארק הזהב, קריית שמונה: ארוחת צהריים ושיחת סיכום 🍽️ https://waze.com/ul?q=%D7%A4%D7%90%D7%A8%D7%A7%20%D7%94%D7%96%D7%94%D7%91%20%D7%A7%D7%A8%D7%99%D7%99%D7%AA%20%D7%A9%D7%9E%D7%95%D7%A0%D7%94&navigate=yes", "13:00 – סיום הסד\"ח 🏁"]}]};
+var SCHED_DEFAULT = {"published": false, "title": "", "subtitle": "", "days": [{"title": "יום 1", "items": []}]};
 var schedDays = [], schedPub = false;
 function loadSched(){
   window.fetchSettings('schedule').then(function(d){
