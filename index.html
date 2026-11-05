@@ -504,7 +504,10 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
       <div class="gal-closed" id="galClosed" style="display:none">🔒 העלאת תמונות סגורה כרגע</div>
       <div id="galGrid" class="gal-grid"></div>
       <div id="galPager" class="gal-pager"></div>
-      <div style="text-align:center;margin-top:10px"><button class="retry-btn" onclick="loadGallery(galPage)">🔄 רענון הגלריה</button></div>
+      <div style="text-align:center;margin-top:10px"><button class="retry-btn" onclick="loadGallery(galPage)">🔄 רענון הגלריה</button> <button class="retry-btn" id="galDlBtn" onclick="galDownloadAll()">⬇️ הורדת כל הגלריה</button></div>
+      <div style="text-align:center;margin-top:6px"><div class="gal-status" id="galDlStatus"></div>
+        <button class="btn-primary" id="galDlSave" style="display:none;margin-top:6px" onclick="galDlShare()">💾 שמירה לטלפון</button>
+        <button class="retry-btn" id="galDlZip" style="display:none" onclick="galDlZip()">🗜️ הורדה כקובץ ZIP</button></div>
     </div>
   </div>
 
@@ -1499,6 +1502,72 @@ var GALLERY_KEY = 'chinuch-tiberias-2026';   // upload secret (same in gallery/C
 function galEv(){ return (EV && EV.id) ? '&event=' + encodeURIComponent(EV.id) : ''; }
 function galFix(d){ return (EV && EV.id && d && d.v !== 2) ? { ok: true, total: 0, page: 1, pages: 1, items: [] } : d; }
 var galLoaded = false, galPage = 1, galItems = [], galPages = 1, lbIndex = 0;
+// ===== DOWNLOAD THE WHOLE GALLERY (all pages) =====
+// Gets every photo in full size through the gallery script, then: phone → share sheet ("Save images"), otherwise → ZIP file.
+var galDl = { files: [], busy: false };
+function galDlEv(){ return typeof galEv === 'function' ? galEv() : ''; }
+function galDlSet(t, show){
+  var el = document.getElementById('galDlStatus'); el.textContent = t || '';
+  document.getElementById('galDlSave').style.display = show ? '' : 'none';
+  document.getElementById('galDlZip').style.display = show ? '' : 'none';
+}
+function galDlJson(url){ return fetch(url, { cache: 'no-store' }).then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); }
+function galDownloadAll(){
+  if(galDl.busy) return;
+  galDl.busy = true; galDl.files = [];
+  var btn = document.getElementById('galDlBtn'); btn.disabled = true;
+  galDlSet('אוסף את רשימת התמונות...');
+  var ids = [];
+  galDlJson(GALLERY_URL + '?page=1' + galDlEv()).then(function(d){
+    (d.items || []).forEach(function(it){ ids.push(it.id); });
+    var rest = [];
+    for(var p = 2; p <= (d.pages || 1); p++) rest.push(galDlJson(GALLERY_URL + '?page=' + p + galDlEv()));
+    return Promise.all(rest).then(function(all){ all.forEach(function(x){ (x.items || []).forEach(function(it){ ids.push(it.id); }); }); });
+  }).then(function(){
+    if(!ids.length){ galDlSet('אין תמונות בגלריה'); return; }
+    var i = 0, done = 0, failed = 0;
+    function next(){
+      if(i >= ids.length) return Promise.resolve();
+      var id = ids[i++];
+      return galDlJson(GALLERY_URL + '?action=file&id=' + encodeURIComponent(id) + galDlEv()).then(function(r){
+        if(r.v !== 2 && !r.data) throw new Error('OLD_SCRIPT');
+        if(!r.ok || !r.data){ failed++; return; }
+        var bin = atob(r.data), u8 = new Uint8Array(bin.length);
+        for(var k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k);
+        var name = String(r.name || ('photo-' + (done + 1) + '.jpg')).replace(/[\\\/:*?"<>|]/g, '');
+        galDl.files.push(new File([u8], name, { type: r.mime || 'image/jpeg' }));
+      }, function(e){ if(e && e.message === 'OLD_SCRIPT') throw e; failed++; })
+      .then(function(){ done++; galDlSet('מוריד ' + done + ' / ' + ids.length + '...'); return next(); });
+    }
+    return Promise.all([next(), next(), next()]).then(function(){
+      galDlSet('✅ ' + galDl.files.length + ' תמונות מוכנות' + (failed ? ' (' + failed + ' לא ירדו)' : '') + ' · לחצו לשמירה', true);
+    });
+  }).catch(function(e){
+    galDlSet(e && e.message === 'OLD_SCRIPT' ? 'ההורדה תעבוד אחרי עדכון סקריפט הגלריה' : 'לא ניתן להוריד כרגע, נסו שוב');
+  }).then(function(){ galDl.busy = false; btn.disabled = false; });
+}
+function galDlShare(){
+  var f = galDl.files; if(!f.length) return;
+  if(navigator.canShare && navigator.canShare({ files: f })){
+    navigator.share({ files: f }).catch(function(e){ if(!e || e.name !== 'AbortError') galDlZip(); });
+  } else galDlZip();
+}
+function galDlZip(){
+  var f = galDl.files; if(!f.length) return;
+  galDlSet('יוצר קובץ ZIP...', true);
+  (window.JSZip ? Promise.resolve() : new Promise(function(res, rej){
+    var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = res; s.onerror = rej; document.head.appendChild(s);
+  })).then(function(){
+    var zip = new JSZip(), used = {};
+    f.forEach(function(file){ var n = file.name; while(used[n]) n = '1_' + n; used[n] = 1; zip.file(n, file); });
+    return zip.generateAsync({ type: 'blob' });
+  }).then(function(blob){
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'gallery.zip';
+    document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    galDlSet('✅ הקובץ ירד', true);
+  }).catch(function(){ galDlSet('לא ניתן ליצור ZIP', true); });
+}
 function galThumb(id, w){ return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w' + w; }
 function galSetStatus(t, cls){ var el = document.getElementById('galStatus'); el.textContent = t; el.className = 'gal-status' + (cls ? ' ' + cls : ''); }
 // Upload on/off switch — set from admin.html (Firestore settings/gallery)

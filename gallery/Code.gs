@@ -16,6 +16,7 @@ function authorize() {
 }
 
 function doGet(e) {
+  if (e && e.parameter && e.parameter.action === 'file') return fileData_(e.parameter);
   const page = Math.max(1, parseInt((e && e.parameter && e.parameter.page) || '1', 10) || 1);
   const all = listAll_(evId_(e && e.parameter && e.parameter.event));
   const pages = Math.max(1, Math.ceil(all.length / CONFIG.PAGE_SIZE));
@@ -125,4 +126,19 @@ function listAll_(ev) {
   arr.sort(function (a, b) { return b.t - a.t; });
   try { cache.put('list_' + ev, JSON.stringify(arr), 60); } catch (e) {}
   return arr;
+}
+
+// One full-size image as base64 — used by "download the whole gallery" on the site.
+function fileData_(p) {
+  const ev = evId_(p.event);
+  const folder = eventFolder_(ev, false);
+  if (!folder) return json_({ ok: false, v: 2, error: 'no folder' });
+  let file;
+  try { file = DriveApp.getFileById(String(p.id || '')); } catch (err) { return json_({ ok: false, v: 2, error: 'not found' }); }
+  let inFolder = false;
+  const parents = file.getParents();
+  while (parents.hasNext()) { if (parents.next().getId() === folder.getId()) inFolder = true; }
+  if (!inFolder || file.isTrashed()) return json_({ ok: false, v: 2, error: 'not in gallery' });
+  const blob = file.getBlob();
+  return json_({ ok: true, v: 2, name: file.getName(), mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) });
 }
