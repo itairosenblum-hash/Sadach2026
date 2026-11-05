@@ -8,6 +8,10 @@
 <link rel="icon" href="favicon.png?v=2">
 <meta name="theme-color" content="#0f4c4c">
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script>
+// admin.html?trip=<archive id> → manage a trip that ended (all tabs read/write archives/<id>/...)
+var ADM_TRIP = (new URLSearchParams(location.search).get('trip') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+</script>
 <style>
 :root{
   --teal-dark:#0f4c4c;
@@ -99,6 +103,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .tp-chk.on{background:rgba(47,143,122,.1);border-color:rgba(47,143,122,.35);}
 .tp-chk.on .tp-dot{background:#2f8f7a;box-shadow:0 0 0 4px rgba(47,143,122,.2);}
 .hb-chip{font-size:.7rem;background:var(--teal-soft);color:var(--teal-dark);padding:2px 8px;border-radius:999px;}
+.ctx-arch .live-only{display:none!important}
 .btn-primary:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
 .retry-btn{margin-top:8px;background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);padding:7px 16px;border-radius:999px;font-size:0.8rem;font-weight:700;cursor:pointer;}
 
@@ -419,7 +424,17 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
       </div>
 
       <div class="admin-pane" id="pane-trip">
-        <div class="ct-card" id="tpStateBox">
+        <div class="ct-card arch-only" id="ctxBox" style="display:none;text-align:center">
+          <div style="font-weight:700">🗂️ טיול שהסתיים</div>
+          <div style="font-size:.8rem;color:var(--text-mid);margin:2px 0 8px">כל הלשוניות כאן עורכות את הטיול הזה בלבד · האתר הראשי לא משתנה</div>
+          <div class="ct-actions" style="justify-content:center">
+            <a class="retry-btn" id="ctxPage" style="text-decoration:none" target="_blank">🌐 דף הטיול</a>
+            <button class="retry-btn" onclick="archCsv(ADM_TRIP)">⬇️ נרשמים לאקסל</button>
+            <button class="retry-btn" style="border-color:#c0392b;color:#c0392b;background:#fff" onclick="arDelete(ADM_TRIP)">🗑️ מחיקת הטיול</button>
+          </div>
+          <div class="ct-status" id="arDelStatus"></div>
+        </div>
+        <div class="ct-card live-only" id="tpStateBox">
           <div id="tpState" style="font-weight:700;text-align:center">טוען...</div>
           <div style="font-size:.8rem;color:var(--text-mid);text-align:center;margin:2px 0 10px">מה רואים באתר עכשיו · לחיצה על שורה משנה אותה</div>
           <div id="tpChecks"></div>
@@ -448,6 +463,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <div class="ct-actions"><button class="btn-primary" id="tpSaveBtn" onclick="tpSave()">💾 שמירה</button></div>
           <div class="ct-status" id="tpStatus"></div>
         </div>
+        <div class="live-only">
         <h3 style="color:var(--teal-dark);font-size:1rem;margin:20px 0 8px;text-align:center">🧹 ניקוי</h3>
         <div class="ct-card">
           <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstContacts" checked style="width:auto"> אנשי קשר</label>
@@ -468,6 +484,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <p class="section-sub" style="text-align:right;margin:0 0 8px">מוחק לצמיתות את הטיול הנוכחי עם כל הנרשמים, הנוכחות, החדרים, הלו"ז, ההנחיות ואנשי הקשר — <b>בלי לשמור בטיולים הקודמים</b>. אם רוצים לשמור עותק, משתמשים ב"➕ טיול חדש" בעמוד כל הטיולים.</p>
           <div class="ct-actions"><button class="retry-btn" style="border-color:#c0392b;color:#c0392b;background:#fff" id="tpDelBtn" onclick="tpDeleteTrip()">🗑️ מחיקת הטיול הנוכחי</button></div>
           <div class="ct-status" id="tpDelStatus"></div>
+        </div>
         </div>
       </div>
 
@@ -679,7 +696,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 
 <div class="tabbar" id="tabbar">
   <button class="tab" id="nbHub" onclick="hbShow()"><span class="ic">🧭</span>כל הטיולים</button>
-  <button class="tab" id="nbTrip" onclick="tvOpen()"><span class="ic">✏️</span>הטיול הנוכחי</button>
+  <button class="tab" id="nbTrip" onclick="if(ADM_TRIP) location.href='admin.html?open=trip'; else tvOpen();"><span class="ic">✏️</span>הטיול הנוכחי</button>
   <a class="tab" href="./?preview=1" target="_blank"><span class="ic">👀</span>תצוגה מקדימה</a>
   <a class="tab" href="./"><span class="ic">🌐</span>לאתר</a>
 </div>
@@ -783,6 +800,8 @@ const ADMIN_EMAILS = ["itai.rosenblum@gmail.com", "henshvarts@gmail.com"];
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+// Collections of the trip being managed: live, or an ended trip in archives/<id>/
+function P(c){ return window.ADM_TRIP ? ['archives', window.ADM_TRIP, c] : [c]; }
 
 window.adminSignIn = async function(){
   const provider = new GoogleAuthProvider();
@@ -797,103 +816,103 @@ window.adminSignIn = async function(){
 window.adminSignOut = function(){ return signOut(auth); };
 
 window.fetchAllRegistrations = async function(){
-  const snap = await getDocs(query(collection(db, 'registrations'), orderBy('createdAt', 'asc')));
+  const snap = await getDocs(query(collection(db, ...P('registrations')), orderBy('createdAt', 'asc')));
   return snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
 };
 window.updateRegistration = async function(id, record){
   const batch = writeBatch(db);
-  batch.update(doc(db, 'registrations', id), record);
-  batch.set(doc(db, 'public_list', id), { unit: record.unit, name: record.name, gender: record.gender }, { merge: true });
+  batch.update(doc(db, ...P('registrations'), id), record);
+  batch.set(doc(db, ...P('public_list'), id), { unit: record.unit, name: record.name, gender: record.gender }, { merge: true });
   await batch.commit();
 };
 // "Not coming" also hides the person from the public list on the site (public_list.hidden)
 // Admin adds a person — same shape as a registration from the site
 window.adminAddRegistration = async function(record){
-  const ref = doc(collection(db, 'registrations'));
+  const ref = doc(collection(db, ...P('registrations')));
   const batch = writeBatch(db);
   batch.set(ref, Object.assign({}, record, { createdAt: serverTimestamp() }));
-  batch.set(doc(db, 'public_list', ref.id), { unit: record.unit, name: record.name, gender: record.gender, createdAt: serverTimestamp() });
+  batch.set(doc(db, ...P('public_list'), ref.id), { unit: record.unit, name: record.name, gender: record.gender, createdAt: serverTimestamp() });
   await batch.commit();
 };
 window.setPublicHidden = function(id, hide){
-  return updateDoc(doc(db, 'public_list', id), { hidden: hide ? true : deleteField() }).catch(function(err){ console.warn('public_list', id, err); });
+  return updateDoc(doc(db, ...P('public_list'), id), { hidden: hide ? true : deleteField() }).catch(function(err){ console.warn('public_list', id, err); });
 };
 window.setArrival = async function(id, val){
-  await updateDoc(doc(db, 'registrations', id), { arrival: val ? val : deleteField() });
+  await updateDoc(doc(db, ...P('registrations'), id), { arrival: val ? val : deleteField() });
   await window.setPublicHidden(id, val === 'no');
 };
 // Bulk delete: registration + public list entry + room pick
 window.deleteRegistrations = async function(ids){
   const batch = writeBatch(db);
   ids.forEach(function(id){
-    batch.delete(doc(db, 'registrations', id));
-    batch.delete(doc(db, 'public_list', id));
-    batch.delete(doc(db, 'roomPicks', id));
+    batch.delete(doc(db, ...P('registrations'), id));
+    batch.delete(doc(db, ...P('public_list'), id));
+    batch.delete(doc(db, ...P('roomPicks'), id));
   });
   await batch.commit();
 };
 window.deleteRegistration = async function(id){
   const batch = writeBatch(db);
-  batch.delete(doc(db, 'registrations', id));
-  batch.delete(doc(db, 'public_list', id));
+  batch.delete(doc(db, ...P('registrations'), id));
+  batch.delete(doc(db, ...P('public_list'), id));
   await batch.commit();
 };
 
 // Trip contacts — shown publicly on the "אנשי קשר" tab
 window.fetchContacts = async function(){
-  const s = await getDoc(doc(db, 'settings', 'contacts'));
+  const s = await getDoc(doc(db, ...P('settings'), 'contacts'));
   return s.exists() && Array.isArray(s.data().items) ? s.data().items : [];
 };
 window.fetchSettings = async function(id){
-  const s = await getDoc(doc(db, 'settings', id));
+  const s = await getDoc(doc(db, ...P('settings'), id));
   return s.exists() ? s.data() : null;
 };
 window.getIdToken = function(){ return auth.currentUser ? auth.currentUser.getIdToken() : Promise.reject(new Error('not signed in')); };
 window.saveSettings = async function(id, data){
-  await setDoc(doc(db, 'settings', id), Object.assign({}, data, { updatedAt: serverTimestamp() }));
+  await setDoc(doc(db, ...P('settings'), id), Object.assign({}, data, { updatedAt: serverTimestamp() }));
 };
 window.saveContactsDoc = async function(items){
-  await setDoc(doc(db, 'settings', 'contacts'), { items: items, updatedAt: serverTimestamp() });
+  await setDoc(doc(db, ...P('settings'), 'contacts'), { items: items, updatedAt: serverTimestamp() });
 };
 
 // Attendance checks — admin only. Each check: { title, scope, present: { regId: true }, createdAt }
 function attData(s){ return Object.assign({ id: s.id }, s.data({ serverTimestamps: 'estimate' })); }
 window.attCreate = async function(title, scope){
-  const r = await addDoc(collection(db, 'attendance'), { title: title, scope: scope, present: {}, notes: {}, createdAt: serverTimestamp() });
+  const r = await addDoc(collection(db, ...P('attendance')), { title: title, scope: scope, present: {}, notes: {}, createdAt: serverTimestamp() });
   return r.id;
 };
 window.attWatchList = function(cb, errCb){
-  return onSnapshot(query(collection(db, 'attendance'), orderBy('createdAt', 'desc')), function(s){ cb(s.docs.map(attData)); }, errCb);
+  return onSnapshot(query(collection(db, ...P('attendance')), orderBy('createdAt', 'desc')), function(s){ cb(s.docs.map(attData)); }, errCb);
 };
 window.attWatch = function(id, cb, errCb){
-  return onSnapshot(doc(db, 'attendance', id), function(s){ cb(s.exists() ? attData(s) : null); }, errCb);
+  return onSnapshot(doc(db, ...P('attendance'), id), function(s){ cb(s.exists() ? attData(s) : null); }, errCb);
 };
 window.attMarkMany = function(id, regIds, on){
   const upd = {};
   regIds.forEach(function(r){ upd['present.' + r] = on ? true : deleteField(); });
-  return updateDoc(doc(db, 'attendance', id), upd);
+  return updateDoc(doc(db, ...P('attendance'), id), upd);
 };
-window.attResetDoc = function(id){ return updateDoc(doc(db, 'attendance', id), { present: {}, notes: {} }); };
+window.attResetDoc = function(id){ return updateDoc(doc(db, ...P('attendance'), id), { present: {}, notes: {} }); };
 window.attSetNote = function(id, regId, text){
   const upd = {}; upd['notes.' + regId] = text ? text : deleteField();
-  return updateDoc(doc(db, 'attendance', id), upd);
+  return updateDoc(doc(db, ...P('attendance'), id), upd);
 };
-window.attDeleteDoc = function(id){ return deleteDoc(doc(db, 'attendance', id)); };
+window.attDeleteDoc = function(id){ return deleteDoc(doc(db, ...P('attendance'), id)); };
 
 // Room picks — roomPicks/{regId}: { room, name, unit, rank, gender, locked, updatedAt } (public read)
 window.rmWatchPicks = function(cb, errCb){
-  return onSnapshot(collection(db, 'roomPicks'), function(s){ const o = {}; s.docs.forEach(function(d){ o[d.id] = d.data(); }); cb(o); }, errCb);
+  return onSnapshot(collection(db, ...P('roomPicks')), function(s){ const o = {}; s.docs.forEach(function(d){ o[d.id] = d.data(); }); cb(o); }, errCb);
 };
-window.rmSetPick = function(regId, data){ return setDoc(doc(db, 'roomPicks', regId), Object.assign({}, data, { updatedAt: serverTimestamp() })); };
-window.rmDelPick = function(regId){ return deleteDoc(doc(db, 'roomPicks', regId)); };
+window.rmSetPick = function(regId, data){ return setDoc(doc(db, ...P('roomPicks'), regId), Object.assign({}, data, { updatedAt: serverTimestamp() })); };
+window.rmDelPick = function(regId){ return deleteDoc(doc(db, ...P('roomPicks'), regId)); };
 // Overnight yes/no change from the rooms tab; optionally drops the person's room pick in the same write
 window.rmSetOvernight = function(regId, val, dropPick){
   const b = writeBatch(db);
-  b.update(doc(db, 'registrations', regId), { overnight: val });
-  if(dropPick) b.delete(doc(db, 'roomPicks', regId));
+  b.update(doc(db, ...P('registrations'), regId), { overnight: val });
+  if(dropPick) b.delete(doc(db, ...P('roomPicks'), regId));
   return b.commit();
 };
-window.rmDelPicks = function(ids){ const b = writeBatch(db); ids.forEach(function(id){ b.delete(doc(db, 'roomPicks', id)); }); return b.commit(); };
+window.rmDelPicks = function(ids){ const b = writeBatch(db); ids.forEach(function(id){ b.delete(doc(db, ...P('roomPicks'), id)); }); return b.commit(); };
 
 // ===== ARCHIVE — archives/{id} (meta, public read) + archives/{id}/{collection}/{docId} copies =====
 const ARCH_COLLS = ['registrations', 'public_list', 'roomPicks', 'attendance', 'settings'];
@@ -1048,6 +1067,8 @@ window.deleteCurrentTrip = async function(fresh){
   await window.resetParts({ rooms: true });
   return regs.size;
 };
+window.archMeta = async function(archId){ const m = await getDoc(doc(db, 'archives', archId)); return m.exists() ? m.data() : null; };
+window.archSetMeta = function(archId, data){ return updateDoc(doc(db, 'archives', archId), data); };
 window.archExists = async function(archId){ const m = await getDoc(doc(db, 'archives', archId)); return m.exists(); };
 window.liveCounts = async function(){
   const r = await getDocs(collection(db, 'registrations')); const a = await getDocs(collection(db, 'attendance'));
@@ -1157,7 +1178,7 @@ function archLoadList(){
     if(!done.length){ box.innerHTML = '<div class="reg-empty">עדיין אין טיולים קודמים</div>'; return; }
     box.innerHTML = done.map(function(a){
       var c = a.counts || {};
-      return '<div class="ct-card" style="margin-bottom:8px;cursor:pointer" onclick="arOpen(\'' + arEsc(a.id) + '\')">'
+      return '<div class="ct-card" style="margin-bottom:8px;cursor:pointer" onclick="location.href=\'admin.html?trip=' + encodeURIComponent(a.id) + '\'">'
         + '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:1.5rem">🏞️</span><div style="flex:1"><b>' + arEsc(a.title || a.id) + '</b>'
         + '<div style="font-size:.8rem;color:var(--text-mid)">' + arEsc(a.date || '') + ' · ' + (c.registrations || 0) + ' נרשמים</div></div><span style="color:var(--accent);font-weight:900">←</span></div></div>';
     }).join('');
@@ -1199,6 +1220,7 @@ function archCsv(id){
 
 // ===================== HUB: all trips =====================
 function hbShow(){
+  if(ADM_TRIP){ location.href = 'admin.html'; return; }
   document.getElementById('hubView').style.display = '';
   document.getElementById('tripView').style.display = 'none';
   document.getElementById('arDetail').style.display = 'none';
@@ -1209,10 +1231,11 @@ function hbShow(){
   if(note) arStatus('hbStatus', note);
 }
 function tvOpen(){
+  if(ADM_TRIP && !window._ctxReady){ location.href = 'admin.html?open=trip'; return; }
   document.getElementById('hubView').style.display = 'none';
   document.getElementById('arDetail').style.display = 'none';
   document.getElementById('tripView').style.display = '';
-  document.getElementById('admHead').textContent = (tpCur && tpCur.title) || 'טיול חדש';
+  document.getElementById('admHead').textContent = (ADM_TRIP ? '🗂️ ' : '') + ((tpCur && tpCur.title) || (ADM_TRIP ? ADM_TRIP : 'טיול חדש'));
   showPane('trip'); window.scrollTo(0, 0);
   hbNav('nbTrip'); tpStatusRender();
 }
@@ -1278,6 +1301,23 @@ function arOpen(id){
     }
     document.getElementById('arSettings').innerHTML = h;
   }).catch(function(){ document.getElementById('arSettings').innerHTML = ''; });
+}
+
+// ===================== MANAGING AN ENDED TRIP (admin.html?trip=<id>) =====================
+function ctxStart(){
+  document.documentElement.classList.add('ctx-arch');
+  document.getElementById('ctxBox').style.display = '';
+  document.getElementById('ctxPage').href = ARCH_PAGES[ADM_TRIP] || ('./?archive=' + encodeURIComponent(ADM_TRIP));
+  var nb = document.getElementById('nbTrip'); if(nb) nb.querySelector('.ic').nextSibling.textContent = 'הטיול הנוכחי';
+  window.archMeta(ADM_TRIP).then(function(m){
+    if(!m){ document.getElementById('admHead').textContent = 'הטיול לא נמצא'; return; }
+    // older archives have no saved trip details — start from the archive's name and date
+    if(!tpCur || !tpCur.title){ tpCur = Object.assign({}, tpCur || {}, { title: m.title || '', dateText: m.date || '' }); tpFill(); }
+    window._ctxReady = true;
+    tvOpen();
+    document.getElementById('admHead').textContent = '🗂️ ' + (tpCur.title || m.title || ADM_TRIP);
+    hbNav('');
+  });
 }
 
 // ===================== TRIP STATUS (what the site shows right now) =====================
@@ -1380,7 +1420,8 @@ function tpCollect(){
   TP_FIELDS.forEach(function(k){ e[k] = document.getElementById('tp-' + k).value.trim(); });
   e.goals = document.getElementById('tp-goals').value.split('\n').map(function(x){ return x.trim(); }).filter(Boolean).slice(0, 6);
   e.active = !!(tpCur && tpCur.active);
-  if(!e.id) e.id = tpNewId();
+  if(!e.id && !ADM_TRIP) e.id = tpNewId();
+  if(!e.id) delete e.id;
   if(!e.code) e.code = '2026';
   if(e.endDate && e.startDate && e.endDate < e.startDate) e.endDate = e.startDate;
   delete e.lat; delete e.lon;
@@ -1392,7 +1433,9 @@ function tpSave(then){
   var btn = document.getElementById('tpSaveBtn'); btn.disabled = true;
   arStatus('tpStatus', 'שומר...');
   return window.saveSettings('event', e).then(function(){
-    tpCur = e; tpRenderState(); arStatus('tpStatus', '✅ נשמר · האתר מתעדכן מיד'); return true;
+    tpCur = e; tpRenderState(); arStatus('tpStatus', '✅ נשמר · האתר מתעדכן מיד');
+    if(ADM_TRIP){ window.archSetMeta(ADM_TRIP, { title: e.title || '', date: e.dateText || '' }).catch(function(){}); document.getElementById('admHead').textContent = '🗂️ ' + (e.title || ADM_TRIP); }
+    return true;
   }).catch(function(err){ arStatus('tpStatus', 'שגיאה בשמירה: ' + (err && (err.code || err.message)), true); return false; })
     .then(function(ok){ btn.disabled = false; return ok; });
 }
@@ -1424,7 +1467,7 @@ function arDelete(id){
   var a = (window._arList || []).filter(function(x){ return x.id === id; })[0] || { id: id };
   if(!arAskSure(a.title || id)) return;
   arStatus('arDelStatus', 'מוחק...');
-  window.archDelete(id).then(function(){ hbShow(); })
+  window.archDelete(id).then(function(){ if(ADM_TRIP) location.href = 'admin.html'; else hbShow(); })
     .catch(function(e){ arStatus('arDelStatus', 'שגיאה במחיקה: ' + (e && (e.code || e.message)), true); });
 }
 function tpDeleteTrip(){
@@ -1500,10 +1543,12 @@ window.onAdminState = function(user, isAdmin){
     // the gallery and the "open the new trip" step need the current trip id first
     loadTrip().then(function(){
       loadAdmGallery(1);
+      if(ADM_TRIP){ ctxStart(); return; }
       var note = null; try { note = sessionStorage.getItem('admOpenTrip'); sessionStorage.removeItem('admOpenTrip'); } catch(e){}
       if(note){ tvOpen(); arStatus('tpStatus', note); }
+      else if(/[?&]open=trip/.test(location.search)) tvOpen();
     });
-    hbShow();
+    if(!ADM_TRIP) hbShow();
     loadContacts();
     loadInstr();
     loadSched();
