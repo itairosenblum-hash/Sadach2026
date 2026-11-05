@@ -377,6 +377,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
     <div id="adminLoggedIn" style="display:none">
       <div class="admin-bar"><span id="adminWho"></span><button class="retry-btn" onclick="adminSignOut()">התנתקות</button></div>
       <div class="admin-tabs">
+        <button type="button" data-pane="trip" onclick="showPane('trip')">🧭 טיול</button>
         <button type="button" class="active" data-pane="regs" onclick="showPane('regs')">📋 נרשמים</button>
         <button type="button" data-pane="att" onclick="showPane('att')">🚌 נוכחות</button>
         <button type="button" data-pane="contacts" onclick="showPane('contacts')">📞 אנשי קשר</button>
@@ -385,6 +386,45 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <button type="button" data-pane="gal" onclick="showPane('gal')">🖼️ גלריה</button>
         <button type="button" data-pane="rooms" onclick="showPane('rooms')">🛏️ חדרים</button>
         <button type="button" data-pane="arch" onclick="showPane('arch');archLoadList()">🗂️ ארכיון</button>
+      </div>
+
+      <div class="admin-pane" id="pane-trip">
+        <div class="ct-card" id="tpStateBox" style="text-align:center">
+          <div id="tpState" style="font-weight:700">טוען...</div>
+          <div class="pub-toggle" id="tpToggle" onclick="tpToggleActive()" style="margin-top:8px">
+            <span class="pub-switch"><span></span></span>
+            <span class="pub-label" id="tpToggleLbl">האתר מציג את הטיול</span>
+          </div>
+          <a class="retry-btn" style="text-decoration:none;display:inline-block" href="./" target="_blank">🌐 פתיחת האתר</a>
+        </div>
+        <h3 style="color:var(--teal-dark);font-size:1rem;margin:16px 0 8px;text-align:center">✏️ פרטי הטיול</h3>
+        <div class="ct-card">
+          <label>שם הטיול *</label><input id="tp-title" maxlength="80" placeholder="למשל: סדרת חינוך · ירושלים" oninput="tpDirty()">
+          <label>כותרת עליונה באתר</label><input id="tp-headline" maxlength="120" placeholder="למשל: סדרת חינוך לאוכלוסיית הקבע המובהק והבכיר" oninput="tpDirty()">
+          <label>מיקום *</label><input id="tp-location" maxlength="60" placeholder="למשל: ירושלים" oninput="tpDirty()">
+          <div style="display:flex;gap:8px">
+            <div style="flex:1"><label>מתאריך *</label><input id="tp-startDate" type="date" oninput="tpDirty();tpAutoDate()"></div>
+            <div style="flex:1"><label>עד תאריך</label><input id="tp-endDate" type="date" oninput="tpDirty();tpAutoDate()"></div>
+          </div>
+          <label>מועד כפי שיוצג באתר</label><input id="tp-dateText" maxlength="60" placeholder="מתמלא אוטומטית מהתאריכים" oninput="tpDirty();this.dataset.manual='1'">
+          <label>מסגרת</label><input id="tp-framing" maxlength="60" placeholder="למשל: סדרת חינוך יחידתית" oninput="tpDirty()">
+          <label>שורת הסבר מתחת ל"פרטים על האירוע"</label><input id="tp-about" maxlength="160" placeholder="למשל: מידע נוסף יעודכן בהמשך" oninput="tpDirty()">
+          <label>מטרות (שורה לכל מטרה · כותרת – הסבר)</label><textarea id="tp-goals" class="in-ta" rows="4" placeholder="מורשת וידיעת הארץ – חיזוק הקשר למורשת" oninput="tpDirty()"></textarea>
+          <label>לינה (מוצג בלשונית החדרים)</label><input id="tp-lodging" maxlength="80" placeholder="למשל: לינה בבית החייל, ירושלים" oninput="tpDirty()">
+          <label>קישור לקבוצת וואטסאפ</label><input id="tp-whatsapp" maxlength="200" dir="ltr" placeholder="https://chat.whatsapp.com/..." oninput="tpDirty()">
+          <label>קוד כניסה לאתר</label><input id="tp-code" maxlength="12" dir="ltr" inputmode="numeric" placeholder="2026" oninput="tpDirty()">
+          <div class="ct-actions"><button class="btn-primary" id="tpSaveBtn" onclick="tpSave()">💾 שמירה</button></div>
+          <div class="ct-status" id="tpStatus"></div>
+        </div>
+        <h3 style="color:var(--teal-dark);font-size:1rem;margin:20px 0 8px;text-align:center">➕ טיול חדש</h3>
+        <div class="ct-card">
+          <p class="section-sub" style="text-align:right;margin:0 0 8px">הטיול הנוכחי (אם יש) נשמר במלואו בארכיון, ואז מתאפסים: הנרשמים, בדיקות הנוכחות, שיבוץ החדרים, הלו"ז והגלריה. ההרשמה ננעלת והאתר מציג "אין כרגע אירוע פעיל" עד שתפעילו את הטיול החדש.</p>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstInstr" checked style="width:auto"> לאפס גם הנחיות ורשימת ציוד</label>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstRooms" checked style="width:auto"> לאפס גם את רשימת החדרים</label>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstContacts" style="width:auto"> לאפס גם אנשי קשר</label>
+          <div class="ct-actions"><button class="btn-primary" id="tpNewBtn" onclick="tpNewTrip()">➕ פתיחת טיול חדש</button></div>
+          <div class="ct-status" id="tpNewStatus"></div>
+        </div>
       </div>
 
       <div class="admin-pane active" id="pane-regs">
@@ -578,21 +618,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
       </div>
 
       <div class="admin-pane" id="pane-arch">
-        <p class="section-sub" style="margin-bottom:12px">שומרים עותק מלא של האירוע (נרשמים, נוכחות, חדרים, לו"ז, אנשי קשר) ואז מנקים את האתר לאירוע הבא. דף האירוע הישן נשאר באוויר במצב קריאה בלבד.</p>
-        <div class="ct-card">
-          <label>שלב 1 · 📦 העברת האירוע הנוכחי לארכיון</label>
-          <input id="arTitle" maxlength="80" placeholder="שם האירוע">
-          <input id="arDate" maxlength="60" placeholder="מועד" style="margin-top:6px">
-          <input id="arId" maxlength="60" dir="ltr" placeholder="מזהה (אותיות לועזיות)" style="margin-top:6px">
-          <div class="ct-actions"><button class="btn-primary" id="arCopyBtn" onclick="archDoCopy()">📦 העברה לארכיון</button></div>
-          <div class="ct-status" id="arCopyStatus"></div>
-        </div>
-        <div class="ct-card" style="margin-top:10px">
-          <label>שלב 2 · 🆕 פתיחת אירוע חדש</label>
-          <p class="section-sub" style="text-align:right;margin:4px 0 8px">מוחק מהאתר את הנרשמים, הנוכחות ובחירות החדרים (אחרי שנשמרו בארכיון), מסתיר את הלו"ז ואת לשונית החדרים ונועל את ההרשמה עד שתפתחו אותה. אנשי הקשר, ההנחיות ורשימת החדרים נשארים לעריכה.</p>
-          <div class="ct-actions"><button class="btn-primary" id="arResetBtn" disabled onclick="archDoReset()">🆕 פתיחת אירוע חדש</button></div>
-          <div class="ct-status" id="arResetStatus"></div>
-        </div>
+        <p class="section-sub" style="margin-bottom:12px">כל אירוע שהסתיים נשמר כאן במלואו · פתיחת טיול חדש נעשית בלשונית "🧭 טיול"</p>
         <h3 style="color:var(--teal-dark);font-size:1rem;margin:16px 0 8px;text-align:center">🗂️ אירועים בארכיון</h3>
         <div id="arList"><div class="reg-empty">טוען...</div></div>
         <div id="arView" style="display:none;margin-top:12px"></div>
@@ -837,7 +863,7 @@ window.rmDelPicks = function(ids){ const b = writeBatch(db); ids.forEach(functio
 
 // ===== ARCHIVE — archives/{id} (meta, public read) + archives/{id}/{collection}/{docId} copies =====
 const ARCH_COLLS = ['registrations', 'public_list', 'roomPicks', 'attendance', 'settings'];
-const SETTINGS_IDS = ['contacts', 'instructions', 'schedule', 'gallery', 'registration', 'rooms', 'roomsPublic'];
+const SETTINGS_IDS = ['event', 'contacts', 'instructions', 'schedule', 'gallery', 'registration', 'rooms', 'roomsPublic'];
 async function commitInChunks(ops){
   for (let i = 0; i < ops.length; i += 400){
     const b = writeBatch(db);
@@ -901,11 +927,16 @@ window.archCopy = async function(archId, meta, onStep){
   return counts;
 };
 // Clears the live event — only after the archive is verified complete.
-window.archResetLive = async function(archId, onStep){
-  const m = await getDoc(doc(db, 'archives', archId));
-  if (!m.exists() || m.data().status !== 'done') throw new Error('NOT_ARCHIVED');
-  const archRegs = await getDocs(collection(db, 'archives', archId, 'registrations'));
-  const archived = {}; archRegs.docs.forEach(function(d){ archived[d.id] = true; });
+// archId = null → nothing to keep (empty event): only the settings are reset.
+window.archResetLive = async function(archId, onStep, opts){
+  opts = opts || {};
+  const archived = {};
+  if (archId){
+    const m = await getDoc(doc(db, 'archives', archId));
+    if (!m.exists() || m.data().status !== 'done') throw new Error('NOT_ARCHIVED');
+    const archRegs = await getDocs(collection(db, 'archives', archId, 'registrations'));
+    archRegs.docs.forEach(function(d){ archived[d.id] = true; });
+  }
   const ops = [];
   const regs = await getDocs(collection(db, 'registrations'));
   // anyone who registered after the archive was taken is not deleted
@@ -919,8 +950,10 @@ window.archResetLive = async function(archId, onStep){
     const s = await getDocs(collection(db, c));
     s.docs.forEach(function(d){ if (archived[d.id]) ops.push([doc(db, c, d.id), null]); });
   }
-  const att = await getDocs(collection(db, 'attendance'));
-  att.docs.forEach(function(d){ ops.push([doc(db, 'attendance', d.id), null]); });
+  if (archId){
+    const att = await getDocs(collection(db, 'attendance'));
+    att.docs.forEach(function(d){ ops.push([doc(db, 'attendance', d.id), null]); });
+  }
   onStep && onStep('מנקה ' + ops.length + ' רשומות...');
   await commitInChunks(ops);
   const ts = serverTimestamp();
@@ -929,9 +962,18 @@ window.archResetLive = async function(archId, onStep){
   b.set(doc(db, 'settings', 'schedule'), { published: false, title: '', subtitle: '', days: [], updatedAt: ts });
   b.set(doc(db, 'settings', 'roomsPublic'), { published: false, open: false, rooms: [], allowed: {}, updatedAt: ts });
   b.set(doc(db, 'settings', 'gallery'), { uploadsOpen: false, updatedAt: ts });
-  b.update(doc(db, 'archives', archId), { resetAt: ts });
+  if (opts.instructions) b.set(doc(db, 'settings', 'instructions'), { rules: [], gear: [], updatedAt: ts });
+  if (opts.rooms) b.set(doc(db, 'settings', 'rooms'), { rooms: [], updatedAt: ts });
+  if (opts.contacts) b.set(doc(db, 'settings', 'contacts'), { items: [], updatedAt: ts });
+  if (opts.event) b.set(doc(db, 'settings', 'event'), Object.assign({}, opts.event, { updatedAt: ts }));
+  if (archId) b.update(doc(db, 'archives', archId), { resetAt: ts });
   await b.commit();
   return { removed: ops.length, kept: keep };
+};
+window.archExists = async function(archId){ const m = await getDoc(doc(db, 'archives', archId)); return m.exists(); };
+window.liveCounts = async function(){
+  const r = await getDocs(collection(db, 'registrations')); const a = await getDocs(collection(db, 'attendance'));
+  return { regs: r.size, att: a.size };
 };
 window.archFetch = async function(archId, c){
   const s = await getDocs(collection(db, 'archives', archId, c));
@@ -1029,24 +1071,14 @@ var arCurrent = null;
 function arEsc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function arFmtDate(ts){ if(!ts || !ts.seconds) return ''; var d = new Date(ts.seconds * 1000); return d.toLocaleDateString('he-IL'); }
 function arStatus(id, msg, err){ var el = document.getElementById(id); el.textContent = msg || ''; el.style.color = err ? '#c0392b' : ''; }
-function archInitForm(){
-  var t = document.getElementById('arTitle');
-  if(!t.value) t.value = 'סדרת חינוך · טבריה';
-  var d = document.getElementById('arDate'); if(!d.value) d.value = '4–5 בנובמבר 2026';
-  var i = document.getElementById('arId'); if(!i.value) i.value = 'chinuch-tiberias-2026';
-}
 function archLoadList(){
-  archInitForm();
   var box = document.getElementById('arList');
   window.archList().then(function(list){
-    var pending = list.filter(function(a){ return a.status === 'done' && !a.resetAt; })[0];
-    document.getElementById('arResetBtn').disabled = !pending;
-    if(pending) document.getElementById('arResetBtn').setAttribute('data-arch', pending.id);
     if(!list.length){ box.innerHTML = '<div class="reg-empty">עדיין אין אירועים בארכיון</div>'; return; }
     box.innerHTML = list.map(function(a){
       var c = a.counts || {};
-      var page = ARCH_PAGES[a.id];
-      var st = a.status !== 'done' ? ' · ⚠️ ההעברה לא הושלמה — אפשר להריץ שוב' : (a.resetAt ? '' : ' · ✅ נשמר · האתר עדיין לא נוקה');
+      var page = ARCH_PAGES[a.id] || ('./?archive=' + encodeURIComponent(a.id));
+      var st = a.status !== 'done' ? ' · ⚠️ השמירה לא הושלמה' : '';
       return '<div class="ct-card" style="margin-bottom:8px">'
         + '<b>' + arEsc(a.title || a.id) + '</b> <small style="color:var(--text-mid)">' + arEsc(a.date || '') + '</small>'
         + '<div style="font-size:.8rem;color:var(--text-mid);margin:4px 0">' + (c.registrations || 0) + ' נרשמים · ' + (c.attendance || 0) + ' בדיקות נוכחות · נשמר ' + arFmtDate(a.createdAt) + st + '</div>'
@@ -1059,36 +1091,6 @@ function archLoadList(){
   }).catch(function(e){
     box.innerHTML = '<div class="reg-empty">שגיאה בטעינת הארכיון' + (e && e.code === 'permission-denied' ? ' — צריך לעדכן את חוקי Firestore (firestore.rules)' : '') + '</div>';
   });
-}
-function archDoCopy(){
-  var title = document.getElementById('arTitle').value.trim();
-  var date = document.getElementById('arDate').value.trim();
-  var id = document.getElementById('arId').value.trim().toLowerCase();
-  if(!title || !/^[a-z0-9-]{3,60}$/.test(id)){ arStatus('arCopyStatus', 'צריך שם ומזהה באותיות לועזיות, ספרות ומקפים', true); return; }
-  var btn = document.getElementById('arCopyBtn'); btn.disabled = true;
-  window.archCopy(id, { title: title, date: date }, function(m){ arStatus('arCopyStatus', m); })
-    .then(function(c){
-      arStatus('arCopyStatus', '✅ נשמר בארכיון: ' + c.registrations + ' נרשמים, ' + c.attendance + ' בדיקות נוכחות, ' + c.roomPicks + ' שיבוצי חדרים. האתר עדיין לא השתנה.');
-      archLoadList();
-    })
-    .catch(function(e){
-      var msg = e && e.message === 'EXISTS' ? 'כבר קיים אירוע בארכיון עם המזהה הזה' :
-        (e && e.code === 'permission-denied' ? 'אין הרשאה — צריך קודם לעדכן את חוקי Firestore' : 'שגיאה: ' + (e && (e.message || e.code)));
-      arStatus('arCopyStatus', msg, true);
-    })
-    .then(function(){ btn.disabled = false; });
-}
-function archDoReset(){
-  var btn = document.getElementById('arResetBtn');
-  var id = btn.getAttribute('data-arch'); if(!id) return;
-  if(!confirm('לפתוח אירוע חדש?\n\nהנרשמים, הנוכחות והחדרים יימחקו מהאתר (העותק בארכיון נשאר).\nההרשמה תינעל עד שתפתחו אותה בלשונית "נרשמים".')) return;
-  btn.disabled = true;
-  window.archResetLive(id, function(m){ arStatus('arResetStatus', m); })
-    .then(function(r){
-      arStatus('arResetStatus', '✅ האתר מוכן לאירוע חדש' + (r.kept ? ' · ' + r.kept + ' שנרשמו אחרי השמירה לארכיון לא נמחקו' : '') + '. רעננו את הדף.');
-      archLoadList();
-    })
-    .catch(function(e){ arStatus('arResetStatus', e && e.message === 'NOT_ARCHIVED' ? 'קודם צריך להשלים את שלב 1' : 'שגיאה: ' + (e && (e.message || e.code)), true); btn.disabled = false; });
 }
 var AR_COLS = [['name','שם'],['unit','יחידה'],['rank','דרגה'],['role','תפקיד'],['personalNum','מ.א.'],['phone','טלפון'],['gender','מין'],['overnight','לינה'],['weapon','נשק'],['diet','תזונה'],['arrival','הגעה'],['notes','הערות']];
 function arArrival(v){ return v === 'yes' ? 'מגיע' : (v === 'no' ? 'לא מגיע' : (v || '')); }
@@ -1123,6 +1125,109 @@ function archCsv(id){
   }).catch(function(e){ alert('שגיאה בהורדה: ' + (e && (e.message || e.code))); });
 }
 
+// ===================== TRIP (settings/event) =====================
+var TP_FIELDS = ['title','headline','location','startDate','endDate','dateText','framing','about','lodging','whatsapp','code'];
+var tpCur = null;
+var HE_MONTHS = ['בינואר','בפברואר','במרץ','באפריל','במאי','ביוני','ביולי','באוגוסט','בספטמבר','באוקטובר','בנובמבר','בדצמבר'];
+function tpDirty(){ arStatus('tpStatus', 'יש שינויים שלא נשמרו'); }
+function tpAutoDate(){
+  var el = document.getElementById('tp-dateText'); if(el.dataset.manual === '1' && el.value) return;
+  var a = document.getElementById('tp-startDate').value, b = document.getElementById('tp-endDate').value || a;
+  if(!a) return;
+  var A = new Date(a + 'T12:00:00'), B = new Date(b + 'T12:00:00');
+  var t;
+  if(a === b) t = A.getDate() + ' ' + HE_MONTHS[A.getMonth()] + ' ' + A.getFullYear();
+  else if(A.getMonth() === B.getMonth() && A.getFullYear() === B.getFullYear()) t = A.getDate() + '–' + B.getDate() + ' ' + HE_MONTHS[A.getMonth()] + ' ' + A.getFullYear();
+  else t = A.getDate() + ' ' + HE_MONTHS[A.getMonth()] + ' – ' + B.getDate() + ' ' + HE_MONTHS[B.getMonth()] + ' ' + B.getFullYear();
+  el.value = t; el.dataset.manual = '';
+}
+function tpRenderState(){
+  var e = tpCur || {};
+  var on = !!e.active;
+  document.getElementById('tpToggle').classList.toggle('on', on);
+  document.getElementById('tpToggleLbl').textContent = on ? '🟢 הטיול מוצג באתר' : '⚪ האתר מציג "אין כרגע אירוע פעיל"';
+  document.getElementById('tpState').textContent = e.title ? ('🧭 ' + e.title + (e.dateText ? ' · ' + e.dateText : '')) : 'אין טיול פעיל · מלאו את הפרטים למטה';
+  window.EVA_ID = e.id || '';
+}
+function tpFill(){
+  var e = tpCur || {};
+  TP_FIELDS.forEach(function(k){ var el = document.getElementById('tp-' + k); if(el) el.value = e[k] || ''; });
+  document.getElementById('tp-goals').value = (e.goals || []).join('\n');
+  document.getElementById('tp-dateText').dataset.manual = e.dateText ? '1' : '';
+  tpRenderState(); arStatus('tpStatus', '');
+}
+function loadTrip(){
+  window.fetchSettings('event').then(function(d){ tpCur = d; tpFill(); })
+    .catch(function(e){ document.getElementById('tpState').textContent = e && e.code === 'permission-denied' ? 'צריך לעדכן את חוקי Firestore' : 'שגיאה בטעינה'; });
+}
+function tpNewId(){ var d = new Date(); function z(n){ return (n < 10 ? '0' : '') + n; } return 'ev-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()); }
+function tpCollect(){
+  var e = Object.assign({}, tpCur || {});
+  delete e.updatedAt;
+  TP_FIELDS.forEach(function(k){ e[k] = document.getElementById('tp-' + k).value.trim(); });
+  e.goals = document.getElementById('tp-goals').value.split('\n').map(function(x){ return x.trim(); }).filter(Boolean).slice(0, 6);
+  e.active = !!(tpCur && tpCur.active);
+  if(!e.id) e.id = tpNewId();
+  if(!e.code) e.code = '2026';
+  if(e.endDate && e.startDate && e.endDate < e.startDate) e.endDate = e.startDate;
+  delete e.lat; delete e.lon;
+  return e;
+}
+function tpSave(then){
+  var e = tpCollect();
+  if(e.whatsapp && !/^https:\/\//.test(e.whatsapp)){ arStatus('tpStatus', 'קישור הוואטסאפ צריך להתחיל ב-https://', true); return Promise.resolve(false); }
+  var btn = document.getElementById('tpSaveBtn'); btn.disabled = true;
+  arStatus('tpStatus', 'שומר...');
+  return window.saveSettings('event', e).then(function(){
+    tpCur = e; tpRenderState(); arStatus('tpStatus', '✅ נשמר · האתר מתעדכן מיד'); return true;
+  }).catch(function(err){ arStatus('tpStatus', 'שגיאה בשמירה: ' + (err && (err.code || err.message)), true); return false; })
+    .then(function(ok){ btn.disabled = false; return ok; });
+}
+function tpToggleActive(){
+  var turnOn = !(tpCur && tpCur.active);
+  if(turnOn){
+    var t = document.getElementById('tp-title').value.trim(), l = document.getElementById('tp-location').value.trim(), d = document.getElementById('tp-startDate').value;
+    if(!t || !l || !d){ arStatus('tpStatus', 'כדי להציג את הטיול צריך שם, מיקום ותאריך התחלה', true); return; }
+  } else if(!confirm('להסתיר את הטיול מהאתר?\nהאתר יציג "אין כרגע אירוע פעיל". שום מידע לא נמחק.')) return;
+  tpCur = Object.assign({}, tpCur || {}, { active: turnOn });
+  tpSave();
+}
+function tpNewTrip(){
+  var cur = tpCur || {};
+  var btn = document.getElementById('tpNewBtn');
+  var opts = { instructions: document.getElementById('tpRstInstr').checked, rooms: document.getElementById('tpRstRooms').checked, contacts: document.getElementById('tpRstContacts').checked };
+  btn.disabled = true; arStatus('tpNewStatus', 'בודק...');
+  window.liveCounts().then(function(c){
+    var hasData = c.regs > 0 || c.att > 0 || !!cur.title;
+    var msg = hasData
+      ? 'לפתוח טיול חדש?\n\n"' + (cur.title || 'הטיול הנוכחי') + '" יישמר בארכיון (' + c.regs + ' נרשמים, ' + c.att + ' בדיקות נוכחות), ואז האתר יתאפס.'
+      : 'לפתוח טיול חדש?\nאין כרגע נתונים לשמור — האתר פשוט יתאפס.';
+    if(!confirm(msg)){ arStatus('tpNewStatus', ''); btn.disabled = false; return; }
+    var archId = null;
+    var step = function(m){ arStatus('tpNewStatus', m); };
+    var p = Promise.resolve();
+    if(hasData){
+      archId = cur.id || tpNewId();
+      p = window.archExists(archId).then(function(ex){
+        if(ex) archId = archId + '-' + Math.random().toString(36).slice(2, 6);
+        return window.archCopy(archId, { title: cur.title || 'אירוע', date: cur.dateText || '' }, step);
+      });
+    }
+    var fresh = { active: false, id: tpNewId(), title: '', headline: cur.headline || '', location: '', startDate: '', endDate: '', dateText: '',
+      framing: cur.framing || '', about: '', lodging: '', goals: [], whatsapp: '', code: cur.code || '2026' };
+    if(fresh.id === (cur.id || '')) fresh.id += '-n';
+    opts.event = fresh;
+    return p.then(function(){ return window.archResetLive(archId, step, opts); }).then(function(r){
+      tpCur = fresh; tpFill();
+      arStatus('tpNewStatus', '✅ ' + (archId ? '"' + (cur.title || 'האירוע') + '" נשמר בארכיון והאתר אופס. ' : 'האתר אופס. ') + 'מלאו את פרטי הטיול החדש, שמרו והפעילו את המתג למעלה כשהכל מוכן. ההרשמה נפתחת בלשונית "נרשמים".');
+      try { loadAdmin(); } catch(e){}
+      document.getElementById('tp-title').focus();
+    });
+  }).catch(function(e){
+    arStatus('tpNewStatus', (e && e.code === 'permission-denied') ? 'אין הרשאה — צריך לעדכן את חוקי Firestore' : 'שגיאה: ' + (e && (e.message || e.code)) + ' · שום דבר לא נמחק לפני שהארכיון נשמר', true);
+  }).then(function(){ btn.disabled = false; });
+}
+
 // ===================== ADMIN =====================
 var adminRegs = [];
 
@@ -1145,6 +1250,7 @@ window.onAdminState = function(user, isAdmin){
     inn.style.display = 'block';
     document.getElementById('adminWho').textContent = 'מחובר: ' + user.email;
     loadAdmin();
+    loadTrip();
     loadContacts();
     loadInstr();
     loadSched();
@@ -1885,7 +1991,7 @@ function admThumb(id){ return 'https://drive.google.com/thumbnail?id=' + encodeU
 function loadAdmGallery(page){
   var grid = document.getElementById('admGalGrid');
   grid.innerHTML = '<div class="reg-empty" style="grid-column:1/-1">טוען...</div>';
-  fetch(GALLERY_URL + '?page=' + page, { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(d){
+  fetch(GALLERY_URL + '?page=' + page + (window.EVA_ID ? '&event=' + encodeURIComponent(window.EVA_ID) : ''), { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(d){
     admGalPage = d.page || 1; admGalItems = d.items || [];
     if(!admGalItems.length){ grid.innerHTML = '<div class="reg-empty" style="grid-column:1/-1">אין תמונות בגלריה</div>'; document.getElementById('admGalPager').innerHTML = ''; return; }
     grid.innerHTML = admGalItems.map(function(it, i){

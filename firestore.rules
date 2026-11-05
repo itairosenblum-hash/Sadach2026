@@ -46,12 +46,13 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // Site settings edited from admin.html (contacts, instructions + gear) — everyone reads, only admins write.
+    // Site settings edited from admin.html (current trip, contacts, instructions + gear) — everyone reads, only admins write.
     match /settings/{docId} {
-      allow read: if docId in ['contacts', 'instructions', 'gallery', 'registration']
+      allow read: if docId in ['event', 'contacts', 'instructions', 'gallery', 'registration']
         || (docId == 'schedule' && (isAdmin() || resource.data.published == true));
-      allow write: if isAdmin() && docId in ['contacts', 'instructions', 'schedule', 'gallery', 'registration']
-        && request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'published', 'title', 'subtitle', 'days', 'uploadsOpen', 'open', 'message', 'updatedAt']);
+      allow write: if isAdmin() && docId in ['event', 'contacts', 'instructions', 'schedule', 'gallery', 'registration']
+        && request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'published', 'title', 'subtitle', 'days', 'uploadsOpen', 'open', 'message', 'updatedAt',
+             'active', 'id', 'headline', 'location', 'startDate', 'endDate', 'dateText', 'framing', 'about', 'lodging', 'goals', 'whatsapp', 'code']);
     }
 
     // Room setup — admins only.
@@ -155,7 +156,7 @@ service cloud.firestore {
       match /{coll}/{docId} {
         allow read: if isAdmin()
           || coll in ['public_list', 'roomPicks']
-          || (coll == 'settings' && docId in ['contacts', 'instructions', 'gallery', 'registration', 'roomsPublic'])
+          || (coll == 'settings' && docId in ['event', 'contacts', 'instructions', 'gallery', 'registration', 'roomsPublic'])
           || (coll == 'settings' && docId == 'schedule' && resource.data.get('published', false) == true);
         allow write: if isAdmin();
       }

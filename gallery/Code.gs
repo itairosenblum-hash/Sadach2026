@@ -17,7 +17,7 @@ function authorize() {
 
 function doGet(e) {
   const page = Math.max(1, parseInt((e && e.parameter && e.parameter.page) || '1', 10) || 1);
-  const all = listAll_();
+  const all = listAll_(evId_(e && e.parameter && e.parameter.event));
   const pages = Math.max(1, Math.ceil(all.length / CONFIG.PAGE_SIZE));
   return json_({ ok: true, total: all.length, page: page, pages: pages,
     items: all.slice((page - 1) * CONFIG.PAGE_SIZE, page * CONFIG.PAGE_SIZE) });
@@ -42,6 +42,18 @@ function getFolder_() {
   return DriveApp.getFolderById(CONFIG.FOLDER_ID);
 }
 
+// Each event has its own sub-folder (named by the event id). No id = the main folder (Tiberias photos).
+function evId_(v) {
+  return String(v || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
+}
+function eventFolder_(ev, create) {
+  const root = getFolder_();
+  if (!ev) return root;
+  const it = root.getFoldersByName(ev);
+  if (it.hasNext()) return it.next();
+  return create ? root.createFolder(ev) : null;
+}
+
 function uploadImage_(body) {
   const m = String(body.data || '').match(/^data:(image\/(jpeg|png|webp));base64,(.+)$/);
   if (!m) return json_({ ok: false, error: 'bad image' });
@@ -50,14 +62,15 @@ function uploadImage_(body) {
   const name = String(body.name || '').replace(/[\\\/:*?"<>|]/g, '').trim().slice(0, 40);
   const ts = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'yyyy-MM-dd_HH-mm-ss');
   const ext = m[2] === 'jpeg' ? 'jpg' : m[2];
-  const file = getFolder_().createFile(Utilities.newBlob(bytes, m[1], ts + (name ? '_' + name : '') + '.' + ext));
+  const ev = evId_(body.event);
+  const file = eventFolder_(ev, true).createFile(Utilities.newBlob(bytes, m[1], ts + (name ? '_' + name : '') + '.' + ext));
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   if (name) file.setDescription(name);
   const token = String(body.token || '');
   if (/^[a-f0-9]{32}$/.test(token)) {
     PropertiesService.getScriptProperties().setProperty('t_' + file.getId(), token);
   }
-  CacheService.getScriptCache().remove('list');
+  CacheService.getScriptCache().remove('list_' + ev);
   return json_({ ok: true, id: file.getId() });
 }
 
@@ -70,11 +83,19 @@ function deleteImage_(body) {
   const file = DriveApp.getFileById(id);
   let inGallery = false;
   const parents = file.getParents();
-  while (parents.hasNext()) { if (parents.next().getId() === CONFIG.FOLDER_ID) inGallery = true; }
+  let parentEv = '';
+  while (parents.hasNext()) {
+    const p = parents.next();
+    if (p.getId() === CONFIG.FOLDER_ID) inGallery = true;
+    else {
+      const gp = p.getParents();
+      while (gp.hasNext()) { if (gp.next().getId() === CONFIG.FOLDER_ID) { inGallery = true; parentEv = p.getName(); } }
+    }
+  }
   if (!inGallery) return json_({ ok: false, error: 'not in gallery' });
   file.setTrashed(true);
   props.deleteProperty('t_' + id);
-  CacheService.getScriptCache().remove('list');
+  CacheService.getScriptCache().remove('list_' + parentEv);
   return json_({ ok: true });
 }
 
@@ -88,11 +109,13 @@ function isAdmin_(idToken) {
   return !!(u && u.emailVerified && CONFIG.ADMIN_EMAILS.indexOf(String(u.email).toLowerCase()) !== -1);
 }
 
-function listAll_() {
+function listAll_(ev) {
   const cache = CacheService.getScriptCache();
-  const hit = cache.get('list');
+  const hit = cache.get('list_' + ev);
   if (hit) return JSON.parse(hit);
-  const files = getFolder_().getFiles();
+  const folder = eventFolder_(ev, false);
+  if (!folder) return [];
+  const files = folder.getFiles();
   const arr = [];
   while (files.hasNext()) {
     const f = files.next();
@@ -100,6 +123,6 @@ function listAll_() {
     arr.push({ id: f.getId(), t: f.getDateCreated().getTime(), by: f.getDescription() || '' });
   }
   arr.sort(function (a, b) { return b.t - a.t; });
-  try { cache.put('list', JSON.stringify(arr), 60); } catch (e) {}
+  try { cache.put('list_' + ev, JSON.stringify(arr), 60); } catch (e) {}
   return arr;
 }

@@ -26,8 +26,27 @@ a.ev .go{margin-inline-start:auto;color:var(--accent);font-weight:700}
 <div class="wrap">
   <h1>🗂️ ארכיון אירועים</h1>
   <p class="sub">אירועים שהסתיימו · לצפייה בלבד</p>
-  <a class="ev" href="chinuch-tiberias-2026/"><span class="ic">🏞️</span><span><b>סדרת חינוך · טבריה</b><small>4–5 בנובמבר 2026</small></span><span class="go">←</span></a>
+  <div id="list"><p class="sub">טוען...</p></div>
   <a class="back" href="../">← לאתר הנוכחי</a>
 </div>
+<script>
+(function(){
+  var STATIC = { 'chinuch-tiberias-2026': 'chinuch-tiberias-2026/' };
+  function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function sv(f, k){ return f[k] && (f[k].stringValue || '') || ''; }
+  fetch('https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/archives?key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI', { cache: 'no-store' })
+    .then(function(r){ return r.ok ? r.json() : { documents: [] }; })
+    .then(function(j){
+      var list = (j.documents || []).filter(function(d){ return sv(d.fields || {}, 'status') === 'done'; })
+        .sort(function(a, b){ return String(b.createTime).localeCompare(String(a.createTime)); });
+      document.getElementById('list').innerHTML = list.length ? list.map(function(d){
+        var id = d.name.split('/').pop(), f = d.fields || {};
+        var href = STATIC[id] || ('../?archive=' + encodeURIComponent(id));
+        return '<a class="ev" href="' + href + '"><span class="ic">🏞️</span><span><b>' + esc(sv(f, 'title') || id) + '</b><small>' + esc(sv(f, 'date')) + '</small></span><span class="go">←</span></a>';
+      }).join('') : '<p class="sub">אין עדיין אירועים בארכיון</p>';
+    })
+    .catch(function(){ document.getElementById('list').innerHTML = '<p class="sub">לא ניתן לטעון כרגע</p>'; });
+})();
+</script>
 </body>
 </html>
