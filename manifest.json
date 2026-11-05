@@ -1,8 +1,8 @@
 {
   "id": "./?app=chinuch-tiberias-2026",
-  "name": "סדרת חינוך המערך הלוגיסטי - טבריה",
+  "name": "המערך הלוגיסטי · טיולים ואירועים",
   "short_name": "סדרת חינוך",
-  "description": "סדרת חינוך המערך הלוגיסטי · טבריה 2026 — פרטים, לו\"ז והרשמה",
+  "description": "טיולים ואירועים של המערך הלוגיסטי — פרטים, לו\"ז והרשמה",
   "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
@@ -12,9 +12,29 @@
   "dir": "rtl",
   "lang": "he",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
