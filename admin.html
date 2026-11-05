@@ -91,6 +91,7 @@ table.reg-table thead th{position:sticky;top:0;background:var(--teal-soft);color
 table.reg-table tbody td{padding:8px 10px;border-bottom:1px solid rgba(15,76,76,0.08);background:rgba(255,255,255,0.6);}
 table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
 .reg-empty{text-align:center;color:var(--text-mid);font-size:0.85rem;padding:10px;}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
 .retry-btn{margin-top:8px;background:var(--teal-soft);border:1px solid var(--teal);color:var(--teal-dark);padding:7px 16px;border-radius:999px;font-size:0.8rem;font-weight:700;cursor:pointer;}
 
 /* ADMIN */
@@ -383,6 +384,7 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <button type="button" data-pane="sched" onclick="showPane('sched')">🗓️ לו"ז</button>
         <button type="button" data-pane="gal" onclick="showPane('gal')">🖼️ גלריה</button>
         <button type="button" data-pane="rooms" onclick="showPane('rooms')">🛏️ חדרים</button>
+        <button type="button" data-pane="arch" onclick="showPane('arch');archLoadList()">🗂️ ארכיון</button>
       </div>
 
       <div class="admin-pane active" id="pane-regs">
@@ -573,6 +575,27 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <button class="btn-primary" id="inSaveBtn" onclick="saveInstr()">💾 שמירה</button>
         </div>
         <div class="ct-status" id="inStatus"></div>
+      </div>
+
+      <div class="admin-pane" id="pane-arch">
+        <p class="section-sub" style="margin-bottom:12px">שומרים עותק מלא של האירוע (נרשמים, נוכחות, חדרים, לו"ז, אנשי קשר) ואז מנקים את האתר לאירוע הבא. דף האירוע הישן נשאר באוויר במצב קריאה בלבד.</p>
+        <div class="ct-card">
+          <label>שלב 1 · 📦 העברת האירוע הנוכחי לארכיון</label>
+          <input id="arTitle" maxlength="80" placeholder="שם האירוע">
+          <input id="arDate" maxlength="60" placeholder="מועד" style="margin-top:6px">
+          <input id="arId" maxlength="60" dir="ltr" placeholder="מזהה (אותיות לועזיות)" style="margin-top:6px">
+          <div class="ct-actions"><button class="btn-primary" id="arCopyBtn" onclick="archDoCopy()">📦 העברה לארכיון</button></div>
+          <div class="ct-status" id="arCopyStatus"></div>
+        </div>
+        <div class="ct-card" style="margin-top:10px">
+          <label>שלב 2 · 🆕 פתיחת אירוע חדש</label>
+          <p class="section-sub" style="text-align:right;margin:4px 0 8px">מוחק מהאתר את הנרשמים, הנוכחות ובחירות החדרים (אחרי שנשמרו בארכיון), מסתיר את הלו"ז ואת לשונית החדרים ונועל את ההרשמה עד שתפתחו אותה. אנשי הקשר, ההנחיות ורשימת החדרים נשארים לעריכה.</p>
+          <div class="ct-actions"><button class="btn-primary" id="arResetBtn" disabled onclick="archDoReset()">🆕 פתיחת אירוע חדש</button></div>
+          <div class="ct-status" id="arResetStatus"></div>
+        </div>
+        <h3 style="color:var(--teal-dark);font-size:1rem;margin:16px 0 8px;text-align:center">🗂️ אירועים בארכיון</h3>
+        <div id="arList"><div class="reg-empty">טוען...</div></div>
+        <div id="arView" style="display:none;margin-top:12px"></div>
       </div>
 
       <div class="admin-pane" id="pane-contacts">
@@ -812,6 +835,109 @@ window.rmSetOvernight = function(regId, val, dropPick){
 };
 window.rmDelPicks = function(ids){ const b = writeBatch(db); ids.forEach(function(id){ b.delete(doc(db, 'roomPicks', id)); }); return b.commit(); };
 
+// ===== ARCHIVE — archives/{id} (meta, public read) + archives/{id}/{collection}/{docId} copies =====
+const ARCH_COLLS = ['registrations', 'public_list', 'roomPicks', 'attendance', 'settings'];
+const SETTINGS_IDS = ['contacts', 'instructions', 'schedule', 'gallery', 'registration', 'rooms', 'roomsPublic'];
+async function commitInChunks(ops){
+  for (let i = 0; i < ops.length; i += 400){
+    const b = writeBatch(db);
+    ops.slice(i, i + 400).forEach(function(op){ op[1] === null ? b.delete(op[0]) : b.set(op[0], op[1]); });
+    await b.commit();
+  }
+}
+window.archList = async function(){
+  const s = await getDocs(collection(db, 'archives'));
+  return s.docs.map(function(d){ return Object.assign({ id: d.id }, d.data({ serverTimestamps: 'estimate' })); })
+    .sort(function(a, b){ return ((b.createdAt && b.createdAt.seconds) || 0) - ((a.createdAt && a.createdAt.seconds) || 0); });
+};
+window.archLiveCount = async function(){
+  const s = await getDocs(collection(db, 'registrations')); return s.size;
+};
+// Copies everything live into the archive. Live data is NOT touched here.
+window.archCopy = async function(archId, meta, onStep){
+  const metaRef = doc(db, 'archives', archId);
+  const ex = await getDoc(metaRef);
+  if (ex.exists() && ex.data().status === 'done') throw new Error('EXISTS');
+  const live = {};
+  for (const c of ARCH_COLLS){
+    onStep && onStep('קורא ' + c + '...');
+    if (c === 'settings'){
+      // settings can't be listed under the rules — read each known doc
+      const got = await Promise.all(SETTINGS_IDS.map(function(id){ return getDoc(doc(db, 'settings', id)); }));
+      live[c] = got.filter(function(d){ return d.exists(); }).map(function(d){ return { id: d.id, v: d.data() }; });
+      continue;
+    }
+    const s = await getDocs(collection(db, c));
+    live[c] = s.docs.map(function(d){ return { id: d.id, v: d.data() }; });
+  }
+  const counts = {}; ARCH_COLLS.forEach(function(c){ counts[c] = live[c].length; });
+  await setDoc(metaRef, Object.assign({}, meta, { status: 'copying', counts: counts, createdAt: serverTimestamp() }));
+  // The archived page is read-only: registration closed, room picking + uploads off
+  const freeze = {
+    registration: { open: false, message: 'האירוע הסתיים · תודה לכל המשתתפים!' },
+    roomsPublic: { open: false },
+    gallery: { uploadsOpen: false }
+  };
+  const ops = [];
+  ARCH_COLLS.forEach(function(c){
+    live[c].forEach(function(d){
+      let v = d.v;
+      if (c === 'settings' && freeze[d.id]) v = Object.assign({}, v, freeze[d.id]);
+      ops.push([doc(db, 'archives', archId, c, d.id), v]);
+    });
+  });
+  if (!live.settings.some(function(d){ return d.id === 'registration'; }))
+    ops.push([doc(db, 'archives', archId, 'settings', 'registration'), freeze.registration]);
+  onStep && onStep('שומר ' + ops.length + ' רשומות בארכיון...');
+  await commitInChunks(ops);
+  // Verify every collection made it before marking the archive as complete
+  onStep && onStep('מאמת...');
+  for (const c of ARCH_COLLS){
+    const s = await getDocs(collection(db, 'archives', archId, c));
+    const need = counts[c] + (c === 'settings' && !live.settings.some(function(d){ return d.id === 'registration'; }) ? 1 : 0);
+    if (s.size !== need) throw new Error('VERIFY ' + c + ' ' + s.size + '/' + need);
+  }
+  await updateDoc(metaRef, { status: 'done', doneAt: serverTimestamp() });
+  return counts;
+};
+// Clears the live event — only after the archive is verified complete.
+window.archResetLive = async function(archId, onStep){
+  const m = await getDoc(doc(db, 'archives', archId));
+  if (!m.exists() || m.data().status !== 'done') throw new Error('NOT_ARCHIVED');
+  const archRegs = await getDocs(collection(db, 'archives', archId, 'registrations'));
+  const archived = {}; archRegs.docs.forEach(function(d){ archived[d.id] = true; });
+  const ops = [];
+  const regs = await getDocs(collection(db, 'registrations'));
+  // anyone who registered after the archive was taken is not deleted
+  const keep = regs.docs.filter(function(d){ return !archived[d.id]; }).length;
+  regs.docs.forEach(function(d){
+    if (!archived[d.id]) return;
+    ops.push([doc(db, 'registrations', d.id), null]);
+    ops.push([doc(db, 'roomKeys', d.id), null]);
+  });
+  for (const c of ['public_list', 'roomPicks']){
+    const s = await getDocs(collection(db, c));
+    s.docs.forEach(function(d){ if (archived[d.id]) ops.push([doc(db, c, d.id), null]); });
+  }
+  const att = await getDocs(collection(db, 'attendance'));
+  att.docs.forEach(function(d){ ops.push([doc(db, 'attendance', d.id), null]); });
+  onStep && onStep('מנקה ' + ops.length + ' רשומות...');
+  await commitInChunks(ops);
+  const ts = serverTimestamp();
+  const b = writeBatch(db);
+  b.set(doc(db, 'settings', 'registration'), { open: false, message: 'ההרשמה לאירוע הבא תיפתח בקרוב', updatedAt: ts });
+  b.set(doc(db, 'settings', 'schedule'), { published: false, title: '', subtitle: '', days: [], updatedAt: ts });
+  b.set(doc(db, 'settings', 'roomsPublic'), { published: false, open: false, rooms: [], allowed: {}, updatedAt: ts });
+  b.set(doc(db, 'settings', 'gallery'), { uploadsOpen: false, updatedAt: ts });
+  b.update(doc(db, 'archives', archId), { resetAt: ts });
+  await b.commit();
+  return { removed: ops.length, kept: keep };
+};
+window.archFetch = async function(archId, c){
+  const s = await getDocs(collection(db, 'archives', archId, c));
+  return s.docs.map(function(d){ return Object.assign({ id: d.id }, d.data()); });
+};
+
 onAuthStateChanged(auth, function(user){
   const isAdmin = !!(user && user.emailVerified && user.email && ADMIN_EMAILS.indexOf(user.email.toLowerCase()) !== -1);
   if (typeof window.onAdminState === 'function') window.onAdminState(user, isAdmin);
@@ -897,6 +1023,106 @@ function adjustHeaderSpace(){
 }
 window.addEventListener('load', adjustHeaderSpace);
 window.addEventListener('resize', adjustHeaderSpace);
+// ===================== ARCHIVE UI =====================
+var ARCH_PAGES = { 'chinuch-tiberias-2026': 'archive/chinuch-tiberias-2026/' }; // static read-only copies in the repo
+var arCurrent = null;
+function arEsc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function arFmtDate(ts){ if(!ts || !ts.seconds) return ''; var d = new Date(ts.seconds * 1000); return d.toLocaleDateString('he-IL'); }
+function arStatus(id, msg, err){ var el = document.getElementById(id); el.textContent = msg || ''; el.style.color = err ? '#c0392b' : ''; }
+function archInitForm(){
+  var t = document.getElementById('arTitle');
+  if(!t.value) t.value = 'סדרת חינוך · טבריה';
+  var d = document.getElementById('arDate'); if(!d.value) d.value = '4–5 בנובמבר 2026';
+  var i = document.getElementById('arId'); if(!i.value) i.value = 'chinuch-tiberias-2026';
+}
+function archLoadList(){
+  archInitForm();
+  var box = document.getElementById('arList');
+  window.archList().then(function(list){
+    var pending = list.filter(function(a){ return a.status === 'done' && !a.resetAt; })[0];
+    document.getElementById('arResetBtn').disabled = !pending;
+    if(pending) document.getElementById('arResetBtn').setAttribute('data-arch', pending.id);
+    if(!list.length){ box.innerHTML = '<div class="reg-empty">עדיין אין אירועים בארכיון</div>'; return; }
+    box.innerHTML = list.map(function(a){
+      var c = a.counts || {};
+      var page = ARCH_PAGES[a.id];
+      var st = a.status !== 'done' ? ' · ⚠️ ההעברה לא הושלמה — אפשר להריץ שוב' : (a.resetAt ? '' : ' · ✅ נשמר · האתר עדיין לא נוקה');
+      return '<div class="ct-card" style="margin-bottom:8px">'
+        + '<b>' + arEsc(a.title || a.id) + '</b> <small style="color:var(--text-mid)">' + arEsc(a.date || '') + '</small>'
+        + '<div style="font-size:.8rem;color:var(--text-mid);margin:4px 0">' + (c.registrations || 0) + ' נרשמים · ' + (c.attendance || 0) + ' בדיקות נוכחות · נשמר ' + arFmtDate(a.createdAt) + st + '</div>'
+        + '<div class="ct-actions" style="justify-content:flex-start">'
+        + '<button class="retry-btn" onclick="archView(\'' + arEsc(a.id) + '\')">👀 נרשמים</button>'
+        + '<button class="retry-btn" onclick="archCsv(\'' + arEsc(a.id) + '\')">⬇️ אקסל</button>'
+        + (page ? '<a class="retry-btn" style="text-decoration:none" href="' + page + '" target="_blank">🌐 דף האירוע</a>' : '')
+        + '</div></div>';
+    }).join('');
+  }).catch(function(e){
+    box.innerHTML = '<div class="reg-empty">שגיאה בטעינת הארכיון' + (e && e.code === 'permission-denied' ? ' — צריך לעדכן את חוקי Firestore (firestore.rules)' : '') + '</div>';
+  });
+}
+function archDoCopy(){
+  var title = document.getElementById('arTitle').value.trim();
+  var date = document.getElementById('arDate').value.trim();
+  var id = document.getElementById('arId').value.trim().toLowerCase();
+  if(!title || !/^[a-z0-9-]{3,60}$/.test(id)){ arStatus('arCopyStatus', 'צריך שם ומזהה באותיות לועזיות, ספרות ומקפים', true); return; }
+  var btn = document.getElementById('arCopyBtn'); btn.disabled = true;
+  window.archCopy(id, { title: title, date: date }, function(m){ arStatus('arCopyStatus', m); })
+    .then(function(c){
+      arStatus('arCopyStatus', '✅ נשמר בארכיון: ' + c.registrations + ' נרשמים, ' + c.attendance + ' בדיקות נוכחות, ' + c.roomPicks + ' שיבוצי חדרים. האתר עדיין לא השתנה.');
+      archLoadList();
+    })
+    .catch(function(e){
+      var msg = e && e.message === 'EXISTS' ? 'כבר קיים אירוע בארכיון עם המזהה הזה' :
+        (e && e.code === 'permission-denied' ? 'אין הרשאה — צריך קודם לעדכן את חוקי Firestore' : 'שגיאה: ' + (e && (e.message || e.code)));
+      arStatus('arCopyStatus', msg, true);
+    })
+    .then(function(){ btn.disabled = false; });
+}
+function archDoReset(){
+  var btn = document.getElementById('arResetBtn');
+  var id = btn.getAttribute('data-arch'); if(!id) return;
+  if(!confirm('לפתוח אירוע חדש?\n\nהנרשמים, הנוכחות והחדרים יימחקו מהאתר (העותק בארכיון נשאר).\nההרשמה תינעל עד שתפתחו אותה בלשונית "נרשמים".')) return;
+  btn.disabled = true;
+  window.archResetLive(id, function(m){ arStatus('arResetStatus', m); })
+    .then(function(r){
+      arStatus('arResetStatus', '✅ האתר מוכן לאירוע חדש' + (r.kept ? ' · ' + r.kept + ' שנרשמו אחרי השמירה לארכיון לא נמחקו' : '') + '. רעננו את הדף.');
+      archLoadList();
+    })
+    .catch(function(e){ arStatus('arResetStatus', e && e.message === 'NOT_ARCHIVED' ? 'קודם צריך להשלים את שלב 1' : 'שגיאה: ' + (e && (e.message || e.code)), true); btn.disabled = false; });
+}
+var AR_COLS = [['name','שם'],['unit','יחידה'],['rank','דרגה'],['role','תפקיד'],['personalNum','מ.א.'],['phone','טלפון'],['gender','מין'],['overnight','לינה'],['weapon','נשק'],['diet','תזונה'],['arrival','הגעה'],['notes','הערות']];
+function arArrival(v){ return v === 'yes' ? 'מגיע' : (v === 'no' ? 'לא מגיע' : (v || '')); }
+function archView(id){
+  var box = document.getElementById('arView'); box.style.display = 'block';
+  box.innerHTML = '<div class="reg-empty">טוען...</div>';
+  window.archFetch(id, 'registrations').then(function(rows){
+    rows.sort(function(a, b){ return ((a.createdAt && a.createdAt.seconds) || 0) - ((b.createdAt && b.createdAt.seconds) || 0); });
+    box.innerHTML = '<div class="admin-bar"><b>' + rows.length + ' נרשמים · ' + arEsc(id) + '</b><button class="retry-btn" onclick="document.getElementById(\'arView\').style.display=\'none\'">סגירה</button></div>'
+      + '<div class="reg-table-wrap" style="max-height:420px"><table class="reg-table"><thead><tr><th>#</th>'
+      + AR_COLS.map(function(c){ return '<th>' + c[1] + '</th>'; }).join('') + '</tr></thead><tbody>'
+      + rows.map(function(r, i){ return '<tr><td>' + (i + 1) + '</td>' + AR_COLS.map(function(c){ return '<td>' + arEsc(c[0] === 'arrival' ? arArrival(r[c[0]]) : r[c[0]]) + '</td>'; }).join('') + '</tr>'; }).join('')
+      + '</tbody></table></div>';
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }).catch(function(e){ box.innerHTML = '<div class="reg-empty">שגיאה: ' + arEsc(e && (e.message || e.code)) + '</div>'; });
+}
+function archCsv(id){
+  Promise.all([window.archFetch(id, 'registrations'), window.archFetch(id, 'attendance')]).then(function(res){
+    var rows = res[0], att = res[1];
+    rows.sort(function(a, b){ return ((a.createdAt && a.createdAt.seconds) || 0) - ((b.createdAt && b.createdAt.seconds) || 0); });
+    att.sort(function(a, b){ return ((a.createdAt && a.createdAt.seconds) || 0) - ((b.createdAt && b.createdAt.seconds) || 0); });
+    function q(v){ v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+    var head = AR_COLS.map(function(c){ return c[1]; }).concat(['נרשם בתאריך']).concat(att.map(function(a){ return a.title; }));
+    var lines = [head.map(q).join(',')].concat(rows.map(function(r){
+      return AR_COLS.map(function(c){ return q(c[0] === 'arrival' ? arArrival(r[c[0]]) : r[c[0]]); })
+        .concat([q(arFmtDate(r.createdAt))])
+        .concat(att.map(function(a){ return (a.present || {})[r.id] ? 'V' : ''; })).join(',');
+    }));
+    var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = id + '-registrations.csv';
+    document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }).catch(function(e){ alert('שגיאה בהורדה: ' + (e && (e.message || e.code))); });
+}
+
 // ===================== ADMIN =====================
 var adminRegs = [];
 

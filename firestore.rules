@@ -146,5 +146,19 @@ service cloud.firestore {
         && existsAfter(/databases/$(db)/documents/registrations/$(id));
       allow update, delete: if isAdmin();
     }
+
+    // ARCHIVE — past events. archives/{id} = title/date/counts; archives/{id}/{collection}/{doc} = full copy.
+    // The public read-only page of an old event reads its public list, room picks and public settings; everything else is admin-only.
+    match /archives/{archId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      match /{coll}/{docId} {
+        allow read: if isAdmin()
+          || coll in ['public_list', 'roomPicks']
+          || (coll == 'settings' && docId in ['contacts', 'instructions', 'gallery', 'registration', 'roomsPublic'])
+          || (coll == 'settings' && docId == 'schedule' && resource.data.get('published', false) == true);
+        allow write: if isAdmin();
+      }
+    }
   }
 }
