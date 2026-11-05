@@ -442,7 +442,8 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
         <div class="ct-card">
           <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstContacts" checked style="width:auto"> אנשי קשר</label>
           <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstInstr" checked style="width:auto"> הנחיות ורשימת ציוד</label>
-          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstRooms" checked style="width:auto"> רשימת החדרים</label>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstRooms" checked style="width:auto"> חדרים (רשימה ושיבוצים)</label>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstSched" checked style="width:auto"> לו"ז</label>
           <div class="ct-actions"><button class="retry-btn" id="tpCleanBtn" onclick="tpCleanOnly()">🧹 לאפס את המסומנים</button></div>
           <div class="ct-status" id="tpNewStatus"></div>
         </div>
@@ -989,9 +990,20 @@ window.archResetLive = async function(archId, onStep, opts){
 window.resetParts = async function(opts){
   const ts = serverTimestamp(); const b = writeBatch(db);
   if (opts.instructions) b.set(doc(db, 'settings', 'instructions'), { rules: [], gear: [], updatedAt: ts });
-  if (opts.rooms) b.set(doc(db, 'settings', 'rooms'), { rooms: [], updatedAt: ts });
+  if (opts.rooms){
+    b.set(doc(db, 'settings', 'rooms'), { rooms: [], updatedAt: ts });
+    b.set(doc(db, 'settings', 'roomsPublic'), { published: false, open: false, rooms: [], allowed: {}, updatedAt: ts });
+  }
   if (opts.contacts) b.set(doc(db, 'settings', 'contacts'), { items: [], updatedAt: ts });
+  if (opts.sched) b.set(doc(db, 'settings', 'schedule'), { published: false, title: '', subtitle: '', days: [], updatedAt: ts });
   await b.commit();
+  // room picks of people who are no longer registered
+  if (opts.rooms){
+    const regs = await getDocs(collection(db, 'registrations')); const ok = {}; regs.docs.forEach(function(d){ ok[d.id] = true; });
+    const picks = await getDocs(collection(db, 'roomPicks'));
+    const ops = picks.docs.filter(function(d){ return !ok[d.id]; }).map(function(d){ return [doc(db, 'roomPicks', d.id), null]; });
+    if (ops.length) await commitInChunks(ops);
+  }
 };
 window.archExists = async function(archId){ const m = await getDoc(doc(db, 'archives', archId)); return m.exists(); };
 window.liveCounts = async function(){
@@ -1250,7 +1262,7 @@ function tpFill(){
   tpRenderState(); arStatus('tpStatus', '');
 }
 function loadTrip(){
-  window.fetchSettings('event').then(function(d){ tpCur = d; tpFill(); hbRenderCurrent(); })
+  return window.fetchSettings('event').then(function(d){ tpCur = d; tpFill(); hbRenderCurrent(); })
     .catch(function(e){ document.getElementById('tpState').textContent = e && e.code === 'permission-denied' ? 'צריך לעדכן את חוקי Firestore' : 'שגיאה בטעינה'; });
 }
 function tpNewId(){ var d = new Date(); function z(n){ return (n < 10 ? '0' : '') + n; } return 'ev-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()); }
@@ -1285,15 +1297,15 @@ function tpToggleActive(){
   tpCur = Object.assign({}, tpCur || {}, { active: turnOn });
   tpSave();
 }
-function tpOpts(){ return { instructions: document.getElementById('tpRstInstr').checked, rooms: document.getElementById('tpRstRooms').checked, contacts: document.getElementById('tpRstContacts').checked }; }
+function tpOpts(){ return { instructions: document.getElementById('tpRstInstr').checked, rooms: document.getElementById('tpRstRooms').checked, contacts: document.getElementById('tpRstContacts').checked, sched: document.getElementById('tpRstSched').checked }; }
 function tpCleanOnly(){
   var o = tpOpts(), names = [];
-  if(o.contacts) names.push('אנשי קשר'); if(o.instructions) names.push('הנחיות וציוד'); if(o.rooms) names.push('רשימת החדרים');
+  if(o.contacts) names.push('אנשי קשר'); if(o.instructions) names.push('הנחיות וציוד'); if(o.rooms) names.push('חדרים'); if(o.sched) names.push('לו"ז');
   if(!names.length){ arStatus('tpNewStatus', 'לא סומן כלום', true); return; }
   if(!confirm('למחוק עכשיו: ' + names.join(', ') + '?\nהנרשמים והטיול לא משתנים.')) return;
   window.resetParts(o).then(function(){
-    arStatus('tpNewStatus', '✅ אופס: ' + names.join(', '));
-    try { loadContacts(); } catch(e){} try { loadInstr(); } catch(e){}
+    arStatus('tpNewStatus', '✅ אופס: ' + names.join(', ') + ' · טוען מחדש...');
+    setTimeout(function(){ location.reload(); }, 900);
   }).catch(function(e){ arStatus('tpNewStatus', 'שגיאה: ' + (e && (e.code || e.message)), true); });
 }
 function tpNewTrip(){
@@ -1322,13 +1334,10 @@ function tpNewTrip(){
     if(fresh.id === (cur.id || '')) fresh.id += '-n';
     opts.event = fresh;
     return p.then(function(){ return window.archResetLive(archId, step, opts); }).then(function(r){
-      tpCur = fresh; tpFill();
-      arStatus('hbStatus', '');
-      document.getElementById('hbNewBox').style.display = 'none';
-      try { loadAdmin(); loadContacts(); loadInstr(); } catch(e){}
-      tvOpen();
-      arStatus('tpStatus', (archId ? '✅ "' + (cur.title || 'הטיול הקודם') + '" נשמר בטיולים הקודמים. ' : '✅ ') + 'מלאו את פרטי הטיול, שמרו, והפעילו את המתג כשהכל מוכן.');
-      document.getElementById('tp-title').focus();
+      var note = (archId ? '✅ "' + (cur.title || 'הטיול הקודם') + '" נשמר בטיולים הקודמים. ' : '✅ הטיול נוצר. ') + 'מלאו את פרטי הטיול, שמרו, והפעילו את המתג כשהכל מוכן.';
+      try { sessionStorage.setItem('admOpenTrip', note); } catch(e){}
+      arStatus('hbStatus', 'טוען את הטיול החדש...');
+      location.reload();
     });
   }).catch(function(e){
     arStatus('hbStatus', (e && e.code === 'permission-denied') ? 'אין הרשאה — צריך לעדכן את חוקי Firestore' : 'שגיאה: ' + (e && (e.message || e.code)) + ' · שום דבר לא נמחק לפני שהארכיון נשמר', true);
@@ -1357,14 +1366,18 @@ window.onAdminState = function(user, isAdmin){
     inn.style.display = 'block';
     document.getElementById('adminWho').textContent = 'מחובר: ' + user.email;
     loadAdmin();
-    loadTrip();
+    // the gallery and the "open the new trip" step need the current trip id first
+    loadTrip().then(function(){
+      loadAdmGallery(1);
+      var note = null; try { note = sessionStorage.getItem('admOpenTrip'); sessionStorage.removeItem('admOpenTrip'); } catch(e){}
+      if(note){ tvOpen(); arStatus('tpStatus', note); }
+    });
     hbShow();
     loadContacts();
     loadInstr();
     loadSched();
     loadGalSetting();
     loadRegSetting();
-    loadAdmGallery(1);
     attStart();
     rmLoad();
   } else {
