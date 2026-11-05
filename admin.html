@@ -447,6 +447,12 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <div class="ct-actions"><button class="retry-btn" id="tpCleanBtn" onclick="tpCleanOnly()">🧹 לאפס את המסומנים</button></div>
           <div class="ct-status" id="tpNewStatus"></div>
         </div>
+        <h3 style="color:#c0392b;font-size:1rem;margin:20px 0 8px;text-align:center">🗑️ מחיקת הטיול</h3>
+        <div class="ct-card" style="border-color:rgba(192,57,43,.3)">
+          <p class="section-sub" style="text-align:right;margin:0 0 8px">מוחק לצמיתות את הטיול הנוכחי עם כל הנרשמים, הנוכחות, החדרים, הלו"ז, ההנחיות ואנשי הקשר — <b>בלי לשמור בטיולים הקודמים</b>. אם רוצים לשמור עותק, משתמשים ב"➕ טיול חדש" בעמוד כל הטיולים.</p>
+          <div class="ct-actions"><button class="retry-btn" style="border-color:#c0392b;color:#c0392b;background:#fff" id="tpDelBtn" onclick="tpDeleteTrip()">🗑️ מחיקת הטיול הנוכחי</button></div>
+          <div class="ct-status" id="tpDelStatus"></div>
+        </div>
       </div>
 
       <div class="admin-pane active" id="pane-regs">
@@ -1005,6 +1011,31 @@ window.resetParts = async function(opts){
     if (ops.length) await commitInChunks(ops);
   }
 };
+// Permanently deletes a past trip from the archive (all its copied data).
+window.archDelete = async function(archId){
+  const ops = [];
+  for (const c of ARCH_COLLS){
+    const s = await getDocs(collection(db, 'archives', archId, c));
+    s.docs.forEach(function(d){ ops.push([doc(db, 'archives', archId, c, d.id), null]); });
+  }
+  ops.push([doc(db, 'archives', archId), null]);
+  await commitInChunks(ops);
+  return ops.length - 1;
+};
+// Permanently deletes the current trip without archiving it, and starts an empty one.
+window.deleteCurrentTrip = async function(fresh){
+  const ops = [];
+  const regs = await getDocs(collection(db, 'registrations'));
+  regs.docs.forEach(function(d){ ops.push([doc(db, 'registrations', d.id), null]); ops.push([doc(db, 'roomKeys', d.id), null]); });
+  for (const c of ['public_list', 'roomPicks', 'attendance']){
+    const s = await getDocs(collection(db, c));
+    s.docs.forEach(function(d){ ops.push([doc(db, c, d.id), null]); });
+  }
+  await commitInChunks(ops);
+  await window.archResetLive(null, null, { instructions: true, rooms: true, contacts: true, event: fresh });
+  await window.resetParts({ rooms: true });
+  return regs.size;
+};
 window.archExists = async function(archId){ const m = await getDoc(doc(db, 'archives', archId)); return m.exists(); };
 window.liveCounts = async function(){
   const r = await getDocs(collection(db, 'registrations')); const a = await getDocs(collection(db, 'attendance'));
@@ -1198,7 +1229,8 @@ function arOpen(id){
   box.innerHTML = '<div class="admin-bar"><button class="retry-btn" onclick="hbShow()">→ כל הטיולים</button><b>' + arEsc(a.title || id) + '</b></div>'
     + '<div class="ct-card" style="text-align:center"><div style="color:var(--text-mid);font-size:.85rem">' + arEsc(a.date || '') + ' · טיול שהסתיים · לצפייה בלבד</div>'
     + '<div class="ct-actions" style="justify-content:center"><a class="retry-btn" style="text-decoration:none" href="' + page + '" target="_blank">🌐 דף הטיול</a>'
-    + '<button class="retry-btn" onclick="archCsv(\'' + arEsc(id) + '\')">⬇️ נרשמים לאקסל</button></div></div>'
+    + '<button class="retry-btn" onclick="archCsv(\'' + arEsc(id) + '\')">⬇️ נרשמים לאקסל</button>'
+    + '<button class="retry-btn" style="border-color:#c0392b;color:#c0392b;background:#fff" onclick="arDelete(\'' + arEsc(id) + '\')">🗑️ מחיקת הטיול</button></div><div class="ct-status" id="arDelStatus"></div></div>'
     + '<div id="arSettings"><div class="reg-empty">טוען...</div></div><div id="arView" style="margin-top:12px"></div>';
   archView(id);
   window.archFetch(id, 'settings').then(function(docs){
@@ -1307,6 +1339,29 @@ function tpCleanOnly(){
     arStatus('tpNewStatus', '✅ אופס: ' + names.join(', ') + ' · טוען מחדש...');
     setTimeout(function(){ location.reload(); }, 900);
   }).catch(function(e){ arStatus('tpNewStatus', 'שגיאה: ' + (e && (e.code || e.message)), true); });
+}
+function arAskSure(title){
+  var ans = prompt('מחיקה לצמיתות של "' + title + '".\nאי אפשר לשחזר.\n\nכדי לאשר הקלידו: מחק');
+  return ans !== null && ans.trim() === 'מחק';
+}
+function arDelete(id){
+  var a = (window._arList || []).filter(function(x){ return x.id === id; })[0] || { id: id };
+  if(!arAskSure(a.title || id)) return;
+  arStatus('arDelStatus', 'מוחק...');
+  window.archDelete(id).then(function(){ hbShow(); })
+    .catch(function(e){ arStatus('arDelStatus', 'שגיאה במחיקה: ' + (e && (e.code || e.message)), true); });
+}
+function tpDeleteTrip(){
+  var cur = tpCur || {};
+  if(!arAskSure(cur.title || 'הטיול הנוכחי')) return;
+  var btn = document.getElementById('tpDelBtn'); btn.disabled = true;
+  arStatus('tpDelStatus', 'מוחק...');
+  var fresh = { active: false, id: tpNewId(), title: '', headline: cur.headline || '', location: '', startDate: '', endDate: '', dateText: '',
+    framing: cur.framing || '', about: '', lodging: '', goals: [], whatsapp: '', code: cur.code || '2026' };
+  window.deleteCurrentTrip(fresh).then(function(){
+    arStatus('tpDelStatus', '✅ הטיול נמחק · טוען מחדש...');
+    setTimeout(function(){ location.reload(); }, 900);
+  }).catch(function(e){ arStatus('tpDelStatus', 'שגיאה במחיקה: ' + (e && (e.code || e.message)), true); btn.disabled = false; });
 }
 function tpNewTrip(){
   var cur = tpCur || {};
