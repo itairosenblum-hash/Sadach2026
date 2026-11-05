@@ -1497,6 +1497,7 @@ var GALLERY_URL = 'https://script.google.com/macros/s/AKfycbyQVPOG5dzgQ1jyLMnRIz
 var GALLERY_KEY = 'chinuch-tiberias-2026';   // upload secret (same in gallery/Code.gs)
 // Each event gets its own sub-folder in the gallery (by event id); no id = the original Tiberias photos
 function galEv(){ return (EV && EV.id) ? '&event=' + encodeURIComponent(EV.id) : ''; }
+function galFix(d){ return (EV && EV.id && d && d.v !== 2) ? { ok: true, total: 0, page: 1, pages: 1, items: [] } : d; }
 var galLoaded = false, galPage = 1, galItems = [], galPages = 1, lbIndex = 0;
 function galThumb(id, w){ return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w' + w; }
 function galSetStatus(t, cls){ var el = document.getElementById('galStatus'); el.textContent = t; el.className = 'gal-status' + (cls ? ' ' + cls : ''); }
@@ -1524,7 +1525,7 @@ function loadGallery(page){
   galLoaded = true;
   grid.innerHTML = '<div class="reg-empty" style="grid-column:1/-1">טוען...</div>';
   fetch(GALLERY_URL + '?page=' + page + galEv(), { cache: 'no-store' })
-    .then(function(r){ return r.json(); })
+    .then(function(r){ return r.json(); }).then(galFix)
     .then(function(d){
       galPage = d.page || 1; galPages = d.pages || 1; galItems = d.items || [];
       galSetCount(d.total || 0);
@@ -1542,7 +1543,7 @@ function loadGalCount(){
   try { setTabBadge('badgeGallery', localStorage.getItem(GAL_COUNT_KEY) || 0); } catch(e){}
   if(!GALLERY_URL) return;
   fetch(GALLERY_URL + '?page=1' + galEv(), { cache: 'no-store' })
-    .then(function(r){ return r.json(); })
+    .then(function(r){ return r.json(); }).then(galFix)
     .then(function(d){ if(d && typeof d.total === 'number') galSetCount(d.total); })
     .catch(function(){});
 }

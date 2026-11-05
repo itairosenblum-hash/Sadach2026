@@ -19,7 +19,7 @@ function doGet(e) {
   const page = Math.max(1, parseInt((e && e.parameter && e.parameter.page) || '1', 10) || 1);
   const all = listAll_(evId_(e && e.parameter && e.parameter.event));
   const pages = Math.max(1, Math.ceil(all.length / CONFIG.PAGE_SIZE));
-  return json_({ ok: true, total: all.length, page: page, pages: pages,
+  return json_({ ok: true, v: 2, total: all.length, page: page, pages: pages,
     items: all.slice((page - 1) * CONFIG.PAGE_SIZE, page * CONFIG.PAGE_SIZE) });
 }
 

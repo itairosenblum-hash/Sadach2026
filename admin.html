@@ -421,8 +421,9 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <p class="section-sub" style="text-align:right;margin:0 0 8px">הטיול הנוכחי (אם יש) נשמר במלואו בארכיון, ואז מתאפסים: הנרשמים, בדיקות הנוכחות, שיבוץ החדרים, הלו"ז והגלריה. ההרשמה ננעלת והאתר מציג "אין כרגע אירוע פעיל" עד שתפעילו את הטיול החדש.</p>
           <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstInstr" checked style="width:auto"> לאפס גם הנחיות ורשימת ציוד</label>
           <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstRooms" checked style="width:auto"> לאפס גם את רשימת החדרים</label>
-          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstContacts" style="width:auto"> לאפס גם אנשי קשר</label>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="tpRstContacts" checked style="width:auto"> לאפס גם אנשי קשר</label>
           <div class="ct-actions"><button class="btn-primary" id="tpNewBtn" onclick="tpNewTrip()">➕ פתיחת טיול חדש</button></div>
+          <div class="ct-actions"><button class="retry-btn" id="tpCleanBtn" onclick="tpCleanOnly()">🧹 לאפס עכשיו רק את המסומנים (בלי טיול חדש)</button></div>
           <div class="ct-status" id="tpNewStatus"></div>
         </div>
       </div>
@@ -970,6 +971,14 @@ window.archResetLive = async function(archId, onStep, opts){
   await b.commit();
   return { removed: ops.length, kept: keep };
 };
+// Clears only the chosen sections (contacts / instructions / rooms list) — registrations are untouched.
+window.resetParts = async function(opts){
+  const ts = serverTimestamp(); const b = writeBatch(db);
+  if (opts.instructions) b.set(doc(db, 'settings', 'instructions'), { rules: [], gear: [], updatedAt: ts });
+  if (opts.rooms) b.set(doc(db, 'settings', 'rooms'), { rooms: [], updatedAt: ts });
+  if (opts.contacts) b.set(doc(db, 'settings', 'contacts'), { items: [], updatedAt: ts });
+  await b.commit();
+};
 window.archExists = async function(archId){ const m = await getDoc(doc(db, 'archives', archId)); return m.exists(); };
 window.liveCounts = async function(){
   const r = await getDocs(collection(db, 'registrations')); const a = await getDocs(collection(db, 'attendance'));
@@ -1192,10 +1201,21 @@ function tpToggleActive(){
   tpCur = Object.assign({}, tpCur || {}, { active: turnOn });
   tpSave();
 }
+function tpOpts(){ return { instructions: document.getElementById('tpRstInstr').checked, rooms: document.getElementById('tpRstRooms').checked, contacts: document.getElementById('tpRstContacts').checked }; }
+function tpCleanOnly(){
+  var o = tpOpts(), names = [];
+  if(o.contacts) names.push('אנשי קשר'); if(o.instructions) names.push('הנחיות וציוד'); if(o.rooms) names.push('רשימת החדרים');
+  if(!names.length){ arStatus('tpNewStatus', 'לא סומן כלום', true); return; }
+  if(!confirm('למחוק עכשיו: ' + names.join(', ') + '?\nהנרשמים והטיול לא משתנים.')) return;
+  window.resetParts(o).then(function(){
+    arStatus('tpNewStatus', '✅ אופס: ' + names.join(', '));
+    try { loadContacts(); } catch(e){} try { loadInstr(); } catch(e){}
+  }).catch(function(e){ arStatus('tpNewStatus', 'שגיאה: ' + (e && (e.code || e.message)), true); });
+}
 function tpNewTrip(){
   var cur = tpCur || {};
   var btn = document.getElementById('tpNewBtn');
-  var opts = { instructions: document.getElementById('tpRstInstr').checked, rooms: document.getElementById('tpRstRooms').checked, contacts: document.getElementById('tpRstContacts').checked };
+  var opts = tpOpts();
   btn.disabled = true; arStatus('tpNewStatus', 'בודק...');
   window.liveCounts().then(function(c){
     var hasData = c.regs > 0 || c.att > 0 || !!cur.title;
@@ -1992,6 +2012,7 @@ function loadAdmGallery(page){
   var grid = document.getElementById('admGalGrid');
   grid.innerHTML = '<div class="reg-empty" style="grid-column:1/-1">טוען...</div>';
   fetch(GALLERY_URL + '?page=' + page + (window.EVA_ID ? '&event=' + encodeURIComponent(window.EVA_ID) : ''), { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(d){
+    if(window.EVA_ID && d && d.v !== 2) d = { ok: true, total: 0, page: 1, pages: 1, items: [], old: true };
     admGalPage = d.page || 1; admGalItems = d.items || [];
     if(!admGalItems.length){ grid.innerHTML = '<div class="reg-empty" style="grid-column:1/-1">אין תמונות בגלריה</div>'; document.getElementById('admGalPager').innerHTML = ''; return; }
     grid.innerHTML = admGalItems.map(function(it, i){
