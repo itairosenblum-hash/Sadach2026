@@ -40,6 +40,7 @@ if(ARCH_ID) document.documentElement.classList.add('ev-arch');
 </script>
 <style>
 #evIdle,#evWait,#evArchBar{display:none}
+.tabbar .tab.pg-off{display:none!important}
 html.ev-wait body>*:not(#evWait){display:none!important}
 html.ev-wait #evWait{display:flex}
 html.ev-idle body>*:not(#evIdle){display:none!important}
@@ -696,7 +697,10 @@ function evApply(){
   }).join('');
   gb.parentNode.style.display = goals.length ? '' : 'none';
   var wa = document.getElementById('evWaTab');
-  if(wa){ if(e.whatsapp && /^https:\/\//.test(e.whatsapp)){ wa.href = e.whatsapp; wa.style.display = ''; } else wa.style.display = 'none'; }
+  if(wa){ if(e.whatsapp && /^https:\/\//.test(e.whatsapp) && pageOn('whatsapp')){ wa.href = e.whatsapp; wa.style.display = ''; } else wa.style.display = 'none'; }
+  document.querySelectorAll('.tabbar .tab[data-target]').forEach(function(t){ t.classList.toggle('pg-off', !pageOn(t.getAttribute('data-target'))); });
+  var act = document.querySelector('.page.active');
+  if(act && !pageOn(act.id.replace('page-', '')) && typeof showPage === 'function') showPage(firstPage());
   CAL_EVENT.title = e.title || ''; CAL_EVENT.location = e.location || ''; CAL_EVENT.details = e.headline || e.title || '';
   CAL_EVENT.start = evIcsDate(e.startDate); CAL_EVENT.end = e.startDate ? evNextDay(e.endDate || e.startDate) : '';
   var cal = document.querySelector('.cal-row .btn-primary'); if(cal) cal.style.display = e.startDate ? '' : 'none';
@@ -904,7 +908,11 @@ function icsNow(){
 }
 
 // PAGE SWITCHING
+// Pages can be hidden per trip (admin → 🧭 טיול → "עמודים באתר"); missing = shown
+function pageOn(id){ var pg = (EV && EV.pages) || {}; return pg[id] !== false; }
+function firstPage(){ var t = document.querySelector('.tabbar .tab[data-target]:not(.pg-off)'); return t ? t.getAttribute('data-target') : 'details'; }
 function showPage(id){
+  if(!pageOn(id)) id = firstPage();
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-target') === id); });
@@ -1190,7 +1198,7 @@ function loadContactsPublic(){
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadContactsPublic); } else { loadContactsPublic(); }
 
 // INSTRUCTIONS + GEAR — edited from admin.html, stored in Firestore settings/instructions
-var INSTR_DEFAULT = {"rules": ["חל איסור מוחלט על שתיית אלכוהול", "יש להקפיד ולשמור על כללי השילוב הראוי", "אין להגיע למסלולים עם כפכפים"], "gear": [{"title": "👕 לבוש", "items": ["ביגוד אזרחי נוח", "נעליים סגורות ונוחות להליכה", "ביגוד ונעלי ספורט לסדנת ODT", "שכבה חמה לערב (סווטשרט / מעיל קל)", "כובע"]}, {"title": "🎒 לסיורים", "items": ["בקבוק מים (1.5 ליטר לפחות)", "קרם הגנה ומשקפי שמש", "תיק גב קטן", "פנקס ועט"]}, {"title": "🛏️ ללינה", "items": ["ערכת רחצה", "בגדים להחלפה ליום השני", "תרופות אישיות (במידת הצורך)", "מטען לטלפון", "מגבת ומצעים — מסופקים ע\"י בית החייל"]}, {"title": "📄 כללי", "items": ["חוגר / תעודה צבאית", "נושאי נשק: נשק אישי ומחסניות", "סוללת גיבוי לטלפון"]}]};
+var INSTR_DEFAULT = { rules: [], gear: [] };   // nothing saved yet → "יפורסם בהמשך"
 var INSTR_URL = FS_BASE + 'settings/instructions'
   + '?key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI';
 var INSTR_CACHE_KEY = KEY_PFX + 'chinuchInstrV1';

@@ -459,6 +459,8 @@ table.reg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,0.35);}
           <label>מטרות (שורה לכל מטרה · כותרת – הסבר)</label><textarea id="tp-goals" class="in-ta" rows="4" placeholder="מורשת וידיעת הארץ – חיזוק הקשר למורשת" oninput="tpDirty()"></textarea>
           <label>לינה (מוצג בלשונית החדרים)</label><input id="tp-lodging" maxlength="80" placeholder="למשל: לינה בבית החייל, ירושלים" oninput="tpDirty()">
           <label>קישור לקבוצת וואטסאפ</label><input id="tp-whatsapp" maxlength="200" dir="ltr" placeholder="https://chat.whatsapp.com/..." oninput="tpDirty()">
+          <label>📑 עמודים באתר (V = מוצג)</label>
+          <div id="tpPages" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-bottom:8px"></div>
           <label>קוד כניסה לאתר</label><input id="tp-code" maxlength="12" dir="ltr" inputmode="numeric" placeholder="2026" oninput="tpDirty()">
           <div class="ct-actions"><button class="btn-primary" id="tpSaveBtn" onclick="tpSave()">💾 שמירה</button></div>
           <div class="ct-status" id="tpStatus"></div>
@@ -1379,6 +1381,16 @@ function tpEndTrip(){
 // ===================== TRIP (settings/event) =====================
 var TP_FIELDS = ['title','headline','location','startDate','endDate','dateText','framing','about','lodging','whatsapp','code'];
 var tpCur = null;
+var TP_PAGES = [['details','📋 פרטים'],['schedule','🗓️ לו"ז'],['instructions','📢 הנחיות'],['gallery','🖼️ גלריה'],['emergency','📞 אנשי קשר'],['rooms','🛏️ חדרים'],['register','✅ הרשמה'],['whatsapp','💬 קבוצת וואטסאפ']];
+function tpPagesFill(pg){
+  pg = pg || {};
+  document.getElementById('tpPages').innerHTML = TP_PAGES.map(function(x){
+    return '<label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0"><input type="checkbox" style="width:auto" data-pg="' + x[0] + '"' + (pg[x[0]] !== false ? ' checked' : '') + ' onchange="tpDirty()"> ' + x[1] + '</label>';
+  }).join('');
+}
+function tpPagesGet(){
+  var o = {}; document.querySelectorAll('#tpPages input[data-pg]').forEach(function(c){ o[c.getAttribute('data-pg')] = c.checked; }); return o;
+}
 var HE_MONTHS = ['בינואר','בפברואר','במרץ','באפריל','במאי','ביוני','ביולי','באוגוסט','בספטמבר','באוקטובר','בנובמבר','בדצמבר'];
 function tpDirty(){ arStatus('tpStatus', 'יש שינויים שלא נשמרו'); }
 function tpAutoDate(){
@@ -1406,6 +1418,7 @@ function tpFill(){
   var e = tpCur || {};
   TP_FIELDS.forEach(function(k){ var el = document.getElementById('tp-' + k); if(el) el.value = e[k] || ''; });
   document.getElementById('tp-goals').value = (e.goals || []).join('\n');
+  tpPagesFill(e.pages);
   document.getElementById('tp-dateText').dataset.manual = e.dateText ? '1' : '';
   tpRenderState(); arStatus('tpStatus', '');
 }
@@ -1420,6 +1433,8 @@ function tpCollect(){
   TP_FIELDS.forEach(function(k){ e[k] = document.getElementById('tp-' + k).value.trim(); });
   e.goals = document.getElementById('tp-goals').value.split('\n').map(function(x){ return x.trim(); }).filter(Boolean).slice(0, 6);
   e.active = !!(tpCur && tpCur.active);
+  e.pages = tpPagesGet();
+  if(!Object.keys(e.pages).some(function(k){ return e.pages[k] && k !== 'whatsapp'; })) e.pages.details = true;
   if(!e.id && !ADM_TRIP) e.id = tpNewId();
   if(!e.id) delete e.id;
   if(!e.code) e.code = '2026';

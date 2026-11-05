@@ -50,9 +50,10 @@ service cloud.firestore {
     match /settings/{docId} {
       allow read: if docId in ['event', 'contacts', 'instructions', 'gallery', 'registration']
         || (docId == 'schedule' && (isAdmin() || resource.data.published == true));
+      // "event" (trip details) may hold any fields, so new trip settings don't need a rules change
       allow write: if isAdmin() && docId in ['event', 'contacts', 'instructions', 'schedule', 'gallery', 'registration']
-        && request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'published', 'title', 'subtitle', 'days', 'uploadsOpen', 'open', 'message', 'updatedAt',
-             'active', 'id', 'headline', 'location', 'startDate', 'endDate', 'dateText', 'framing', 'about', 'lodging', 'goals', 'whatsapp', 'code']);
+        && (docId == 'event' || request.resource.data.keys().hasOnly(['items', 'rules', 'gear', 'published', 'title', 'subtitle', 'days', 'uploadsOpen', 'open', 'message', 'updatedAt',
+             'active', 'id', 'headline', 'location', 'startDate', 'endDate', 'dateText', 'framing', 'about', 'lodging', 'goals', 'whatsapp', 'code']));
     }
 
     // Room setup — admins only.

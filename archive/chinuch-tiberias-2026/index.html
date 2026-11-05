@@ -1819,5 +1819,21 @@ function closeWx(){ document.getElementById('wxOverlay').classList.remove('open'
 document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeWx(); });
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', loadWx); } else { loadWx(); }
 </script>
+<script>
+// Pages hidden from admin (archives/chinuch-tiberias-2026/settings/event.pages)
+(function(){
+  var css = document.createElement('style'); css.textContent = '.tabbar .tab.pg-off{display:none!important}'; document.head.appendChild(css);
+  fetch('https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/archives/chinuch-tiberias-2026/settings/event?key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI', { cache: 'no-store' })
+    .then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+      var f = d && d.fields && d.fields.pages && d.fields.pages.mapValue && d.fields.pages.mapValue.fields; if(!f) return;
+      var off = {}; for(var k in f) if(f[k].booleanValue === false) off[k] = true;
+      document.querySelectorAll('.tabbar .tab[data-target]').forEach(function(t){ t.classList.toggle('pg-off', !!off[t.getAttribute('data-target')]); });
+      var wa = document.querySelector('.tabbar a.tab[href*="chat.whatsapp.com"]'); if(wa && off.whatsapp) wa.style.display = 'none';
+      var orig = window.showPage;
+      window.showPage = function(id){ if(off[id]){ var t = document.querySelector('.tabbar .tab[data-target]:not(.pg-off)'); id = t ? t.getAttribute('data-target') : 'details'; } return orig(id); };
+      var act = document.querySelector('.page.active'); if(act && off[act.id.replace('page-', '')]) window.showPage('details');
+    }).catch(function(){});
+})();
+</script>
 </body>
 </html>
