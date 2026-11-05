@@ -26,6 +26,7 @@
 // ?archive=<id> shows a past event from archives/<id>/ (read-only).
 var QS = new URLSearchParams(location.search);
 var ARCH_ID = (QS.get('archive') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+var PREVIEW = !ARCH_ID && QS.get('preview') === '1';   // admin preview of a trip that isn't shown yet
 var FS_ROOT = 'https://firestore.googleapis.com/v1/projects/sadach-a63c7/databases/(default)/documents/';
 var FS_BASE = FS_ROOT + (ARCH_ID ? 'archives/' + ARCH_ID + '/' : '');
 var FS_KEY = '?key=AIzaSyB7mXq6CuqSxS6A20xIir6EkrR3rMPSvCI';
@@ -33,7 +34,8 @@ var KEY_PFX = ARCH_ID ? 'a_' + ARCH_ID + '_' : '';
 var EV_CACHE_KEY = KEY_PFX + 'evDocV1';
 var EV = null;
 try { EV = JSON.parse(localStorage.getItem(EV_CACHE_KEY) || 'null'); } catch(e){}
-document.documentElement.classList.add(EV ? (EV.active || ARCH_ID ? 'ev-on' : 'ev-idle') : 'ev-wait');
+document.documentElement.classList.add(EV ? (EV.active || ARCH_ID || (PREVIEW && EV.title) ? 'ev-on' : 'ev-idle') : 'ev-wait');
+if(PREVIEW) document.documentElement.classList.add('ev-prev');
 if(ARCH_ID) document.documentElement.classList.add('ev-arch');
 </script>
 <style>
@@ -42,7 +44,7 @@ html.ev-wait body>*:not(#evWait){display:none!important}
 html.ev-wait #evWait{display:flex}
 html.ev-idle body>*:not(#evIdle){display:none!important}
 html.ev-idle #evIdle{display:flex}
-html.ev-arch #evArchBar{display:block}
+html.ev-arch #evArchBar,html.ev-prev #evArchBar{display:block}
 #evWait{position:fixed;inset:0;align-items:center;justify-content:center;font-size:2rem}
 #evIdle{min-height:100vh;flex-direction:column;align-items:center;padding:calc(36px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#eaf6f6,#dff0ea)}
 #evIdle .w{width:100%;max-width:480px;flex:1;display:flex;flex-direction:column;align-items:center}
@@ -409,7 +411,7 @@ table.reg-table tr.unit-row td span{background:rgba(255,255,255,0.2);border-radi
   <div id="evPast" style="width:100%"></div>
   <div class="foot"><a href="admin.html">🔐 ניהול</a></div>
 </div></div>
-<div id="evArchBar">🗂️ ארכיון · האירוע הסתיים · <a href="./">לאתר הנוכחי ←</a></div>
+<div id="evArchBar"><span id="evBarTxt">🗂️ ארכיון · האירוע הסתיים</span> · <a href="./">לאתר הנוכחי ←</a></div>
 <div class="bg-waves" aria-hidden="true">
   <div class="bg-wave-layer"></div>
 </div>
@@ -728,7 +730,8 @@ function evSetMode(on){
   if(on && typeof adjustHeaderSpace === 'function') setTimeout(adjustHeaderSpace, 0);
 }
 function evStart(){
-  var cachedOn = EV && (EV.active || ARCH_ID);
+  if(PREVIEW){ var bt = document.getElementById('evBarTxt'); if(bt) bt.textContent = '👀 תצוגה מקדימה' + (EV && EV.active ? '' : ' · עדיין לא מוצג לכולם'); }
+  var cachedOn = EV && (EV.active || ARCH_ID || (PREVIEW && EV.title));
   if(EV){ evApply(); evSetMode(!!cachedOn); }
   fetch(FS_BASE + 'settings/event' + FS_KEY, { cache: 'no-store' })
     .then(function(r){ if(r.status === 404 || r.status === 403) return null; if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -736,11 +739,11 @@ function evStart(){
       var e = null;
       if(doc){ e = {}; var f = doc.fields || {}; for(var k in f) e[k] = evFs(f[k]); }
       try { if(e) localStorage.setItem(EV_CACHE_KEY, JSON.stringify(e)); else localStorage.removeItem(EV_CACHE_KEY); } catch(x){}
-      var on = !!(e && (e.active || ARCH_ID));
+      var on = !!(e && (e.active || ARCH_ID || (PREVIEW && e.title)));
       var changed = JSON.stringify(e) !== JSON.stringify(EV);
       EV = e;
       if(changed || !cachedOn) evApply();
-      if(e && e.code && e.code !== SITE_CODE){ SITE_CODE = e.code; if(localStorage.getItem('sadachGateCode') !== SITE_CODE && !ARCH_ID) document.getElementById('gateOverlay').style.display = ''; }
+      if(e && e.code && e.code !== SITE_CODE){ SITE_CODE = e.code; if(localStorage.getItem('sadachGateCode') !== SITE_CODE && !ARCH_ID && !PREVIEW) document.getElementById('gateOverlay').style.display = ''; }
       evSetMode(on);
     })
     .catch(function(){ if(!EV) evSetMode(false); })
@@ -837,7 +840,7 @@ function checkGateCode(){
   }
 }
 (function(){
-  if(ARCH_ID || localStorage.getItem('sadachGateCode') === SITE_CODE || (SITE_CODE === '2026' && localStorage.getItem('sadachLogisticsGateOk') === '1')){
+  if(ARCH_ID || PREVIEW || localStorage.getItem('sadachGateCode') === SITE_CODE || (SITE_CODE === '2026' && localStorage.getItem('sadachLogisticsGateOk') === '1')){
     document.addEventListener('DOMContentLoaded', function(){
       document.getElementById('gateOverlay').style.display = 'none';
     });
